@@ -11,7 +11,7 @@ class Algorithm(Enum):
     LAPLACIAN = "LAPLACIAN"
     SOBEL = "SOBEL"
 
-# Define Constants for Path to file
+# Define Constants
 PATH = 'videos/'
 VIDEO = 'sample_cell_video.mp4'
 SCALE = 0.25
@@ -35,32 +35,28 @@ def main():
         while True:
             isTrue, frame = capture.read()
 
-            # # Process Frame to detect edges
-            # processed_laplacian = process_image(frame, Algorithm.LAPLACIAN, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
-            #
-            # # Display Proccessed Video
-            # cv.imshow("Laplacian", processed_laplacian)
-
-            # Edge Cascade Test: only display edges found.
-            # Use Canny Edge Detection
-            processed_canny = process_image(frame, Algorithm.CANNY, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
-            cv.imshow("Canny", processed_canny)
-
-            # Laplacian Derivative
+            # Process Frame to detect edges
             processed_laplacian = process_image(frame, Algorithm.LAPLACIAN, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
+
+            # Display Proccessed Video
             cv.imshow("Laplacian", processed_laplacian)
 
-            # Sobel XY
-            processed_sobel = process_image(frame, Algorithm.SOBEL, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
-            cv.imshow("Sobel", processed_sobel)
+            cont_img = detect_shape(processed_laplacian)
+            cv.imshow("Contours", cont_img)
 
-            # Dilate frame. Can be used to thicken and define edges
-            #dilated_frame = cv.dilate(canny_frame, (7, 7), iterations=3)
-            #cv.imshow("Dilated", dilated_frame)
+            # # Edge Cascade Test: only display edges found.
+            # # Use Canny Edge Detection
+            # processed_canny = process_image(frame, Algorithm.CANNY, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
+            # cv.imshow("Canny", processed_canny)
+            #
+            # # Laplacian Derivative
+            # processed_laplacian = process_image(frame, Algorithm.LAPLACIAN, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
+            # cv.imshow("Laplacian", processed_laplacian)
+            #
+            # # Sobel XY
+            # processed_sobel = process_image(frame, Algorithm.SOBEL, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
+            # cv.imshow("Sobel", processed_sobel)
 
-            # Erode. Can be used on dilated image to sharpen lines
-            #eroded_frame = cv.erode(dilated_frame, (7, 7), iterations=3)
-            #cv.imshow("Eroded", eroded_frame)
 
             # Adjust waitKey to change time each frame is displayed
             # Press q to exit out of opencv early
@@ -141,12 +137,50 @@ def detect_edges(img, edge_alg):
     # Laplacian Derivative
     elif edge_alg.value == "LAPLACIAN":
         processed = cv.Laplacian(img, cv.CV_8UC3)
+        processed = np.uint8(np.absolute(processed))
     # Sobel XY
     elif edge_alg.value == "SOBEL":
         sobel = cv.Sobel(img, cv.CV_64F, 1, 1, 5)
         processed = cv.convertScaleAbs(sobel)
 
+    # Dilate frame to thicken and define edges
+    processed = cv.dilate(processed, (7, 7), 2)
+
+    # Erode. Can be used on dilated image to sharpen lines
+    # processes = cv.erode(processed, (7, 7), 1)
+
     return processed
 
+
+'''
+    Uses a specified edge detection algorithm to display only edges found in the image
+    @:param img: image to detect edges in
+    @:param edge_alg Option from Algorithm enum
+    @:return edited frame/image with drawn on contours and text
+'''
+def detect_shape(img):
+    # Epsilon value determines how exact the contour needs to follow specifications
+    EPSILON = 3
+    threshold_val, thrash = cv.threshold(img, 240, 255, cv.THRESH_BINARY)
+    contours, hierarchy = cv.findContours(thrash, cv.RETR_TREE, cv.CHAIN_APPROX_NONE)
+
+    for contour in contours:
+        # Grab contour following shape. The True value indicates that it must be a closed shape
+        approx = cv.approxPolyDP(contour, EPSILON*cv.arcLength(contour, True), True)
+        # First number = index of contour
+        # Draw contour in white
+        # Last num = thickness of line
+        cv.drawContours(img, [approx], 0, (255, 0, 0), 5)
+        # Grab coordinates of contour
+        x = approx.ravel()[0]
+        y = approx.ravel()[1]
+
+        # TODO add logic to determine if shape matches that of cell
+        # cv.HoughCircles()?
+        # Or find center and radius
+        # Write Cell label onto photo in white font
+        cv.putText(img, "Cell", (x, y), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
+
+    return img
 
 main()
