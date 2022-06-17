@@ -4,6 +4,7 @@ import cv2 as cv
 import numpy as np
 import os
 from enum import Enum
+import centroid_tracker
 
 # Edge Detection Algorithm Enum to store valid options
 class Algorithm(Enum):
@@ -12,7 +13,7 @@ class Algorithm(Enum):
     SOBEL = "SOBEL"
 
 # Define Constants
-PATH = 'videos/'
+PATH = '../videos/'
 VIDEO = 'sample_cell_video.mp4'
 SCALE = 0.25
 CONTRAST = 4.0
