@@ -16,8 +16,12 @@ PATH = 'videos/'
 VIDEO = 'sample_cell_video.mp4'
 SCALE = 0.25
 CONTRAST = 4.0
-BRIGHTNESS = 0
+BRIGHTNESS = 0.5
 BLUR_INTENSITY = 75
+MIN_CELL_SIZE = 1
+
+# Elliptical Kernel
+ELIPTICAL_KERNEL = cv.getStructuringElement(cv.MORPH_ELLIPSE,(5,5))
 
 
 def main():
@@ -33,7 +37,11 @@ def main():
         capture = cv.VideoCapture(videoFile)
 
         while True:
-            isTrue, frame = capture.read()
+            valid, frame = capture.read()
+
+            # If next frame is not found exit program
+            if not valid:
+                break
 
             # Process Frame to detect edges
             processed_laplacian = process_image(frame, Algorithm.LAPLACIAN, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
@@ -41,8 +49,29 @@ def main():
             # Display Proccessed Video
             cv.imshow("Laplacian", processed_laplacian)
 
+            # color_edges = process_color_image(frame, Algorithm.LAPLACIAN, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
+            # cv.imshow("Color", color_edges)
+            #
+            # # Use mask to cover all non white in image
+            # lower = np.array([240,240,240], dtype="uint8")
+            # upper = np.array([255, 255, 255], dtype="uint8")
+            #
+            # mask = cv.inRange(color_edges, lower, upper)
+            # output = cv.bitwise_and(color_edges, color_edges, mask=mask)
+            #
+            # output = cv.dilate(output, (7,7), iterations=2)
+            #
+            # cv.imshow("MASKED", output)
+
+
+            # Use opening
+            #open = cv.morphologyEx(processed_laplacian, cv.MORPH_OPEN, (7,7))
+            #cv.imshow("Opening", open)
             cont_img = detect_shape(processed_laplacian)
             cv.imshow("Contours", cont_img)
+
+            cont = draw_external_contours(processed_laplacian)
+            cv.imshow("Contours-External", cont)
 
             # # Edge Cascade Test: only display edges found.
             # # Use Canny Edge Detection
@@ -60,7 +89,7 @@ def main():
 
             # Adjust waitKey to change time each frame is displayed
             # Press q to exit out of opencv early
-            if cv.waitKey(50) & 0xFF == ord('q'):
+            if cv.waitKey(500) & 0xFF == ord('q'):
                 break
 
         # Close opencv
@@ -93,6 +122,29 @@ def process_image(img, edge_alg, scale:float=1.0, contrast:float=1.0, brightness
     processed = detect_edges(processed, edge_alg)
     return processed
 
+'''
+    Adjusts image to better view individual cells
+    This involves increasing contrast, applying filters, 
+    and applying an edge detector to bring out the edges of each cell. 
+    This does not convert it to grayscale
+    @:param img Image to adjust
+    @:param edge_alg Option from Algorithm enum
+    @:param scale:   (0.0,  inf) with 1.0 leaving the scale as is
+    @:param contrast:   (0.0,  inf) with 1.0 leaving the contrast as is
+    @:param brightness: [-255, 255] with 0 leaving the brightness as is
+    @:param blur: [0, 250] Blur Intensity
+    @:return adjusted frame/image
+'''
+def process_color_image(img, edge_alg, scale:float=1.0, contrast:float=1.0, brightness:int=0, blur:int=0):
+    # Scale image
+    processed = rescale_frame(img, scale)
+    # Increase contrast
+    processed = adjust_contrast_brightness(processed, contrast, brightness)
+    # Apply Bilateral Filter to Blur and reduce noise
+    processed = cv.bilateralFilter(processed, 5, blur, blur)
+    # Use Edge Detection Algorithm
+    processed = color_canny(processed)
+    return processed
 
 '''
     Resizes the given video frame or image to supplied scale
@@ -144,10 +196,33 @@ def detect_edges(img, edge_alg):
         processed = cv.convertScaleAbs(sobel)
 
     # Dilate frame to thicken and define edges
-    processed = cv.dilate(processed, (7, 7), 2)
+    processed = cv.dilate(processed, (7, 7), iterations=2)
 
     # Erode. Can be used on dilated image to sharpen lines
     # processes = cv.erode(processed, (7, 7), 1)
+
+    return processed
+
+'''
+    Uses canny edge detection algorithm to display only edges found in the color image
+    @:param img: image to detect edges in
+    @:return edited frame/image
+'''
+def color_canny(img):
+    # Use canny edge detection on each color channel seperately
+    (B, G, R) = cv.split(img)
+    B_canny = cv.Canny(B, 50, 200)
+    #cv.imshow("B", B_canny)
+    G_canny = cv.Canny(G, 50, 200)
+    #cv.imshow("G", G_canny)
+    R_canny = cv.Canny(R, 50, 200)
+    #cv.imshow("R", R_canny)
+
+    # Recombine seperate color channels
+    processed = cv.merge([B_canny, G_canny, R_canny])
+
+    # Dilate frame to thicken and define edges
+    processed = cv.dilate(processed, (7, 7), iterations=1)
 
     return processed
 
@@ -182,5 +257,41 @@ def detect_shape(img):
         cv.putText(img, "Cell", (x, y), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
 
     return img
+
+
+def draw_external_contours(img):
+    threshold_val, thrash = cv.threshold(img, 240, 255, cv.THRESH_BINARY)
+    # Grab all contours not surrounded by another contour
+    contours, hierarchy = cv.findContours(thrash, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+    mask = np.zeros(img.shape[:2], dtype=np.uint8)
+    # Draw each contour found onto a black mask if they are large enough to be considered cells
+    for contour in contours:
+        if cv.contourArea(contour) > MIN_CELL_SIZE:
+            x, y, w, h = cv.boundingRect(contour)
+            cv.rectangle(mask, (x,y), (x+w, y+h), (255,255,255), -1)
+
+    # Find contours on mask and draw outline onto given img
+    contours, hierarchy = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    for contour in contours:
+        x = contour.ravel()[0]
+        y = contour.ravel()[1]
+
+        cv.drawContours(img, [contour], 0, (255, 0, 0), 2)
+
+        # Write Cell label onto photo in white font
+        cv.putText(img, "Cell", (x, y), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
+
+    return img
+
+
+def get_circular_kernel(diameter):
+
+    mid = (diameter - 1) / 2
+    distances = np.indices((diameter, diameter)) - np.array([mid, mid])[:, None, None]
+    kernel = ((np.linalg.norm(distances, axis=0) - mid) <= 0).astype(int)
+
+    return kernel
+
 
 main()
