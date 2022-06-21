@@ -4,7 +4,7 @@ from collections import OrderedDict
 import numpy as np
 
 class CentroidTracker():
-	def __init__(self, maxDisappeared=50000):
+	def __init__(self, maxDisappeared=500):
 		# initialize the next unique object ID along with two ordered
 		# dictionaries used to keep track of mapping a given object
 		# ID to its centroid and number of consecutive frames it has
@@ -141,28 +141,23 @@ class CentroidTracker():
 						if self.disappeared[objectID] > self.maxDisappeared:
 							self.deregister(objectID)
 
-				# otherwise, if the number of input centroids is greater
-				# than the number of existing object centroids we need to
-				# register each new input centroid as a trackable object
-				else:
-					new_objects = list()
-					input = list(inputCentroids)
-					known = list(self.objects.values())
+			# After all known centroids have been updated to track their new position, register all newly found centroids
+			# If there are more centroids input than tracked
+			if D.shape[1] > D.shape[0]:
+				# Convert np arrays to lists
+				input = list(inputCentroids)
+				known = list(self.objects.values())
 
-					# Check that new centroid is not already within the list of known centroids
-					for new_object in input:
-						is_new = True
-						for known_object in known:
-							new_object = list(new_object)
-							known_object = list(known_object)
-							if np.array_equal(new_object, known_object):
-								is_new = False
-						if is_new:
-							new_objects.append(new_object)
+				# Create set of new centroids
+				# since sets can only contain unique elements all known centroids will be removed
+				new_centroids = set(tuple(i) for i in input)
+				known_centroids = set(tuple(k) for k in known)
+				unique_centroids = new_centroids - known_centroids
+				print(f"New: {len(new_centroids)}, Known: {len(known_centroids)}, Unique: {len(unique_centroids)}")
 
-					# Register all input centroids as new tracked/known objects
-					for new_object in new_objects:
-						self.register(new_object)
+				# Register all unique centroids
+				for centroid in unique_centroids:
+					self.register(centroid)
 
 		# return the set of trackable objects
 		return self.objects
