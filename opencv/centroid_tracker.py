@@ -32,6 +32,8 @@ class CentroidTracker():
 		del self.disappeared[objectID]
 
 	# TODO Create version of update using circles
+	# TODO Remove duplicate centroids at the end of the method
+	# TODO These duplicates are always the first to be added after the original centroids are updated. EX- if there are 20 objects the object with the id of 20 is identical to the object of id 0
 	def update(self, rects):
 		# check to see if the list of input bounding box rectangles
 		# is empty
@@ -63,10 +65,6 @@ class CentroidTracker():
 		if len(self.objects) == 0:
 			for i in range(0, len(inputCentroids)):
 				self.register(inputCentroids[i])
-		# TODO New code I wrote
-		# If we are currently tracking less objects than were input we shall register them
-		# elif len(self.objects) < len(inputCentroids):
-		# 	self.register(inpu)
 		# otherwise, we are currently tracking objects, so we need to
 		# try to match the input centroids to existing object
 		# centroids
@@ -98,34 +96,6 @@ class CentroidTracker():
 			# of the rows and column indexes we have already examined
 			usedRows = set()
 			usedCols = set()
-
-			# If there are more centroids input than objects tracked
-			# if D.shape[1] > D.shape[0]:
-			# 	# Update the tracked objects first with the closest centroid
-			# 	for row in rows:
-			# 		objectID = objectIDs[row]
-			# 		# add first centroid as coordinates since the matrix was ordered by distance
-			# 		self.objects[objectID] = inputCentroids[0]
-			# 		self.disappeared[objectID] = 0
-			#
-			# 	# Then Add all other centroids to the tracked objects list
-			# 	new_objects = list()
-			# 	input = list(inputCentroids)
-			# 	known = list(self.objects.values())
-			# 	for new_object in input:
-			# 		is_new = True
-			# 		for known_object in known:
-			# 			new_object = list(new_object)
-			# 			known_object = list(known_object)
-			# 			if np.array_equal(new_object, known_object):
-			# 				is_new = False
-			# 		if is_new:
-			# 			new_objects.append(new_object)
-			#
-			# 	for new_object in new_objects:
-			# 		self.register(new_object)
-
-
 
 			# loop over the combination of the (row, column) index
 			# tuples
