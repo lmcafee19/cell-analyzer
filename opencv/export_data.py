@@ -1,37 +1,48 @@
 # Helper Python File containing functions to export recorded data about cells to either an excel spreadsheet or a csv file
 
+import os
+import datetime
 import csv
-import xlwt
-from xlwt import Workbook
+import openpyxl
+
 
 '''
     Exports given cell data to an excel spreadsheet
-    @param filename: name given to excel sheet to save to, extension will be .xlsx
+    @param filename: Name of excel file to edit or write to. Should end with extension .xls or .xlsx
     @param data
-    @param path: path to save excel file to or open from. By default will be set to current working directory
 '''
-def to_excel_file(filename, data, path=""):
+def to_excel_file(filename, data):
     # TODO Check if given file is an existing excel file
-    # If file already exists and is an excel sheet create a new sheet to store data
+    # If filename does not end in .xls extension exit
+    if not (filename.endswith(".xls") or filename.endswith(".xlsx")):
+        raise Exception("File must be of type .xls or .xlsx")
 
-    # Otherwise create a new excel file to write to
-    # Create Workbook to store all sheets and their data
-    wb = Workbook()
+    # If file already exists, create a new sheet to store data on
+    if os.path.exists(f"{filename}"):
+        # Open excel file for reading and writing
+        wb = openpyxl.load_workbook(filename)
+    else:
+        # Otherwise create a new excel file to write to
+        # Create Workbook to store all sheets and their data
+        wb = openpyxl.Workbook()
 
-    # Add Sheet to store column/row data about this iteration
-    sheet = wb.add_sheet('First Iteration')
+    # Add Sheet to store column/row data about this iteration TODO make dynamic/better name
+    sheetname = datetime.datetime.now()
+    sheet = wb.create_sheet(str(sheetname))
 
     # Write Data to sheet
-    # First num is row, second is col, third is data to input
     # Create Headers
-    sheet.write(0, 0, "Cell ID")
-    sheet.write(0, 1, "Starting Position")
+    # Cell (row, col, data) Base 1
+    sheet.cell(1, 1, "Cell ID")
+    sheet.cell(1, 2, "Initial Position")
+    sheet.cell(1, 3, "Area")
 
-    # Loop through all data given then extract useful info
-
+    # Loop through all data given then extract useful info and append it
+    # Adds data to new row. Argument must be iterable object
+    # sheet.append("Cell ID")
 
     # Save File
-    wb.save(f"{path}{filename}.xls")
+    wb.save(f"{filename}")
 
 
 '''
@@ -44,4 +55,7 @@ def to_csv_file(filename, data, path=""):
     with open(filename, "r+") as file:
         return 0
 
-to_excel_file("Test", "Cell Stuff", "../data/")
+
+
+
+#to_excel_file("../data/Test.xlsx", "Cell Stuff")

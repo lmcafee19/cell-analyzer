@@ -4,7 +4,7 @@ from collections import OrderedDict
 import numpy as np
 
 class CentroidTracker():
-	def __init__(self, maxDisappeared=500):
+	def __init__(self, maxDisappeared=50000):
 		# initialize the next unique object ID along with two ordered
 		# dictionaries used to keep track of mapping a given object
 		# ID to its centroid and number of consecutive frames it has
@@ -32,8 +32,6 @@ class CentroidTracker():
 		del self.disappeared[objectID]
 
 	# TODO Create version of update using circles
-	# TODO Remove duplicate centroids at the end of the method
-	# TODO These duplicates are always the first to be added after the original centroids are updated. EX- if there are 20 objects the object with the id of 20 is identical to the object of id 0
 	def update(self, rects):
 		# check to see if the list of input bounding box rectangles
 		# is empty

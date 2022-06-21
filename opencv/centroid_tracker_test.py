@@ -64,7 +64,7 @@ def main():
             cells = tracker.update(rectangles)
             print(f"Tracked Cells: {cells}")
             #
-            # # loop over the tracked cells
+            # # loop over the tracked cells and reformat data to array of args we want
             # for (objectID, centroid) in cells.items():
             #     # draw both the ID of the object and the centroid of the
             #     # object on the output frame
@@ -251,6 +251,7 @@ def detect_shape(img):
 
     return img
 
+
 '''
     Places rectangles around all objects within the image that are larger MIN_CELL_SIZE
     @:param img: image to detect edges in
@@ -302,6 +303,20 @@ def detect_cell_boundries(img):
             rectangles.append(rec_coordinates)
 
     return photo, rectangles
+
+
+'''
+    Calculates the area of the given rectangle
+    @param rectangle: List Containing starting x coordinate, starting y, ending x, and ending y in that order
+    @return The area of the given rectangle
+'''
+def calc_rect_area(rectangle):
+    # Grab length and Width
+    length = rectangle[3] - rectangle[1]
+    width = rectangle[2] - rectangle[0]
+    # A = l * w
+    area = length * width
+    return area
 
 
 def get_circular_kernel(diameter):
