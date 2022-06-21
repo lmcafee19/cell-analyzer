@@ -268,13 +268,16 @@ def draw_external_contours(img):
     mask = np.zeros(img.shape[:2], dtype=np.uint8)
     # Draw each contour found onto a black mask if they are large enough to be considered cells
     for contour in contours:
+        print(f"contours1: {len(contours)}")
         if cv.contourArea(contour) > MIN_CELL_SIZE:
             x, y, w, h = cv.boundingRect(contour)
             cv.rectangle(mask, (x,y), (x+w, y+h), (255,255,255), -1)
 
+
     # Find contours on mask and draw outline onto given img
     contours, hierarchy = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
     for contour in contours:
+        print(f"contours2: {len(contours)}")
         x = contour.ravel()[0]
         y = contour.ravel()[1]
 

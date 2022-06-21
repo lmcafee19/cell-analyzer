@@ -4,7 +4,7 @@ from collections import OrderedDict
 import numpy as np
 
 class CentroidTracker():
-	def __init__(self, maxDisappeared=50):
+	def __init__(self, maxDisappeared=50000):
 		# initialize the next unique object ID along with two ordered
 		# dictionaries used to keep track of mapping a given object
 		# ID to its centroid and number of consecutive frames it has
@@ -63,8 +63,11 @@ class CentroidTracker():
 		if len(self.objects) == 0:
 			for i in range(0, len(inputCentroids)):
 				self.register(inputCentroids[i])
-
-		# otherwise, are are currently tracking objects so we need to
+		# TODO New code I wrote
+		# If we are currently tracking less objects than were input we shall register them
+		# elif len(self.objects) < len(inputCentroids):
+		# 	self.register(inpu)
+		# otherwise, we are currently tracking objects, so we need to
 		# try to match the input centroids to existing object
 		# centroids
 		else:
@@ -76,7 +79,7 @@ class CentroidTracker():
 			# centroids and input centroids, respectively -- our
 			# goal will be to match an input centroid to an existing
 			# object centroid
-			D = dist.cdist(np.array(objectCentroids), inputCentroids)
+			D = dist.cdist(np.array(objectCentroids), inputCentroids, "euclidean")
 
 			# in order to perform this matching we must (1) find the
 			# smallest value in each row and then (2) sort the row
@@ -95,6 +98,34 @@ class CentroidTracker():
 			# of the rows and column indexes we have already examined
 			usedRows = set()
 			usedCols = set()
+
+			# If there are more centroids input than objects tracked
+			# if D.shape[1] > D.shape[0]:
+			# 	# Update the tracked objects first with the closest centroid
+			# 	for row in rows:
+			# 		objectID = objectIDs[row]
+			# 		# add first centroid as coordinates since the matrix was ordered by distance
+			# 		self.objects[objectID] = inputCentroids[0]
+			# 		self.disappeared[objectID] = 0
+			#
+			# 	# Then Add all other centroids to the tracked objects list
+			# 	new_objects = list()
+			# 	input = list(inputCentroids)
+			# 	known = list(self.objects.values())
+			# 	for new_object in input:
+			# 		is_new = True
+			# 		for known_object in known:
+			# 			new_object = list(new_object)
+			# 			known_object = list(known_object)
+			# 			if np.array_equal(new_object, known_object):
+			# 				is_new = False
+			# 		if is_new:
+			# 			new_objects.append(new_object)
+			#
+			# 	for new_object in new_objects:
+			# 		self.register(new_object)
+
+
 
 			# loop over the combination of the (row, column) index
 			# tuples
@@ -132,6 +163,7 @@ class CentroidTracker():
 						# grab the object ID for the corresponding row
 						# index and increment the disappeared counter
 						objectID = objectIDs[row]
+						# TODO add handling for after an object disappears as to not leave holes in the disappeared dict keys
 						self.disappeared[objectID] += 1
 						# check to see if the number of consecutive
 						# frames the object has been marked "disappeared"
@@ -143,8 +175,24 @@ class CentroidTracker():
 				# than the number of existing object centroids we need to
 				# register each new input centroid as a trackable object
 				else:
-					for col in unusedCols:
-						self.register(inputCentroids[col])
+					new_objects = list()
+					input = list(inputCentroids)
+					known = list(self.objects.values())
+
+					# Check that new centroid is not already within the list of known centroids
+					for new_object in input:
+						is_new = True
+						for known_object in known:
+							new_object = list(new_object)
+							known_object = list(known_object)
+							if np.array_equal(new_object, known_object):
+								is_new = False
+						if is_new:
+							new_objects.append(new_object)
+
+					# Register all input centroids as new tracked/known objects
+					for new_object in new_objects:
+						self.register(new_object)
 
 		# return the set of trackable objects
 		return self.objects
