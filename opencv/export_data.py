@@ -9,10 +9,13 @@ import openpyxl
 '''
     Exports given cell data to an excel spreadsheet
     @param filename: Name of excel file to edit or write to. Should end with extension .xls or .xlsx
-    @param data
+    @param data: 2d iterable object containing data about each cell
+    @param headers: iterable object containing headers for each column
 '''
-def to_excel_file(filename, data):
-    # TODO Check if given file is an existing excel file
+def to_excel_file(filename, data, headers=None):
+    if headers is None:
+        headers = []
+
     # If filename does not end in .xls extension exit
     if not (filename.endswith(".xls") or filename.endswith(".xlsx")):
         raise Exception("File must be of type .xls or .xlsx")
@@ -32,14 +35,14 @@ def to_excel_file(filename, data):
 
     # Write Data to sheet
     # Create Headers
-    # Cell (row, col, data) Base 1
-    sheet.cell(1, 1, "Cell ID")
-    sheet.cell(1, 2, "Initial Position")
-    sheet.cell(1, 3, "Area")
+    for i in range(0, len(headers)):
+        # Cell (row, col, data) Base 1
+        sheet.cell(1, i + 1, headers[i])
 
     # Loop through all data given then extract useful info and append it
     # Adds data to new row. Argument must be iterable object
-    # sheet.append("Cell ID")
+    for row in data:
+        sheet.append(row)
 
     # Save File
     wb.save(f"{filename}")
@@ -47,15 +50,38 @@ def to_excel_file(filename, data):
 
 '''
     Exports given cell data to a comma separated value file
-    @param filename: Name of File to append to or save data to. Should end with extension .csv
-    @param data
-    @param path: path to save file to or open from. By default will be set to current working directory
+    @param filename: Name of File to append to or save data to. Should end with extension .csv and contain full path as necessary
+    @param data: 2d iterable object containing data about each cell
+    @param headers: iterable object containing headers for each column
 '''
-def to_csv_file(filename, data, path=""):
-    with open(filename, "r+") as file:
-        return 0
+def to_csv_file(filename, data, headers=None):
+    if headers is None:
+        headers = []
+    # If filename does not end in .xls extension exit
+    if not filename.endswith(".csv"):
+        raise Exception("File must be of type .csv")
 
+    # If file already exists, append data to the end
+    if os.path.exists(f"{filename}"):
+        # Open csv file in append mode
+        with open(filename, "a") as file:
+            csvwriter = csv.writer(file)
 
+            # Loop through data and write each row
+            for row in data:
+                csvwriter.writerow(row)
+
+    # Otherwise create a new csv file to write to
+    else:
+        with open(filename, "w") as file:
+            csvwriter = csv.writer(file)
+
+            # Write headers
+            csvwriter.writerow(headers)
+
+            # Loop through data and write each row
+            for row in data:
+                csvwriter.writerow(row)
 
 
 #to_excel_file("../data/Test.xlsx", "Cell Stuff")
