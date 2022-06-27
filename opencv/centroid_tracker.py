@@ -151,7 +151,7 @@ class CentroidTracker():
 				new_centroids = set(tuple(i) for i in input)
 				known_centroids = set(tuple(k) for k in known)
 				unique_centroids = new_centroids - known_centroids
-				print(f"New: {len(new_centroids)}, Known: {len(known_centroids)}, Unique: {len(unique_centroids)}")
+				#print(f"New: {len(new_centroids)}, Known: {len(known_centroids)}, Unique: {len(unique_centroids)}")
 
 				# Register all unique centroids
 				for centroid in unique_centroids:

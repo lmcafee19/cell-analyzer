@@ -5,6 +5,8 @@ import numpy as np
 import os
 from enum import Enum
 import centroid_tracker as ct
+from collections import OrderedDict
+import export_data
 
 # Edge Detection Algorithm Enum to store valid options
 class Algorithm(Enum):
@@ -24,16 +26,12 @@ MIN_CELL_SIZE = 50
 # Elliptical Kernel
 ELIPTICAL_KERNEL = cv.getStructuringElement(cv.MORPH_ELLIPSE,(5,5))
 
-
+# TODO Determine approx shape of Cell
+# TODO Determine Direction Cells are moving
+# TODO Record Data About Location and size Separately
 def main():
     # Print opencv version
     print("Your OpenCV version is: " + cv.__version__)
-
-    # Initialize Centroid tracker
-    tracker = ct.CentroidTracker()
-    # Frame Dimensions
-    (h, w) = (None, None)
-
 
     videoFile = f'{PATH}{VIDEO}'
     # Check if video exists
@@ -42,6 +40,17 @@ def main():
     else:
         # Read in video frame by frame
         capture = cv.VideoCapture(videoFile)
+        total_frames = int(capture.get(cv.CAP_PROP_FRAME_COUNT))
+
+        # Initialize Centroid tracker
+        tracker = ct.CentroidTracker()
+        # Frame Dimensions
+        (h, w) = (None, None)
+
+        # Initialize Objects to store data on cell size and location
+        # Indexed by cell ID given by centroid tracker and set to size = num frames
+        cell_positions = OrderedDict()
+        cell_sizes = [[total_frames]]
 
         while True:
             valid, frame = capture.read()
@@ -60,9 +69,20 @@ def main():
             cv.imshow("Contours-External", cont)
 
             # Update Centroid tracker with list of rectangles
-            print(f"num rectangles: {len(rectangles)}")
+            #print(f"num rectangles: {len(rectangles)}")
             cells = tracker.update(rectangles)
-            print(f"Tracked Cells: {cells}")
+            #print(f"Tracked Cells: {cells}")
+
+            # Record Data about Number of Iterations, cell position, and cell size
+            # Record positonal data given by tracker
+            for cell_id, coordinates in cells.items():
+                # If no entry exist for that cell create it
+                if not (cell_id in cell_positions):
+                    cell_positions[cell_id] = list()
+
+                cell_positions[cell_id].append(list(coordinates))
+
+
             #
             # # loop over the tracked cells and reformat data to array of args we want
             # for (objectID, centroid) in cells.items():
