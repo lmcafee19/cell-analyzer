@@ -91,8 +91,8 @@ def main():
 
                 cell_sizes[cell_id].append(area)
 
-            print(cell_positions)
-            print(cell_sizes)
+            print(f"Locations: {cell_positions}")
+            print(f"Areas: {cell_sizes}")
 
             #print(cell_positions)
             #
@@ -143,6 +143,9 @@ def process_image(img, edge_alg, scale:float=1.0, contrast:float=1.0, brightness
     processed = adjust_contrast_brightness(processed, contrast, brightness)
     # Apply Bilateral Filter to Blur and reduce noise
     processed = cv.bilateralFilter(processed, 5, blur, blur)
+    # Use Contrast Limited Adaptive histogram equalization
+    clahe = cv.createCLAHE(2.0, (8, 8))
+    processed = clahe.apply(processed)
     # Use Edge Detection Algorithm
     processed = detect_edges(processed, edge_alg)
     return processed
@@ -261,7 +264,8 @@ def color_canny(img):
 def detect_shape(img):
     # Epsilon value determines how exact the contour needs to follow specifications
     EPSILON = 3
-    threshold_val, thrash = cv.threshold(img, 240, 255, cv.THRESH_BINARY)
+    #threshold_val, thrash = cv.threshold(img, 240, 255, cv.THRESH_BINARY)
+    ret, thrash = cv.threshold(img, 0, 255, cv.THRESH_BINARY+cv.THRESH_OTSU)
     contours, hierarchy = cv.findContours(thrash, cv.RETR_TREE, cv.CHAIN_APPROX_NONE)
 
     for contour in contours:

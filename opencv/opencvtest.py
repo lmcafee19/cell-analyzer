@@ -14,11 +14,11 @@ class Algorithm(Enum):
 
 # Define Constants
 PATH = '../videos/'
-VIDEO = 'sample_cell_video.mp4'
+VIDEO = 'sample_cell_culture_3.mp4'
 SCALE = 0.25
-CONTRAST = 4.0
-BRIGHTNESS = 0.5
-BLUR_INTENSITY = 75
+CONTRAST = 3.0
+BRIGHTNESS = 0.25
+BLUR_INTENSITY = 20
 MIN_CELL_SIZE = 1
 
 # Elliptical Kernel
@@ -44,49 +44,21 @@ def main():
             if not valid:
                 break
 
+            processed = rescale_frame(frame, SCALE)
+            # Convert to grayscale
+            processed = cv.cvtColor(processed, cv.COLOR_BGR2GRAY)
+            cv.imshow("Gray", processed)
+            clahe = cv.createCLAHE(2.0, (5, 5))
+            hehe = clahe.apply(processed)
+            cv.imshow("CLAHE", hehe)
+            # ret, OTSU = cv.threshold(processed, 0, 255, cv.THRESH_BINARY+cv.THRESH_OTSU)
+            # cv.imshow("OTSU", OTSU)
+
             # Process Frame to detect edges
-            processed_laplacian = process_image(frame, Algorithm.LAPLACIAN, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
+            processed_laplacian = process_image(frame, Algorithm.CANNY, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
 
             # Display Proccessed Video
             cv.imshow("Laplacian", processed_laplacian)
-
-            # color_edges = process_color_image(frame, Algorithm.LAPLACIAN, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
-            # cv.imshow("Color", color_edges)
-            #
-            # # Use mask to cover all non white in image
-            # lower = np.array([240,240,240], dtype="uint8")
-            # upper = np.array([255, 255, 255], dtype="uint8")
-            #
-            # mask = cv.inRange(color_edges, lower, upper)
-            # output = cv.bitwise_and(color_edges, color_edges, mask=mask)
-            #
-            # output = cv.dilate(output, (7,7), iterations=2)
-            #
-            # cv.imshow("MASKED", output)
-
-
-            # Use opening
-            #open = cv.morphologyEx(processed_laplacian, cv.MORPH_OPEN, (7,7))
-            #cv.imshow("Opening", open)
-            cont_img = detect_shape(processed_laplacian)
-            cv.imshow("Contours", cont_img)
-
-            cont = draw_external_contours(processed_laplacian)
-            cv.imshow("Contours-External", cont)
-
-            # # Edge Cascade Test: only display edges found.
-            # # Use Canny Edge Detection
-            # processed_canny = process_image(frame, Algorithm.CANNY, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
-            # cv.imshow("Canny", processed_canny)
-            #
-            # # Laplacian Derivative
-            # processed_laplacian = process_image(frame, Algorithm.LAPLACIAN, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
-            # cv.imshow("Laplacian", processed_laplacian)
-            #
-            # # Sobel XY
-            # processed_sobel = process_image(frame, Algorithm.SOBEL, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
-            # cv.imshow("Sobel", processed_sobel)
-
 
             # Adjust waitKey to change time each frame is displayed
             # Press q to exit out of opencv early
@@ -118,9 +90,13 @@ def process_image(img, edge_alg, scale:float=1.0, contrast:float=1.0, brightness
     # Increase contrast
     processed = adjust_contrast_brightness(processed, contrast, brightness)
     # Apply Bilateral Filter to Blur and reduce noise
-    processed = cv.bilateralFilter(processed, 5, blur, blur)
+    processed = cv.bilateralFilter(processed, 3, blur, blur)
+    # Use Thresholding
+    #ret, processed = cv.threshold(processed, 200, 255, cv.THRESH_BINARY)
+    clahe = cv.createCLAHE(2.0, (5, 5))
+    processed = clahe.apply(processed)
     # Use Edge Detection Algorithm
-    processed = detect_edges(processed, edge_alg)
+    #processed = detect_edges(processed, edge_alg)
     return processed
 
 '''
