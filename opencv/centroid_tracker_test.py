@@ -70,19 +70,27 @@ def main():
 
             # Update Centroid tracker with list of rectangles
             #print(f"num rectangles: {len(rectangles)}")
-            cells = tracker.update(rectangles)
+            cell_locations, cell_areas = tracker.update(rectangles)
             #print(f"Tracked Cells: {cells}")
 
-            # Record Data about Number of Iterations, cell position, and cell size
+
+            # Record Data about Cell position, and cell size
             # Record positonal data given by tracker
-            for cell_id, coordinates in cells.items():
+            for cell_id, coordinates in cell_locations.items():
                 # If no entry exist for that cell create it
                 if not (cell_id in cell_positions):
                     cell_positions[cell_id] = list()
 
                 cell_positions[cell_id].append(list(coordinates))
 
+            for cell_id, coordinates in cell_locations.items():
+                # If no entry exist for that cell create it
+                if not (cell_id in cell_positions):
+                    cell_positions[cell_id] = list()
 
+                cell_positions[cell_id].append(list(coordinates))
+
+            #print(cell_positions)
             #
             # # loop over the tracked cells and reformat data to array of args we want
             # for (objectID, centroid) in cells.items():
