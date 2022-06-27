@@ -6,6 +6,7 @@ import os
 from enum import Enum
 import centroid_tracker as ct
 from collections import OrderedDict
+from itertools import chain
 import export_data
 
 # Edge Detection Algorithm Enum to store valid options
@@ -50,7 +51,7 @@ def main():
         # Initialize Objects to store data on cell size and location
         # Indexed by cell ID given by centroid tracker and set to size = num frames
         cell_positions = OrderedDict()
-        cell_sizes = [[total_frames]]
+        cell_sizes = OrderedDict()
 
         while True:
             valid, frame = capture.read()
@@ -73,7 +74,6 @@ def main():
             cell_locations, cell_areas = tracker.update(rectangles)
             #print(f"Tracked Cells: {cells}")
 
-
             # Record Data about Cell position, and cell size
             # Record positonal data given by tracker
             for cell_id, coordinates in cell_locations.items():
@@ -83,12 +83,16 @@ def main():
 
                 cell_positions[cell_id].append(list(coordinates))
 
-            for cell_id, coordinates in cell_locations.items():
+            # Record Area
+            for cell_id, area in cell_areas.items():
                 # If no entry exist for that cell create it
-                if not (cell_id in cell_positions):
-                    cell_positions[cell_id] = list()
+                if not (cell_id in cell_sizes):
+                    cell_sizes[cell_id] = list()
 
-                cell_positions[cell_id].append(list(coordinates))
+                cell_sizes[cell_id].append(area)
+
+            print(cell_positions)
+            print(cell_sizes)
 
             #print(cell_positions)
             #

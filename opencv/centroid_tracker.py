@@ -68,7 +68,9 @@ class CentroidTracker():
         # centroids and register each of them
         if len(self.objects) == 0:
             for i in range(0, len(inputCentroids)):
+                self.object_area[self.nextObjectID] = calc_rect_area(centroid_rect_dict[tuple(inputCentroids[i])])
                 self.register(inputCentroids[i])
+
         # otherwise, we are currently tracking objects, so we need to
         # try to match the input centroids to existing object
         # centroids
