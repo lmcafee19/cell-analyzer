@@ -51,6 +51,25 @@ def main():
             clahe = cv.createCLAHE(2.0, (5, 5))
             hehe = clahe.apply(processed)
             cv.imshow("CLAHE", hehe)
+
+            photo = hehe.copy()
+            circles = cv.HoughCircles(photo, cv.HOUGH_GRADIENT, 1, 40, param1=150, param2=10, minRadius=0, maxRadius=15)
+            # circles = cv.HoughCircles(photo, cv.HOUGH_GRADIENT_ALT, 1, 40, param1=300, param2=.85 , minRadius=0, maxRadius=0)
+
+            # ensure at least some circles were found
+            if circles is not None:
+                # convert the (x, y) coordinates and radius of the circles to integers
+                circles = np.round(circles[0, :]).astype("int")
+                # loop over the (x, y) coordinates and radius of the circles
+                for (x, y, r) in circles:
+                    # draw the circle in the output image
+                    cv.circle(photo, (x, y), r, (255, 255, 255), 2)
+                    # then draw a rectangle corresponding to the center of the circle
+                    cv.rectangle(photo, (x - 2, y - 2), (x + 2, y + 2), (255, 255, 255), -1)
+                    # Label Each Cell
+                    cv.putText(photo, "Cell", (x + r, y + r), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
+
+            cv.imshow("Circles", photo)
             # ret, OTSU = cv.threshold(processed, 0, 255, cv.THRESH_BINARY+cv.THRESH_OTSU)
             # cv.imshow("OTSU", OTSU)
 

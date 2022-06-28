@@ -72,8 +72,11 @@ def main():
             cv.imshow("Canny", processed_canny)
 
             # Detect minimum cell boundaries and display edited photo
-            cont, rectangles = detect_cell_boundries(processed_canny)
+            cont, rectangles = detect_cell_rectangles(processed_canny)
             cv.imshow("Contours-External", cont)
+
+            cir, circles = detect_cell_circles(processed_canny)
+            cv.imshow("Circles", cir)
 
             # Grab Frame's dimensions in order to convert pixels to mm
             if w is None or h is None:
@@ -310,13 +313,13 @@ def detect_shape(img):
     @:param img: image to detect edges in
     @:returns edited image with drawn on rectangle boundries and text, and an array of all rectangles drawn(cell boundries)
 '''
-def detect_cell_boundries(img):
+def detect_cell_rectangles(img):
     rectangles = []
 
     # Create copy of img as to not edit the original
     photo = img.copy()
 
-    threshold_val, thrash = cv.threshold(photo, 240, 255, cv.THRESH_BINARY)
+    threshold_val, thrash = cv.threshold(photo, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
     # Grab all contours not surrounded by another contour
     contours, hierarchy = cv.findContours(thrash, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
@@ -356,6 +359,40 @@ def detect_cell_boundries(img):
             rectangles.append(rec_coordinates)
 
     return photo, rectangles
+
+
+'''
+    Places circles around all cells within the image that are larger MIN_CELL_SIZE
+    Uses Hough circles algorithm to find and draw them
+    @:param img: preprocessed image with edges clearly extracted using a method such as canny
+    @:returns edited image with drawn on circles and text, and an array of all circles drawn (containing radius)
+'''
+def detect_cell_circles(img):
+    # Create copy of img as to not edit the original
+    photo = img.copy()
+
+    # Might need to apply gaussian blur
+    #photo = cv.GaussianBlur(photo, (7, 7), 1.5)
+
+    # Detect Circles
+    # Circles contains arrays for each circle detected with x coordintate of center, y coordinate of center, and radius lengt
+    circles = cv.HoughCircles(photo, cv.HOUGH_GRADIENT, 1, 40, param1=50, param2=10, minRadius=10, maxRadius=20)
+    #circles = cv.HoughCircles(photo, cv.HOUGH_GRADIENT_ALT, 1, 40, param1=300, param2=.85 , minRadius=0, maxRadius=0)
+
+    # ensure at least some circles were found
+    if circles is not None:
+        # convert the (x, y) coordinates and radius of the circles to integers
+        circles = np.round(circles[0, :]).astype("int")
+        # loop over the (x, y) coordinates and radius of the circles
+        for (x, y, r) in circles:
+            # draw the circle in the output image
+            cv.circle(photo, (x, y), r, (255, 255, 255), 2)
+            # then draw a rectangle corresponding to the center of the circle
+            cv.rectangle(photo, (x - 2, y - 2), (x + 2, y + 2), (255, 255, 255), -1)
+            # Label Each Cell
+            cv.putText(photo, "Cell", (x + r, y + r), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
+
+    return photo, circles
 
 
 '''
