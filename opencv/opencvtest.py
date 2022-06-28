@@ -14,10 +14,10 @@ class Algorithm(Enum):
 
 # Define Constants
 PATH = '../videos/'
-VIDEO = 'sample_cell_culture_3.mp4'
+VIDEO = 'sample_cell_culture_0.mp4'
 SCALE = 0.25
 CONTRAST = 3.0
-BRIGHTNESS = 0.25
+BRIGHTNESS = 1
 BLUR_INTENSITY = 20
 MIN_CELL_SIZE = 1
 
@@ -96,7 +96,7 @@ def process_image(img, edge_alg, scale:float=1.0, contrast:float=1.0, brightness
     clahe = cv.createCLAHE(2.0, (5, 5))
     processed = clahe.apply(processed)
     # Use Edge Detection Algorithm
-    #processed = detect_edges(processed, edge_alg)
+    processed = detect_edges(processed, edge_alg)
     return processed
 
 '''

@@ -17,12 +17,16 @@ class Algorithm(Enum):
 
 # Define Constants
 PATH = '../videos/'
-VIDEO = 'sample_cell_video.mp4'
+VIDEO = 'sample_cell_culture_2.mp4'
 SCALE = 0.25
-CONTRAST = 4.0
-BRIGHTNESS = .5
-BLUR_INTENSITY = 75
+CONTRAST = 3.0
+BRIGHTNESS = 1
+BLUR_INTENSITY = 50
 MIN_CELL_SIZE = 50
+
+# Real World size of frame in mm
+VIDEO_HEIGHT_MM = 150
+VIDEO_WIDTH_MM = 195.9
 
 # Elliptical Kernel
 ELIPTICAL_KERNEL = cv.getStructuringElement(cv.MORPH_ELLIPSE,(5,5))
@@ -47,6 +51,8 @@ def main():
         tracker = ct.CentroidTracker()
         # Frame Dimensions
         (h, w) = (None, None)
+        # mms each pixel takes up in real world space
+        pixels_to_mm = None
 
         # Initialize Objects to store data on cell size and location
         # Indexed by cell ID given by centroid tracker and set to size = num frames
@@ -60,14 +66,19 @@ def main():
             if not valid:
                 break
 
-            processed_laplacian = process_image(frame, Algorithm.CANNY, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
+            processed_canny = process_image(frame, Algorithm.CANNY, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
 
             # Display Proccessed Video
-            cv.imshow("Laplacian", processed_laplacian)
+            cv.imshow("Canny", processed_canny)
 
             # Detect minimum cell boundaries and display edited photo
-            cont, rectangles = detect_cell_boundries(processed_laplacian)
+            cont, rectangles = detect_cell_boundries(processed_canny)
             cv.imshow("Contours-External", cont)
+
+            # Grab Frame's dimensions in order to convert pixels to mm
+            if w is None or h is None:
+                (h, w) = processed_canny.shape[:2]
+                pixels_to_mm = VIDEO_HEIGHT_MM/h
 
             # Update Centroid tracker with list of rectangles
             #print(f"num rectangles: {len(rectangles)}")
@@ -81,7 +92,13 @@ def main():
                 if not (cell_id in cell_positions):
                     cell_positions[cell_id] = list()
 
-                cell_positions[cell_id].append(list(coordinates))
+                # Convert coordinates to mm
+                # Coordinates correspond to centroids distance from the left and top of the image
+                coordinates_mm = list(coordinates)
+                coordinates_mm[0] = float(coordinates_mm[0] * pixels_to_mm)
+                coordinates_mm[1] = float(coordinates_mm[1] * pixels_to_mm)
+
+                cell_positions[cell_id].append(coordinates_mm)
 
             # Record Area
             for cell_id, area in cell_areas.items():
@@ -89,7 +106,9 @@ def main():
                 if not (cell_id in cell_sizes):
                     cell_sizes[cell_id] = list()
 
-                cell_sizes[cell_id].append(area)
+                # Convert area to mm^2
+                area_mm = area * (pixels_to_mm**2)
+                cell_sizes[cell_id].append(area_mm)
 
             print(f"Locations: {cell_positions}")
             print(f"Areas: {cell_sizes}")
@@ -101,16 +120,14 @@ def main():
             #     # draw both the ID of the object and the centroid of the
             #     # object on the output frame
             #     text = "ID {}".format(objectID)
-            #     cv.putText(processed_laplacian, text, (centroid[0] - 10, centroid[1] - 10),
+            #     cv.putText(processed_canny, text, (centroid[0] - 10, centroid[1] - 10),
             #                 cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            #     cv.circle(processed_laplacian, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
+            #     cv.circle(processed_canny, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
             #
             # # show the output frame
-            # cv.imshow("Tracked", processed_laplacian)
+            # cv.imshow("Tracked", processed_canny)
             #
-            # # If frame diemensions aren't set then grab them
-            # if w is None or h is None:
-            #     (h, w) = processed_laplacian.shape[:2]
+
 
             # Adjust waitKey to change time each frame is displayed
             # Press q to exit out of opencv early
