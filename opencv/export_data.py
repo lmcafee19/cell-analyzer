@@ -9,12 +9,15 @@ import openpyxl
 '''
     Exports given cell data to an excel spreadsheet
     @param filename: Name of excel file to edit or write to. Should end with extension .xls or .xlsx
-    @param data: 2d iterable object containing data about each cell
+    @param data: Dictionary indexed by cell id, and containing data about each cell
     @param headers: iterable object containing headers for each column
 '''
-def to_excel_file(filename, data, headers=None):
+def to_excel_file(filename, data, headers=None, sheetname=str(datetime.datetime.now())):
     if headers is None:
         headers = []
+
+    current_row = 1
+    current_col = 1
 
     # If filename does not end in .xls extension exit
     if not (filename.endswith(".xls") or filename.endswith(".xlsx")):
@@ -29,20 +32,28 @@ def to_excel_file(filename, data, headers=None):
         # Create Workbook to store all sheets and their data
         wb = openpyxl.Workbook()
 
-    # Add Sheet to store column/row data about this iteration TODO make dynamic/better name
-    sheetname = datetime.datetime.now()
-    sheet = wb.create_sheet(str(sheetname))
+    # Add Sheet to store column/row data about this iteration
+    sheet = wb.create_sheet(sheetname)
 
     # Write Data to sheet
     # Create Headers
     for i in range(0, len(headers)):
         # Cell (row, col, data) Base 1
-        sheet.cell(1, i + 1, headers[i])
+        sheet.cell(current_row, current_col + i, headers[i])
+    current_row += 1
 
     # Loop through all data given then extract useful info and append it
     # Adds data to new row. Argument must be iterable object
-    for row in data:
-        sheet.append(row)
+    for key, value in data.items():
+        current_col = 1
+        sheet.cell(current_row, current_col, key)
+        current_col += 1
+        for val in value:
+            sheet.cell(current_row, current_col, str(val))
+            current_col += 1
+        current_row += 1
+
+        #sheet.append(row)
 
     # Save File
     wb.save(f"{filename}")
@@ -85,3 +96,4 @@ def to_csv_file(filename, data, headers=None):
 
 
 #to_excel_file("../data/Test.xlsx", "Cell Stuff")
+#print(str([104, 103]))

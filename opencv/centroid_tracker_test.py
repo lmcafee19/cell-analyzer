@@ -17,7 +17,8 @@ class Algorithm(Enum):
 
 # Define Constants
 PATH = '../videos/'
-VIDEO = 'sample_cell_culture_2.mp4'
+VIDEO = 'Sample_cell_culture_4.mp4'
+EXPORT_FILE = "../data/Sample_cell_culture_4_data.xlsx"
 SCALE = 0.25
 CONTRAST = 3.0
 BRIGHTNESS = 1
@@ -56,8 +57,11 @@ def main():
 
         # Initialize Objects to store data on cell size and location
         # Indexed by cell ID given by centroid tracker and set to size = num frames
-        cell_positions = OrderedDict()
-        cell_sizes = OrderedDict()
+        cell_positions_mm = OrderedDict()
+        cell_sizes_mm = OrderedDict()
+        positional_headers = ["Cell ID", "Initial Position"]
+        size_headers = ["Cell ID", "Initial Size (mm^2)"]
+        frame_num = 0
 
         while True:
             valid, frame = capture.read()
@@ -92,8 +96,8 @@ def main():
             # Record positonal data given by tracker
             for cell_id, coordinates in cell_locations.items():
                 # If no entry exist for that cell create it
-                if not (cell_id in cell_positions):
-                    cell_positions[cell_id] = list()
+                if not (cell_id in cell_positions_mm):
+                    cell_positions_mm[cell_id] = list()
 
                 # Convert coordinates to mm
                 # Coordinates correspond to centroids distance from the left and top of the image
@@ -101,36 +105,23 @@ def main():
                 coordinates_mm[0] = float(coordinates_mm[0] * pixels_to_mm)
                 coordinates_mm[1] = float(coordinates_mm[1] * pixels_to_mm)
 
-                cell_positions[cell_id].append(coordinates_mm)
+                cell_positions_mm[cell_id].append(coordinates_mm)
 
             # Record Area
             for cell_id, area in cell_areas.items():
                 # If no entry exist for that cell create it
-                if not (cell_id in cell_sizes):
-                    cell_sizes[cell_id] = list()
+                if not (cell_id in cell_sizes_mm):
+                    cell_sizes_mm[cell_id] = list()
 
                 # Convert area to mm^2
                 area_mm = area * (pixels_to_mm**2)
-                cell_sizes[cell_id].append(area_mm)
+                cell_sizes_mm[cell_id].append(area_mm)
 
-            print(f"Locations: {cell_positions}")
-            print(f"Areas: {cell_sizes}")
+            # Increment Frame Counter
+            frame_num += 1
 
-            #print(cell_positions)
-            #
-            # # loop over the tracked cells and reformat data to array of args we want
-            # for (objectID, centroid) in cells.items():
-            #     # draw both the ID of the object and the centroid of the
-            #     # object on the output frame
-            #     text = "ID {}".format(objectID)
-            #     cv.putText(processed_canny, text, (centroid[0] - 10, centroid[1] - 10),
-            #                 cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            #     cv.circle(processed_canny, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
-            #
-            # # show the output frame
-            # cv.imshow("Tracked", processed_canny)
-            #
-
+            #print(f"Locations: {cell_positions_mm}")
+            #print(f"Areas: {cell_sizes_mm}")
 
             # Adjust waitKey to change time each frame is displayed
             # Press q to exit out of opencv early
@@ -140,6 +131,16 @@ def main():
         # Close opencv
         capture.release()
         cv.destroyAllWindows()
+
+        # Generate Headers
+        for i in range(1, frame_num):
+            size_headers.append(f"Frame {i} Size")
+            positional_headers.append(f"Frame {i} Position")
+
+        # Export Positional Data to excel sheet
+        export_data.to_excel_file(EXPORT_FILE, cell_positions_mm, positional_headers, "Locations")
+        # Export Area Data to same excel sheet
+        export_data.to_excel_file(EXPORT_FILE, cell_sizes_mm, size_headers, "Sizes")
 
 
 '''
@@ -376,7 +377,7 @@ def detect_cell_circles(img):
 
     # Detect Circles
     # Circles contains arrays for each circle detected with x coordintate of center, y coordinate of center, and radius lengt
-    circles = cv.HoughCircles(photo, cv.HOUGH_GRADIENT, 1, 40, param1=50, param2=10, minRadius=10, maxRadius=20)
+    circles = cv.HoughCircles(photo, cv.HOUGH_GRADIENT, 1, 40, param1=50, param2=10, minRadius=4, maxRadius=20)
     #circles = cv.HoughCircles(photo, cv.HOUGH_GRADIENT_ALT, 1, 40, param1=300, param2=.85 , minRadius=0, maxRadius=0)
 
     # ensure at least some circles were found
