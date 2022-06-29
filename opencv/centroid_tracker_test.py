@@ -78,15 +78,17 @@ def main():
             # Display Proccessed Video
             cv.imshow("Canny", processed_canny)
 
-            shapes = detect_shape(processed_canny)
-            cv.imshow("SHAPES", shapes)
+            # Detect if cell is a circle or square
+            #shapes = detect_shape(processed_canny)
+            #cv.imshow("SHAPES", shapes)
 
             # Detect minimum cell boundaries and display edited photo
             cont, rectangles = detect_cell_rectangles(processed_canny)
             cv.imshow("Contours-External", cont)
 
-            cir, circles = detect_cell_circles(processed_canny)
-            cv.imshow("Circles", cir)
+            # Use Hough Circles to find all circles within image
+            #cir, circles = detect_cell_circles(processed_canny)
+            #cv.imshow("Circles", cir)
 
             # Grab Frame's dimensions in order to convert pixels to mm
             if w is None or h is None:
@@ -142,11 +144,15 @@ def main():
         for i in range(1, frame_num):
             size_headers.append(f"Frame {i} Size")
             positional_headers.append(f"Frame {i} Position")
+        # Add Final Columns for calculations
+        positional_headers.append("Distance between Initial Position and Final Position")
+        size_headers.append("Final Growth")
+        size_headers.append("Largest Growth in one interval")
 
         # Export Positional Data to excel sheet
-        export_data.to_excel_file(EXPORT_FILE, cell_positions_mm, positional_headers, "Locations")
+        export_data.coordinates_to_excel_file(EXPORT_FILE, cell_positions_mm, positional_headers, "Locations")
         # Export Area Data to same excel sheet
-        export_data.to_excel_file(EXPORT_FILE, cell_sizes_mm, size_headers, "Sizes")
+        export_data.area_to_excel_file(EXPORT_FILE, cell_sizes_mm, size_headers, "Sizes")
 
 
 '''
@@ -321,10 +327,6 @@ def detect_shape(img):
                 # A = pi r^2
                 calc_area = math.pi * (radius**2)
 
-                print(f"True: {true_area}")
-                print(f"circ {circumference}")
-                print(f"calc {calc_area}")
-
                 # Find smallest circle that encompasses each Cell
                 (small_x, small_y), radius = cv.minEnclosingCircle(contour)
                 center = (int(small_x), int(small_y))
@@ -332,17 +334,14 @@ def detect_shape(img):
                 cv.circle(photo, center, smallest_r, (255, 255, 255), 2)
                 min_circle_area = math.pi * (smallest_r**2)
 
-
-                print(f"min area {min_circle_area}")
-
                 # If a contour's calculated minimum spanning circle's area is within a specified percentage of the calculated
                 # area then assume its a circle
                 if (calc_area * .80) < min_circle_area < (calc_area * 1.20):
-                    print("Circle")
+                    #print("Circle")
                     cv.putText(photo, "Circle", (x, y), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
                 # Otherwise use rectangle
                 else:
-                    print("Rectangle")
+                    #print("Rectangle")
                     cv.putText(photo, "Rectangle", (x, y), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
 
         # cv.HoughCircles()?
