@@ -1,5 +1,7 @@
 # Test File Integrating the centroid tracker class to keep track of cells as they move between frames
 # Author: zheath19@georgefox.edu
+import math
+
 import cv2 as cv
 import numpy as np
 import os
@@ -74,6 +76,9 @@ def main():
 
             # Display Proccessed Video
             cv.imshow("Canny", processed_canny)
+
+            shapes = detect_shape(processed_canny)
+            cv.imshow("SHAPES", shapes)
 
             # Detect minimum cell boundaries and display edited photo
             cont, rectangles = detect_cell_rectangles(processed_canny)
@@ -283,30 +288,66 @@ def color_canny(img):
     @:return edited frame/image with drawn on contours and text
 '''
 def detect_shape(img):
+    photo = img.copy()
     # Epsilon value determines how exact the contour needs to follow specifications
     EPSILON = 3
-    #threshold_val, thrash = cv.threshold(img, 240, 255, cv.THRESH_BINARY)
-    ret, thrash = cv.threshold(img, 0, 255, cv.THRESH_BINARY+cv.THRESH_OTSU)
+    #threshold_val, thrash = cv.threshold(photo, 240, 255, cv.THRESH_BINARY)
+    ret, thrash = cv.threshold(photo, 0, 255, cv.THRESH_BINARY+cv.THRESH_OTSU)
     contours, hierarchy = cv.findContours(thrash, cv.RETR_TREE, cv.CHAIN_APPROX_NONE)
 
     for contour in contours:
         # Grab contour following shape. The True value indicates that it must be a closed shape
         approx = cv.approxPolyDP(contour, EPSILON*cv.arcLength(contour, True), True)
-        # First number = index of contour
-        # Draw contour in white
-        # Last num = thickness of line
-        cv.drawContours(img, [approx], 0, (255, 0, 0), 5)
-        # Grab coordinates of contour
-        x = approx.ravel()[0]
-        y = approx.ravel()[1]
+        if cv.contourArea(contour) > MIN_CELL_SIZE:
+            # First number = index of contour
+            # Draw contour in white
+            # Last num = thickness of line
+            cv.drawContours(photo, [approx], 0, (255, 0, 0), 5)
+            # Grab coordinates of contour
+            x = approx.ravel()[0]
+            y = approx.ravel()[1]
 
-        # TODO add logic to determine if shape matches that of cell
+            # Use circumference and area to determine if detected contour is a circle or not
+            circumference = cv.arcLength(contour, True)
+            true_area = cv.contourArea(contour)
+
+            # Radius = C/2pi
+            radius = circumference/(2 * math.pi)
+            # A = pi r^2
+            calc_area = math.pi * (radius**2)
+
+            print(f"True: {true_area}")
+            print(f"circ {circumference}")
+            print(f"calc {calc_area}")
+
+            # Find smallest circle that encompasses each Cell
+            (xx, yy), radius = cv.minEnclosingCircle(contour)
+            center = (int(xx), int(yy))
+            radiusssss = int(radius)
+            cv.circle(photo, center, radiusssss, (255, 255, 255), 2)
+            min_circle_area = math.pi * (radiusssss**2)
+
+            print(f"min area {min_circle_area}")
+
+
+
+            # If a contour's calculated area is within a specified percentage (5% here) of its actual area then it is a circle
+            if (true_area * .90) < calc_area < (true_area * 1.10):
+                print("Circle")
+                cv.putText(photo, "Circle", (x, y), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
+            # Otherwise use rectangle
+            else:
+                print("Rectangle")
+                cv.putText(photo, "Rectangle", (x, y), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
+
         # cv.HoughCircles()?
         # Or find center and radius
         # Write Cell label onto photo in white font
-        cv.putText(img, "Cell", (x, y), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
+        #cv.putText(photo, "Cell", (x, y), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
 
-    return img
+
+
+    return photo
 
 
 '''
