@@ -19,20 +19,21 @@ class Algorithm(Enum):
 
 # Define Constants
 PATH = '../videos/'
-VIDEO = 'Sample_cell_culture_4.mp4'
+VIDEO = 'Sample_cell_culture_0.mp4'
 EXPORT_FILE = "../data/Sample_cell_culture_4_data.xlsx"
 SCALE = 0.25
-CONTRAST = 3.0
-BRIGHTNESS = 1
-BLUR_INTENSITY = 50
-MIN_CELL_SIZE = 50
+CONTRAST = 1.25
+BRIGHTNESS = 0.1
+BLUR_INTENSITY = 10
+MIN_CELL_SIZE = 100
+MAX_CELL_SIZE = 600
 
 # Real World size of frame in mm
 VIDEO_HEIGHT_MM = 150
 VIDEO_WIDTH_MM = 195.9
 
 # Elliptical Kernel
-ELIPTICAL_KERNEL = cv.getStructuringElement(cv.MORPH_ELLIPSE,(5,5))
+#ELIPTICAL_KERNEL = cv.getStructuringElement(cv.MORPH_ELLIPSE,(5,5))
 
 # TODO Determine approx shape of Cell
 # TODO Determine Direction Cells are moving
@@ -294,51 +295,55 @@ def detect_shape(img):
     #threshold_val, thrash = cv.threshold(photo, 240, 255, cv.THRESH_BINARY)
     ret, thrash = cv.threshold(photo, 0, 255, cv.THRESH_BINARY+cv.THRESH_OTSU)
     contours, hierarchy = cv.findContours(thrash, cv.RETR_TREE, cv.CHAIN_APPROX_NONE)
+    hierarchy = hierarchy[0]
 
-    for contour in contours:
+    for contour, tree in zip(contours, hierarchy):
         # Grab contour following shape. The True value indicates that it must be a closed shape
         approx = cv.approxPolyDP(contour, EPSILON*cv.arcLength(contour, True), True)
-        if cv.contourArea(contour) > MIN_CELL_SIZE:
-            # First number = index of contour
-            # Draw contour in white
-            # Last num = thickness of line
-            cv.drawContours(photo, [approx], 0, (255, 0, 0), 5)
-            # Grab coordinates of contour
-            x = approx.ravel()[0]
-            y = approx.ravel()[1]
+        # Throw out all contours under specified size (Helps reduce tracking of noise)
+        if MIN_CELL_SIZE < cv.contourArea(contour) < MAX_CELL_SIZE:
+            # Do not display inner-most contours. This will avoid tracking organelles or multiple lines on the same cell
+            if not tree[2] < 0:
+                # First number = index of contour
+                # Draw contour in white
+                # Last num = thickness of line
+                cv.drawContours(photo, [approx], 0, (255, 255, 255), 10)
+                # Grab coordinates of contour
+                x = approx.ravel()[0]
+                y = approx.ravel()[1]
 
-            # Use circumference and area to determine if detected contour is a circle or not
-            circumference = cv.arcLength(contour, True)
-            true_area = cv.contourArea(contour)
+                # Use circumference of contour to calculate its area
+                circumference = cv.arcLength(contour, True)
+                true_area = cv.contourArea(contour)
 
-            # Radius = C/2pi
-            radius = circumference/(2 * math.pi)
-            # A = pi r^2
-            calc_area = math.pi * (radius**2)
+                # Radius = C/2pi
+                radius = circumference/(2 * math.pi)
+                # A = pi r^2
+                calc_area = math.pi * (radius**2)
 
-            print(f"True: {true_area}")
-            print(f"circ {circumference}")
-            print(f"calc {calc_area}")
+                print(f"True: {true_area}")
+                print(f"circ {circumference}")
+                print(f"calc {calc_area}")
 
-            # Find smallest circle that encompasses each Cell
-            (xx, yy), radius = cv.minEnclosingCircle(contour)
-            center = (int(xx), int(yy))
-            radiusssss = int(radius)
-            cv.circle(photo, center, radiusssss, (255, 255, 255), 2)
-            min_circle_area = math.pi * (radiusssss**2)
-
-            print(f"min area {min_circle_area}")
+                # Find smallest circle that encompasses each Cell
+                (small_x, small_y), radius = cv.minEnclosingCircle(contour)
+                center = (int(small_x), int(small_y))
+                smallest_r = int(radius)
+                cv.circle(photo, center, smallest_r, (255, 255, 255), 2)
+                min_circle_area = math.pi * (smallest_r**2)
 
 
+                print(f"min area {min_circle_area}")
 
-            # If a contour's calculated area is within a specified percentage (5% here) of its actual area then it is a circle
-            if (true_area * .90) < calc_area < (true_area * 1.10):
-                print("Circle")
-                cv.putText(photo, "Circle", (x, y), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
-            # Otherwise use rectangle
-            else:
-                print("Rectangle")
-                cv.putText(photo, "Rectangle", (x, y), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
+                # If a contour's calculated minimum spanning circle's area is within a specified percentage of the calculated
+                # area then assume its a circle
+                if (calc_area * .80) < min_circle_area < (calc_area * 1.20):
+                    print("Circle")
+                    cv.putText(photo, "Circle", (x, y), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
+                # Otherwise use rectangle
+                else:
+                    print("Rectangle")
+                    cv.putText(photo, "Rectangle", (x, y), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
 
         # cv.HoughCircles()?
         # Or find center and radius

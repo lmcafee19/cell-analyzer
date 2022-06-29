@@ -14,7 +14,7 @@ class Algorithm(Enum):
 
 # Define Constants
 PATH = '../videos/'
-VIDEO = 'sample_cell_culture_4.mp4'
+VIDEO = 'sample_cell_culture_0.mp4'
 SCALE = 0.25
 CONTRAST = 3.0
 BRIGHTNESS = 1
