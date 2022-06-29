@@ -19,13 +19,13 @@ class Algorithm(Enum):
 
 # Define Constants
 PATH = '../videos/'
-VIDEO = 'Sample_cell_culture_0.mp4'
+VIDEO = 'Circular_high_contrast.avi'
 EXPORT_FILE = "../data/Sample_cell_culture_4_data.xlsx"
 SCALE = 0.25
 CONTRAST = 1.25
 BRIGHTNESS = 0.1
 BLUR_INTENSITY = 10
-MIN_CELL_SIZE = 100
+MIN_CELL_SIZE = 10
 MAX_CELL_SIZE = 600
 
 # Real World size of frame in mm
@@ -87,8 +87,8 @@ def main():
             cv.imshow("Contours-External", cont)
 
             # Use Hough Circles to find all circles within image
-            #cir, circles = detect_cell_circles(processed_canny)
-            #cv.imshow("Circles", cir)
+            cir, circles = detect_cell_circles(processed_canny)
+            cv.imshow("Circles", cir)
 
             # Grab Frame's dimensions in order to convert pixels to mm
             if w is None or h is None:
