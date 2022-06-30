@@ -84,26 +84,29 @@ def main():
             tracked_cell_id = -1
             while not (0 <= int(tracked_cell_id) < len(cell_locations)):
                 # Allow User to select which cell they want to track
-                tracked_cell_id = input("Select Cell to Track: ")
+                tracked_cell_id = int(input("Select Cell to Track: "))
 
             # Close First Frame
             cv.destroyAllWindows()
 
             # Record data about tracked cell
             tracked_cell_coords[tracked_cell_id] = list()
-            cell_sizes_mm[tracked_cell_id] = list()
-            cell_positions_mm[tracked_cell_id] = list()
+            tracked_cell_coords[tracked_cell_id].append(list(cell_locations[tracked_cell_id]))
 
             # Convert area to mm^2
+            cell_sizes_mm[tracked_cell_id] = list()
             area_mm = cell_areas[tracked_cell_id] * (pixels_to_mm ** 2)
             cell_sizes_mm[tracked_cell_id].append(area_mm)
 
             # Convert Coordinates to mm
+            cell_positions_mm[tracked_cell_id] = list()
             coordinates_mm = list(cell_locations[tracked_cell_id])
             coordinates_mm[0] = float(coordinates_mm[0] * pixels_to_mm)
             coordinates_mm[1] = float(coordinates_mm[1] * pixels_to_mm)
-
             cell_positions_mm[tracked_cell_id].append(coordinates_mm)
+
+            # Increment Frame Counter
+            frame_num += 1
 
             # Loop through all frames of the video
             while True:
@@ -123,16 +126,31 @@ def main():
                 # Use Tracker to label and record coordinates of all cells
                 cell_locations, cell_areas = tracker.update(rectangles)
 
+                # Update Tracking information
+                # Record data about tracked cell
+                tracked_cell_coords[tracked_cell_id].append(list(cell_locations[tracked_cell_id]))
+
+                # Convert area to mm^2
+                area_mm = cell_areas[tracked_cell_id] * (pixels_to_mm ** 2)
+                cell_sizes_mm[tracked_cell_id].append(area_mm)
+
+                # Convert Coordinates to mm
+                coordinates_mm = list(cell_locations[tracked_cell_id])
+                coordinates_mm[0] = float(coordinates_mm[0] * pixels_to_mm)
+                coordinates_mm[1] = float(coordinates_mm[1] * pixels_to_mm)
+                cell_positions_mm[tracked_cell_id].append(coordinates_mm)
+
+                # Draw marker at cell's initial position
+                # print(tracked_cell_coords)
+                # print(f"coords: {tracked_cell_coords[tracked_cell_id]}")
+                cv.circle(processed, tracked_cell_coords[tracked_cell_id][0], 2, (255, 255, 255), 3)
+
+                # Draw an arrow for every frame of movement going from its last position to its next position
+                for i in range(1, len(tracked_cell_coords[tracked_cell_id])):
+                    cv.arrowedLine(processed, tracked_cell_coords[tracked_cell_id][i-1], tracked_cell_coords[tracked_cell_id][i], (255, 255, 255), 3, cv.LINE_AA, 0, 0.1)
+
                 # Display edited photo
-                cv.imshow("First Frame", labeled_img)
-
-                # Draw outline of cell at its initial position
-
-                # Every frame draw an arrow going from its last position to its next position
-
-                # Record data needed for this arrow so that it can be redrawn next frame as well
-
-                # Record Data about this specific cell
+                cv.imshow("First Frame", processed)
 
                 # Increment Frame Counter
                 frame_num += 1
