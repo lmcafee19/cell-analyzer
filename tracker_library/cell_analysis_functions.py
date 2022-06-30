@@ -21,6 +21,7 @@ MAX_CELL_SIZE = 600
 VIDEO_HEIGHT_MM = 150
 VIDEO_WIDTH_MM = 195.9
 
+
 '''
     Adjusts image to better view individual cells
     This involves converting the image to grayscale, increasing contrast,
@@ -49,6 +50,7 @@ def process_image(img, edge_alg, scale:float=1.0, contrast:float=1.0, brightness
     processed = detect_edges(processed, edge_alg)
     return processed
 
+
 '''
     Adjusts image to better view individual cells
     This involves increasing contrast, applying filters, 
@@ -72,6 +74,7 @@ def process_color_image(img, edge_alg, scale:float=1.0, contrast:float=1.0, brig
     # Use Edge Detection Algorithm
     processed = color_canny(processed)
     return processed
+
 
 '''
     Resizes the given video frame or image to supplied scale
@@ -129,6 +132,7 @@ def detect_edges(img, edge_alg):
     # processes = cv.erode(processed, (7, 7), 1)
 
     return processed
+
 
 '''
     Uses canny edge detection algorithm to display only edges found in the color image
@@ -262,7 +266,7 @@ def detect_cell_rectangles(img):
             # Write Cell label onto each boundry
             x = contour.ravel()[0]
             y = contour.ravel()[1]
-            cv.putText(photo, "Cell", (x, y), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
+            #cv.putText(photo, "Cell", (x, y), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
 
             # Record all rectangles found into array
             # Convert box (list of vertices) to list of starting x coordinate, starting y, ending x, and ending y

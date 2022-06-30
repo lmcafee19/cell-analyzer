@@ -2,10 +2,9 @@
 # Author: zheath19@georgefox.edu
 
 import math
-import cv2 as cv
 import numpy as np
+import cv2 as cv
 import os
-from enum import Enum
 from tracker_library import centroid_tracker as ct
 from tracker_library import cell_analysis_functions as analysis
 from tracker_library import export_data as export
@@ -127,7 +126,7 @@ def main():
 
             # Adjust waitKey to change time each frame is displayed
             # Press q to exit out of opencv early
-            if cv.waitKey(5) & 0xFF == ord('q'):
+            if cv.waitKey(50) & 0xFF == ord('q'):
                 break
 
         # Close opencv
