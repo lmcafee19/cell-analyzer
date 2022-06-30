@@ -147,20 +147,27 @@ def main():
 
                 # Draw an arrow for every frame of movement going from its last position to its next position
                 for i in range(1, len(tracked_cell_coords[tracked_cell_id])):
-                    cv.arrowedLine(processed, tracked_cell_coords[tracked_cell_id][i-1], tracked_cell_coords[tracked_cell_id][i], (255, 255, 255), 3, cv.LINE_AA, 0, 0.1)
+                    cv.arrowedLine(processed, tracked_cell_coords[tracked_cell_id][i-1], tracked_cell_coords[tracked_cell_id][i], (255, 255, 255), 2, cv.LINE_AA, 0, 0.1)
 
                 # Display edited photo
-                cv.imshow("First Frame", processed)
+                cv.imshow("Cell Tracking", processed)
 
                 # Increment Frame Counter
                 frame_num += 1
 
-                # Adjust waitKey to change time each frame is displayed
-                # Press q to exit out of opencv early
-                if cv.waitKey(50) & 0xFF == ord('q'):
-                    break
+                # if not the last frame display it for only a short amount of time
+                if frame_num < total_frames - 1:
+                    # Adjust waitKey to change time each frame is displayed
+                    # Press q to exit out of opencv early
+                    if cv.waitKey(50) & 0xFF == ord('q'):
+                        break
+                else:
+                    # if on the last frame display it until the q key is pressed
+                    k = cv.waitKey(0)
+                    if k == ord('q'):
+                        break
 
-            # Export that data to excel
+            # TODO Export that data to excel
 
 
 '''

@@ -12,7 +12,7 @@ from collections import OrderedDict
 
 # Define Constants
 PATH = '../videos/'
-VIDEO = 'Circular_high_contrast.avi'
+VIDEO = 'Sample_cell_culture_0.mp4'
 EXPORT_FILE = "../data/Sample_cell_culture_data.xlsx"
 SCALE = 0.25
 CONTRAST = 1.25
