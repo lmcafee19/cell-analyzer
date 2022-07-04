@@ -8,12 +8,14 @@ import os
 from tracker_library import centroid_tracker as ct
 from tracker_library import cell_analysis_functions as analysis
 from tracker_library import export_data as export
+from tracker_library import matplotlib_graphing
 from collections import OrderedDict
 
 # Define Constants
 PATH = '../videos/'
 VIDEO = 'Sample_cell_culture_0.mp4'
-EXPORT_FILE = "../data/Individual_cell_data.xlsx"
+EXCEL_FILE = "../data/Individual_cell_data.xlsx"
+PDF_FILE = "../data/Individual_area_graph.pdf"
 SCALE = 0.25
 CONTRAST = 1.25
 BRIGHTNESS = 0.1
@@ -94,13 +96,13 @@ def main():
 
             # Convert area to mm^2
             area_mm = cell_areas[tracked_cell_id] * (pixels_to_mm ** 2)
-            tracked_cell_data['Area'].append(area_mm)
+            tracked_cell_data['Area (mm^2)'].append(area_mm)
 
             # Convert Coordinates to mm
             coordinates_mm = list(cell_locations[tracked_cell_id])
             coordinates_mm[0] = float(coordinates_mm[0] * pixels_to_mm)
             coordinates_mm[1] = float(coordinates_mm[1] * pixels_to_mm)
-            tracked_cell_data['Position'].append(coordinates_mm)
+            tracked_cell_data['Position (mm)'].append(coordinates_mm)
 
             # Increment Frame Counter
             frame_num += 1
@@ -129,13 +131,13 @@ def main():
 
                 # Convert area to mm^2
                 area_mm = cell_areas[tracked_cell_id] * (pixels_to_mm ** 2)
-                tracked_cell_data['Area'].append(area_mm)
+                tracked_cell_data['Area (mm^2)'].append(area_mm)
 
                 # Convert Coordinates to mm
                 coordinates_mm = list(cell_locations[tracked_cell_id])
                 coordinates_mm[0] = float(coordinates_mm[0] * pixels_to_mm)
                 coordinates_mm[1] = float(coordinates_mm[1] * pixels_to_mm)
-                tracked_cell_data['Position'].append(coordinates_mm)
+                tracked_cell_data['Position (mm)'].append(coordinates_mm)
 
                 # Record Time from start
                 tracked_cell_data['Time'].append(frame_num * TIME_BETWEEN_FRAMES)
@@ -166,7 +168,9 @@ def main():
                         break
 
             # Export data to excel
-            export.individual_to_excel_file(EXPORT_FILE, tracked_cell_data, sheetname=f"Cell {tracked_cell_id}")
+            export.individual_to_excel_file(EXCEL_FILE, tracked_cell_data, sheetname=f"Cell {tracked_cell_id}")
+            # Draw Graph charting cell's size
+            matplotlib_graphing.export_individual_cell_area(PDF_FILE, tracked_cell_data, "Time", "Area (mm^2)", f"Cell {tracked_cell_id}: Area vs Time")
 
 
 
