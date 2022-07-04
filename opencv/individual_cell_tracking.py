@@ -13,7 +13,7 @@ from collections import OrderedDict
 # Define Constants
 PATH = '../videos/'
 VIDEO = 'Sample_cell_culture_0.mp4'
-EXPORT_FILE = "../data/Sample_cell_culture_data.xlsx"
+EXPORT_FILE = "../data/Individual_cell_data.xlsx"
 SCALE = 0.25
 CONTRAST = 1.25
 BRIGHTNESS = 0.1
@@ -22,6 +22,9 @@ BLUR_INTENSITY = 10
 # Real World size of frame in mm
 VIDEO_HEIGHT_MM = 150
 VIDEO_WIDTH_MM = 195.9
+
+# Minutes Passed between each frame in video
+TIME_BETWEEN_FRAMES = 10
 
 def main():
     # Print opencv version
@@ -43,14 +46,10 @@ def main():
         # mms each pixel takes up in real world space
         pixels_to_mm = None
 
-        # Initialize Objects to store data on cell size and location
-        # Indexed by cell ID given by centroid tracker and set to size = num frames
-        cell_positions_mm = OrderedDict()
-        cell_sizes_mm = OrderedDict()
+        # Initialize Dictionary to store position and Area Data of tracked cell
+        tracked_cell_data = {'Time': [0], 'Position (mm)': [], 'Area (mm^2)': []}
         # Keep Track of our tracked cell's coordinates in pixels
         tracked_cell_coords = OrderedDict()
-        positional_headers = ["Cell ID", "Initial Position"]
-        size_headers = ["Cell ID", "Initial Size (mm^2)"]
         frame_num = 0
 
         # Open First Frame of Video and Detect all cells within it, making sure to label them
@@ -94,16 +93,14 @@ def main():
             tracked_cell_coords[tracked_cell_id].append(list(cell_locations[tracked_cell_id]))
 
             # Convert area to mm^2
-            cell_sizes_mm[tracked_cell_id] = list()
             area_mm = cell_areas[tracked_cell_id] * (pixels_to_mm ** 2)
-            cell_sizes_mm[tracked_cell_id].append(area_mm)
+            tracked_cell_data['Area'].append(area_mm)
 
             # Convert Coordinates to mm
-            cell_positions_mm[tracked_cell_id] = list()
             coordinates_mm = list(cell_locations[tracked_cell_id])
             coordinates_mm[0] = float(coordinates_mm[0] * pixels_to_mm)
             coordinates_mm[1] = float(coordinates_mm[1] * pixels_to_mm)
-            cell_positions_mm[tracked_cell_id].append(coordinates_mm)
+            tracked_cell_data['Position'].append(coordinates_mm)
 
             # Increment Frame Counter
             frame_num += 1
@@ -132,17 +129,18 @@ def main():
 
                 # Convert area to mm^2
                 area_mm = cell_areas[tracked_cell_id] * (pixels_to_mm ** 2)
-                cell_sizes_mm[tracked_cell_id].append(area_mm)
+                tracked_cell_data['Area'].append(area_mm)
 
                 # Convert Coordinates to mm
                 coordinates_mm = list(cell_locations[tracked_cell_id])
                 coordinates_mm[0] = float(coordinates_mm[0] * pixels_to_mm)
                 coordinates_mm[1] = float(coordinates_mm[1] * pixels_to_mm)
-                cell_positions_mm[tracked_cell_id].append(coordinates_mm)
+                tracked_cell_data['Position'].append(coordinates_mm)
+
+                # Record Time from start
+                tracked_cell_data['Time'].append(frame_num * TIME_BETWEEN_FRAMES)
 
                 # Draw marker at cell's initial position
-                # print(tracked_cell_coords)
-                # print(f"coords: {tracked_cell_coords[tracked_cell_id]}")
                 cv.circle(processed, tracked_cell_coords[tracked_cell_id][0], 2, (255, 255, 255), 3)
 
                 # Draw an arrow for every frame of movement going from its last position to its next position
@@ -167,7 +165,9 @@ def main():
                     if k == ord('q'):
                         break
 
-            # TODO Export that data to excel
+            # Export data to excel
+            export.individual_to_excel_file(EXPORT_FILE, tracked_cell_data, sheetname=f"Cell {tracked_cell_id}")
+
 
 
 '''

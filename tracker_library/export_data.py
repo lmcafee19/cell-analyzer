@@ -59,6 +59,53 @@ def to_excel_file(filename, data, headers=None, sheetname=None):
 
 
 '''
+    Exports given dictionary containing data on an individuals cell's area and coordinates to excel file
+    @param filename: Name of excel file to edit or write to. Should end with extension .xls or .xlsx
+    @param data: Dictionary containing data about the cell
+    @param headers: iterable object containing headers for each column
+'''
+def individual_to_excel_file(filename, data:dict, sheetname=None):
+    current_row = 1
+    current_col = 1
+
+    # If filename does not end in .xls extension exit
+    if not (filename.endswith(".xls") or filename.endswith(".xlsx")):
+        raise Exception("File must be of type .xls or .xlsx")
+
+    # If file already exists, create a new sheet to store data on
+    if os.path.exists(f"{filename}"):
+        # Open excel file for reading and writing
+        wb = openpyxl.load_workbook(filename)
+    else:
+        # Otherwise create a new excel file to write to
+        # Create Workbook to store all sheets and their data
+        wb = openpyxl.Workbook()
+
+    # Add Sheet to store column/row data about this iteration
+    sheet = wb.create_sheet(sheetname)
+
+    # Write Data to sheet
+    # Loop through dictionary. For every key write all of its values within the same column then move onto the next
+    for key, value in data.items():
+        current_row = 1
+
+        sheet.cell(current_row, current_col, key)
+        current_row += 1
+
+        for entry in value:
+            # Convert to string and remove illegal characters to format it correctly for Excel
+            entry = str(entry).replace("[", "")
+            entry = str(entry).replace("]", "")
+            sheet.cell(current_row, current_col, entry)
+            current_row += 1
+
+        current_col += 1
+
+    # Save File
+    wb.save(f"{filename}")
+
+
+'''
     Exports given cell coordinates to an excel spreadsheet
     @param filename: Name of excel file to edit or write to. Should end with extension .xls or .xlsx
     @param data: Dictionary indexed by cell id, and containing data about each cell
