@@ -12,7 +12,7 @@ from collections import OrderedDict
 
 # Define Constants
 PATH = '../videos/'
-VIDEO = 'Sample_cell_culture_0.mp4'
+VIDEO = 'Sample_cell_culture_4.mp4'
 EXPORT_FILE = "../data/Sample_cell_culture_data.xlsx"
 SCALE = 0.25
 CONTRAST = 1.25
@@ -72,8 +72,8 @@ def main():
             cv.imshow("Canny", processed_canny)
 
             # Detect if cell is a circle or square
-            #shapes = detect_shape(processed_canny)
-            #cv.imshow("SHAPES", shapes)
+            shapes = analysis.detect_shape(processed_canny)
+            cv.imshow("SHAPES", shapes)
 
             # Detect minimum cell boundaries and display edited photo
             cont, rectangles = analysis.detect_cell_rectangles(processed_canny)
@@ -126,7 +126,7 @@ def main():
 
             # Adjust waitKey to change time each frame is displayed
             # Press q to exit out of opencv early
-            if cv.waitKey(50) & 0xFF == ord('q'):
+            if cv.waitKey(150) & 0xFF == ord('q'):
                 break
 
         # Close opencv

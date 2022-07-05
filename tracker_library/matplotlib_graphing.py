@@ -24,7 +24,7 @@ def export_individual_cell_area(filename, data: dict, xaxis, yaxis, title=None):
 
     with PdfPages(filename) as export_pdf:
         # Create line chart and fill in information
-        plt.plot(df[xaxis], df[yaxis], color='blue', marker='o')
+        plt.plot(df[xaxis], df[yaxis], color='blue')
         if title:
             plt.title(title)
         plt.xlabel(xaxis, fontsize=8)

@@ -21,6 +21,19 @@ MAX_CELL_SIZE = 600
 VIDEO_HEIGHT_MM = 150
 VIDEO_WIDTH_MM = 195.9
 
+'''
+    Seperates given video or multi frame file into array of frames
+'''
+def read_video(file):
+    # Determine file extension
+    # if .tif must use imreadmulti
+    if file.endswith(".tif"):
+        ret, capture = cv.imreadmulti(file, [], cv.IMREAD_ANYCOLOR)
+    else:
+        capture = cv.VideoCapture(file)
+
+    return capture
+
 
 '''
     Adjusts image to better view individual cells
@@ -291,7 +304,7 @@ def detect_cell_circles(img):
     #photo = cv.GaussianBlur(photo, (7, 7), 1.5)
 
     # Detect Circles
-    # Circles contains arrays for each circle detected with x coordintate of center, y coordinate of center, and radius lengt
+    # Circles contains arrays for each circle detected with x coordintate of center, y coordinate of center, and radius length
     circles = cv.HoughCircles(photo, cv.HOUGH_GRADIENT, 1, 40, param1=50, param2=10, minRadius=4, maxRadius=20)
     #circles = cv.HoughCircles(photo, cv.HOUGH_GRADIENT_ALT, 1, 40, param1=300, param2=.85 , minRadius=0, maxRadius=0)
 
