@@ -316,13 +316,14 @@ def calc_individual_cell_statistics(data, time_between_frames):
             distances.append(distance)
             # calc current speed
             speeds.append(distance/time_between_frames)
-            # calc angle of direction from last point
-            angle = math.atan2(y - prevy, x - prevx) * (180 / math.pi)
+            # calc angle of direction from last point. Because of the way opencv stores coordinates
+            # ((0,0) would be the top left) we need to convert the angle by subtracting 360 degrees by it
+            angle = 360 - (math.atan2(y - prevy, x - prevx) * (180 / math.pi))
             angle_of_direction.append(angle)
 
             # If on final coordinate calculate angle between this and origin point
             if i == (len(data) - 1):
-                final_angle = math.atan2(y - origin_y, x - origin_x) * (180 / math.pi)
+                final_angle = 360 - (math.atan2(y - origin_y, x - origin_x) * (180 / math.pi))
 
         # Total Displacement (Total Distance Traveled)
         stats["Total Displacement (mm)"] = sum(distances)

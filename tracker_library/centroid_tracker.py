@@ -54,17 +54,6 @@ class CentroidTracker():
         # initialize an array of input centroids for the current frame
         # inputCentroids = np.zeros((len(shapes), 2), dtype="int")
         inputCentroids = list(shapes.keys())
-        centroid_rect_dict = OrderedDict()
-        # # loop over the bounding box rectangles
-        # for (i, (startX, startY, endX, endY)) in enumerate(shapes):
-        #     # use the bounding box coordinates to derive the centroid
-        #     cX = int((startX + endX) / 2.0)
-        #     cY = int((startY + endY) / 2.0)
-        #     inputCentroids[i] = (cX, cY)
-        #
-        #     # Create mapping between shapes and centroids
-        #     centroid_rect_dict[(cX, cY)] = [startX, startY, endX, endY]
-
 
         # if we are currently not tracking any objects take the input
         # centroids and register each of them

@@ -11,7 +11,7 @@ from collections import OrderedDict
 
 # Define Constants
 PATH = '../videos/'
-VIDEO = 'Sample_cell_culture_0.mp4'
+VIDEO = 'Sample_cell_culture_4.mp4'
 EXCEL_FILE = "../data/Individual_cell_data.xlsx"
 PDF_FILE = "../data/"
 SCALE = 0.25
@@ -61,10 +61,10 @@ def main():
         processed = analysis.process_image(frame, analysis.Algorithm.CANNY, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
 
         # Detect minimum cell boundaries and display edited photo
-        cont, rectangles = analysis.detect_cell_rectangles(processed)
+        cont, shapes = analysis.detect_shape_v2(processed)
 
         # Use Tracker to label and record coordinates of all cells
-        cell_locations, cell_areas = tracker.update(rectangles)
+        cell_locations, cell_areas = tracker.update(shapes)
 
         # Label all cells with cell id
         labeled_img = label_cells(processed, cell_locations)
@@ -119,10 +119,10 @@ def main():
                                                    BLUR_INTENSITY)
 
                 # Detect minimum cell boundaries and display edited photo
-                cont, rectangles = analysis.detect_cell_rectangles(processed)
+                cont, shapes = analysis.detect_shape_v2(processed)
 
                 # Use Tracker to label and record coordinates of all cells
-                cell_locations, cell_areas = tracker.update(rectangles)
+                cell_locations, cell_areas = tracker.update(shapes)
 
                 # Update Tracking information
                 # Record data about tracked cell
