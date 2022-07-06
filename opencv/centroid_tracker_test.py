@@ -13,7 +13,7 @@ from collections import OrderedDict
 # Define Constants
 PATH = '../videos/'
 VIDEO = 'Sample_cell_culture_4.mp4'
-EXPORT_FILE = "../data/Sample_cell_culture_data.xlsx"
+EXPORT_FILE = "../data/detect_shapes_v2_data.xlsx"
 SCALE = 0.25
 CONTRAST = 1.25
 BRIGHTNESS = 0.1
@@ -71,12 +71,12 @@ def main():
             # Display Proccessed Video
             cv.imshow("Canny", processed_canny)
 
-            # Detect if cell is a circle or square
-            shapes, centers = analysis.detect_shape_v2(processed_canny)
-            cv.imshow("SHAPES", shapes)
+            # Detect if cell is a circle or square and grab each objects centroid and area
+            shapes_img, shapes = analysis.detect_shape_v2(processed_canny)
+            cv.imshow("SHAPES", shapes_img)
 
             # Detect minimum cell boundaries and display edited photo
-            cont, rectangles = analysis.detect_cell_rectangles(processed_canny)
+            #cont, rectangles = analysis.detect_cell_rectangles(processed_canny)
             #cv.imshow("Contours-External", cont)
 
             # Use Hough Circles to find all circles within image
@@ -90,8 +90,9 @@ def main():
 
             # Update Centroid tracker with list of rectangles
             #print(f"num rectangles: {len(rectangles)}")
-            cell_locations, cell_areas = tracker.update(rectangles)
-            #print(f"Tracked Cells: {cells}")
+            cell_locations, cell_areas = tracker.update(shapes)
+            print(f"Tracked Cells: {cell_locations}\nAreas: {cell_areas}")
+
 
             # Record Data about Cell position, and cell size
             # Record positonal data given by tracker
@@ -143,9 +144,9 @@ def main():
         size_headers.append("Largest Growth in one interval")
 
         # Export Positional Data to excel sheet
-        #export.coordinates_to_excel_file(EXPORT_FILE, cell_positions_mm, positional_headers, "Locations")
+        export.coordinates_to_excel_file(EXPORT_FILE, cell_positions_mm, positional_headers, "Locations")
         # Export Area Data to same excel sheet
-        #export.area_to_excel_file(EXPORT_FILE, cell_sizes_mm, size_headers, "Sizes")
+        export.area_to_excel_file(EXPORT_FILE, cell_sizes_mm, size_headers, "Sizes")
 
 
 main()

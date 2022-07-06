@@ -12,6 +12,7 @@ class CentroidTracker():
         self.nextObjectID = 0
         self.objects = OrderedDict()
         self.disappeared = OrderedDict()
+        # Mapping between object id and their area
         self.object_area = OrderedDict()
 
         # store the number of maximum consecutive frames a given
@@ -32,11 +33,11 @@ class CentroidTracker():
         del self.objects[objectID]
         del self.disappeared[objectID]
 
-    # TODO Create version of update using circles
-    def update(self, rects):
+    # Shapes should be a dictionary mapping centroids of detected objects to their area
+    def update(self, shapes):
         # check to see if the list of input bounding box rectangles
         # is empty
-        if len(rects) == 0:
+        if len(shapes) == 0:
             # loop over any existing tracked objects and mark them
             # as disappeared
             for objectID in list(self.disappeared.keys()):
@@ -51,24 +52,25 @@ class CentroidTracker():
             return self.objects
 
         # initialize an array of input centroids for the current frame
-        inputCentroids = np.zeros((len(rects), 2), dtype="int")
+        # inputCentroids = np.zeros((len(shapes), 2), dtype="int")
+        inputCentroids = list(shapes.keys())
         centroid_rect_dict = OrderedDict()
-        # loop over the bounding box rectangles
-        for (i, (startX, startY, endX, endY)) in enumerate(rects):
-            # use the bounding box coordinates to derive the centroid
-            cX = int((startX + endX) / 2.0)
-            cY = int((startY + endY) / 2.0)
-            inputCentroids[i] = (cX, cY)
-
-            # Create mapping between rects and centroids
-            centroid_rect_dict[(cX, cY)] = [startX, startY, endX, endY]
+        # # loop over the bounding box rectangles
+        # for (i, (startX, startY, endX, endY)) in enumerate(shapes):
+        #     # use the bounding box coordinates to derive the centroid
+        #     cX = int((startX + endX) / 2.0)
+        #     cY = int((startY + endY) / 2.0)
+        #     inputCentroids[i] = (cX, cY)
+        #
+        #     # Create mapping between shapes and centroids
+        #     centroid_rect_dict[(cX, cY)] = [startX, startY, endX, endY]
 
 
         # if we are currently not tracking any objects take the input
         # centroids and register each of them
         if len(self.objects) == 0:
             for i in range(0, len(inputCentroids)):
-                self.object_area[self.nextObjectID] = calc_rect_area(centroid_rect_dict[tuple(inputCentroids[i])])
+                self.object_area[self.nextObjectID] = shapes[inputCentroids[i]]
                 self.register(inputCentroids[i])
 
         # otherwise, we are currently tracking objects, so we need to
@@ -119,7 +121,7 @@ class CentroidTracker():
                 self.objects[objectID] = inputCentroids[col]
                 self.disappeared[objectID] = 0
                 # Record data mapped between this cell id and rectangle boundries
-                self.object_area[objectID] = calc_rect_area(centroid_rect_dict[tuple(inputCentroids[col])])
+                self.object_area[objectID] = shapes[inputCentroids[col]]
 
                 # indicate that we have examined each of the row and
                 # column indexes, respectively
@@ -166,7 +168,7 @@ class CentroidTracker():
                 # Register all unique centroids
                 for centroid in unique_centroids:
                     # Map new id to new rectangle bounds
-                    self.object_area[self.nextObjectID] = calc_rect_area(centroid_rect_dict[centroid])
+                    self.object_area[self.nextObjectID] = shapes[centroid]
                     self.register(centroid)
 
 

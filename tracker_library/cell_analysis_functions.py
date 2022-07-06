@@ -330,7 +330,7 @@ def detect_cell_circles(img):
 '''
     Detects objects within the image and determines if they are circles or rectangles
     @:param img: image to detect edges in
-    @:return edited image with shape labels
+    @:returns edited image with shape labels, and dictionary between all centroids found and their encompassing shapes centroid
 '''
 def detect_shape_v2(img):
     # Create Dictionary Mapping detected centroids to their area
