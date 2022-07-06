@@ -17,6 +17,10 @@ class Algorithm(Enum):
 MIN_CELL_SIZE = 10
 MAX_CELL_SIZE = 600
 
+# Indicates how close circles must be to the perfect height/width ratio
+# Should be float between 0-1 with higher percentages meaning more leniency and therefore more shapes being declared circles
+CIRCLE_RATIO_RANGE = .30
+
 # Real World size of frame in mm
 VIDEO_HEIGHT_MM = 150
 VIDEO_WIDTH_MM = 195.9
@@ -172,10 +176,9 @@ def color_canny(img):
 
 
 '''
-    Uses a specified edge detection algorithm to display only edges found in the image
+    Detects objects within the image and determines if they are circles or rectangles
     @:param img: image to detect edges in
-    @:param edge_alg Option from Algorithm enum
-    @:return edited frame/image with drawn on contours and text
+    @:return edited image with shape labels
 '''
 def detect_shape(img):
     photo = img.copy()
@@ -325,6 +328,74 @@ def detect_cell_circles(img):
 
 
 '''
+    Detects objects within the image and determines if they are circles or rectangles
+    @:param img: image to detect edges in
+    @:return edited image with shape labels
+'''
+def detect_shape_v2(img):
+    # Create Dictionary Mapping detected centroids to their area
+    centroids = {}
+
+    # Create copy of img as to not edit the original
+    photo = img.copy()
+
+    threshold_val, thrash = cv.threshold(photo, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+    # Grab all contours not surrounded by another contour
+    contours, hierarchy = cv.findContours(thrash, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+    # Loop through each contour if they are large enough to be considered cells
+    for contour in contours:
+        # Filter out all contours not in specified range
+        if MIN_CELL_SIZE < cv.contourArea(contour) < MAX_CELL_SIZE:
+
+            # Minimum rectangle needed to cover contour, will be angled
+            # Rect format: (center(x, y), (width, height), angle of rotation)
+            rect = cv.minAreaRect(contour)
+
+            # Box returns list of four tuples containing coordinates of the vertices of the rectangle
+            # First value in each tuple is x, and second is y
+            box = cv.boxPoints(rect)
+            box = np.int0(box)
+
+            # Use the height/width ratio to figure out if the cell is closer to a rectangle or circle
+            ratio = rect[1][1]/rect[1][0]
+            # A perfect circle would have a ratio of 1, so we accept values around it
+            if 1 - CIRCLE_RATIO_RANGE < ratio < 1 + CIRCLE_RATIO_RANGE:
+                # Detected contour is a circle, measure it with the smallest enclosing circle
+                (x, y), radius = cv.minEnclosingCircle(contour)
+                centroid = (int(x), int(y))
+                radius = float(radius)
+
+                # Grab Area
+                area = calc_area_circle(radius)
+                # Grab Centroid
+                centroids[centroid] = area
+
+                # Draw circle and label
+                cv.circle(photo, centroid, int(radius), (255, 255, 255), 2)
+                cv.putText(photo, "Circle", (int(x + radius), int(y + radius)), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
+
+            else:
+                # Detected contour is rectangular
+                # Convert box (list of vertices) to list of starting x coordinate, starting y, ending x, and ending y
+                # to be compatible with the update function of centroid tracker
+                rec_coordinates = [box[0][0], box[1][1], box[2][0], box[3][1]]
+
+                # Get Centroid from rectangle
+                centroid = (int(rect[0][0]), int(rect[0][1]))
+
+                # Grab Area and Centroid
+                area = calc_rect_area(rec_coordinates)
+                centroids[centroid] = area
+
+                # Draw rectangle and label found onto image in white
+                cv.drawContours(photo, [box], 0, (255, 255, 255), 2)
+                cv.putText(photo, "Rectangle", centroid, cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
+
+    return photo, centroids
+
+
+'''
     Calculates the area of the given rectangle
     @param rectangle: List Containing starting x coordinate, starting y, ending x, and ending y in that order
     @return The area of the given rectangle
@@ -335,6 +406,17 @@ def calc_rect_area(rectangle):
     width = rectangle[2] - rectangle[0]
     # A = l * w
     area = length * width
+    return area
+
+
+'''
+    Calculates the area of the given circle
+    @param radius radius of the circle
+    @return The area of the circle
+'''
+def calc_area_circle(radius):
+    # A = 2 * pi * r^2
+    area = 2 * math.pi * (radius ** 2)
     return area
 
 

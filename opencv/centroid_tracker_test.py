@@ -72,16 +72,16 @@ def main():
             cv.imshow("Canny", processed_canny)
 
             # Detect if cell is a circle or square
-            shapes = analysis.detect_shape(processed_canny)
+            shapes, centers = analysis.detect_shape_v2(processed_canny)
             cv.imshow("SHAPES", shapes)
 
             # Detect minimum cell boundaries and display edited photo
             cont, rectangles = analysis.detect_cell_rectangles(processed_canny)
-            cv.imshow("Contours-External", cont)
+            #cv.imshow("Contours-External", cont)
 
             # Use Hough Circles to find all circles within image
-            cir, circles = analysis.detect_cell_circles(processed_canny)
-            cv.imshow("Circles", cir)
+            #cir, circles = analysis.detect_cell_circles(processed_canny)
+            #cv.imshow("Circles", cir)
 
             # Grab Frame's dimensions in order to convert pixels to mm
             if w is None or h is None:
@@ -143,9 +143,9 @@ def main():
         size_headers.append("Largest Growth in one interval")
 
         # Export Positional Data to excel sheet
-        export.coordinates_to_excel_file(EXPORT_FILE, cell_positions_mm, positional_headers, "Locations")
+        #export.coordinates_to_excel_file(EXPORT_FILE, cell_positions_mm, positional_headers, "Locations")
         # Export Area Data to same excel sheet
-        export.area_to_excel_file(EXPORT_FILE, cell_sizes_mm, size_headers, "Sizes")
+        #export.area_to_excel_file(EXPORT_FILE, cell_sizes_mm, size_headers, "Sizes")
 
 
 main()
