@@ -170,8 +170,19 @@ def main():
             # Export data to excel
             export.individual_to_excel_file(EXCEL_FILE, tracked_cell_data, TIME_BETWEEN_FRAMES, f"Cell {tracked_cell_id}")
             # Draw Graph charting cell's size
-            matplotlib_graphing.export_individual_cell_area(f"{PDF_FILE}Cell{tracked_cell_id}_Area_Graph.pdf", tracked_cell_data, "Time", "Area (mm^2)", f"Cell {tracked_cell_id}: Area vs Time")
+            matplotlib_graphing.export_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Area_Graph.pdf",
+                                                            tracked_cell_data, "Time", "Area (mm^2)",
+                                                            title=f"Cell {tracked_cell_id}: Area vs Time")
+            # Draw Graph charting cell's movement
+            matplotlib_graphing.export_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Movement_Graph.pdf",
+                                                            tracked_cell_data, "X Position (mm)", "Y Position (mm)",
+                                                            labels=tracked_cell_data["Time"], title=f"Cell {tracked_cell_id}: Movement")
 
+            # Draw Simplified version of graph charting cell's movement
+            matplotlib_graphing.export_simplified_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Simple_Movement_Graph.pdf",
+                                                            tracked_cell_data, "X Position (mm)", "Y Position (mm)", 15,
+                                                            labels=tracked_cell_data["Time"],
+                                                            title=f"Cell {tracked_cell_id}: Movement")
 
 
 '''
