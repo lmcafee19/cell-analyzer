@@ -93,6 +93,7 @@ def export_simplified_individual_cell_data(filename, data: dict, xaxis, yaxis, n
         simple_data = simplify_data(data, xaxis, yaxis, num_points)
         export_individual_cell_data(filename, simple_data, xaxis, yaxis, labels, title)
 
+
 '''
     Simplifies data into num points evenly distributed among the data set inorder to make it more readable
     @param data: Dictionary containing data about the cell
@@ -110,7 +111,6 @@ def simplify_data(data: dict, xaxis, yaxis, num_points=10):
 
     # Add First point to simplified data set
     simplified = {xaxis: [], yaxis: []}
-    simplified_labels = []
 
     # Calculate how number of positions to skip between points we grab
     # Subtract 2 from num_points and len since we will always add the first and last point
@@ -152,17 +152,4 @@ def simplify_labels(labels, num_points=10):
     simplified_labels.append(labels[len(labels) - 1])
 
     return simplified_labels
-
-
-
-
-
-
-
-
-
-
-
-
-
 

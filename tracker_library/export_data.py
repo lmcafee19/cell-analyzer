@@ -5,59 +5,18 @@ import csv
 import openpyxl
 import math
 
-
-
 '''
     Exports given cell data to an excel spreadsheet
     @param filename: Name of excel file to edit or write to. Should end with extension .xls or .xlsx
-    @param data: Dictionary indexed by cell id, and containing data about each cell
+    @param coordinates: dictionary indexed by cell id containing coordinates 
+    @param areas: dictionary indexed by cell id containing areas
     @param headers: iterable object containing headers for each column
 '''
-def to_excel_file(filename, data, headers=None, sheetname=None):
-    if headers is None:
-        headers = []
-
-    current_row = 1
-    current_col = 1
-
-    # If filename does not end in .xls extension exit
-    if not (filename.endswith(".xls") or filename.endswith(".xlsx")):
-        raise Exception("File must be of type .xls or .xlsx")
-
-    # If file already exists, create a new sheet to store data on
-    if os.path.exists(f"{filename}"):
-        # Open excel file for reading and writing
-        wb = openpyxl.load_workbook(filename)
-    else:
-        # Otherwise create a new excel file to write to
-        # Create Workbook to store all sheets and their data
-        wb = openpyxl.Workbook()
-
-    # Add Sheet to store column/row data about this iteration
-    sheet = wb.create_sheet(sheetname)
-
-    # Write Data to sheet
-    # Create Headers
-    for i in range(0, len(headers)):
-        # Cell (row, col, data) Base 1
-        sheet.cell(current_row, current_col + i, headers[i])
-    current_row += 1
-
-    # Loop through all data given then extract useful info and append it
-    # Adds data to new row. Argument must be iterable object
-    for key, value in data.items():
-        current_col = 1
-        sheet.cell(current_row, current_col, key)
-        current_col += 1
-        for val in value:
-            sheet.cell(current_row, current_col, str(val))
-            current_col += 1
-        current_row += 1
-
-        #sheet.append(row)
-
-    # Save File
-    wb.save(f"{filename}")
+def culture_to_excel_file(filename, coordinates, areas, time_between_frames, coordinate_headers=None, area_headers=None):
+    coordinates_to_excel_file(filename, coordinates, coordinate_headers, "Positions")
+    area_to_excel_file(filename, areas, area_headers, "Areas")
+    stats = calc_culture_cell_statistics(coordinates, time_between_frames)
+    culture_stats_to_excel_file(filename, stats, "Culture Stats")
 
 
 '''
@@ -123,7 +82,7 @@ def individual_to_excel_file(filename, data:dict, time_between_frames, sheetname
 '''
     Exports given cell coordinates to an excel spreadsheet
     @param filename: Name of excel file to edit or write to. Should end with extension .xls or .xlsx
-    @param data: Dictionary indexed by cell id, and containing data about each cell
+    @param data: Dictionary indexed by cell id, and containing tuples of the coordinates for each cell
     @param headers: iterable object containing headers for each column
 '''
 def coordinates_to_excel_file(filename, data, headers=None, sheetname=None):
@@ -163,16 +122,25 @@ def coordinates_to_excel_file(filename, data, headers=None, sheetname=None):
         sheet.cell(current_row, current_col, key)
         current_col += 1
         for val in value:
-            # Remove [] from string to format it correctly for Excel
-            val = str(val).replace("[", "")
-            val = str(val).replace("]", "")
-            sheet.cell(current_row, current_col, val)
+            # Split tuples into x and y coordinate
+            val = tuple(val)
+            x = val[0]
+            y = val[1]
+
+            # Place x coordinate in one column and y in the next
+            sheet.cell(current_row, current_col, x)
+            current_col += 1
+            sheet.cell(current_row, current_col, y)
             current_col += 1
 
+        # Todo Generate Stats for each cell and place it onto the end
+        # TODO distance between initial and final, direction between initial and final
+        # TODO Direction moved (Up, Down, Left, Right)
         # Insert Excel Formula to display Euclidean Distance between the cell's initial and final position
-        distance_formula = f'=SQRT((((LEFT(INDIRECT(ADDRESS({current_row}, {current_col - 1})),FIND(",",INDIRECT(ADDRESS({current_row}, {current_col - 1})))-1))-(LEFT(INDIRECT(ADDRESS({current_row}, 2)),FIND(",",INDIRECT(ADDRESS({current_row}, 2)))-1)))^2) + (((RIGHT(INDIRECT(ADDRESS({current_row}, {current_col - 1})),LEN(INDIRECT(ADDRESS({current_row}, {current_col - 1})))-FIND(",",INDIRECT(ADDRESS({current_row}, {current_col - 1})))-1)) - (RIGHT(INDIRECT(ADDRESS({current_row}, 2)),LEN(INDIRECT(ADDRESS({current_row}, 2)))-FIND(",",INDIRECT(ADDRESS({current_row}, 2)))-1)))^2))'
-        sheet.cell(current_row, current_col, distance_formula)
-        current_col += 1
+        #distance_formula = f'=SQRT((((LEFT(INDIRECT(ADDRESS({current_row}, {current_col - 1})),FIND(",",INDIRECT(ADDRESS({current_row}, {current_col - 1})))-1))-(LEFT(INDIRECT(ADDRESS({current_row}, 2)),FIND(",",INDIRECT(ADDRESS({current_row}, 2)))-1)))^2) + (((RIGHT(INDIRECT(ADDRESS({current_row}, {current_col - 1})),LEN(INDIRECT(ADDRESS({current_row}, {current_col - 1})))-FIND(",",INDIRECT(ADDRESS({current_row}, {current_col - 1})))-1)) - (RIGHT(INDIRECT(ADDRESS({current_row}, 2)),LEN(INDIRECT(ADDRESS({current_row}, 2)))-FIND(",",INDIRECT(ADDRESS({current_row}, 2)))-1)))^2))'
+        #sheet.cell(current_row, current_col, distance_formula)
+        #current_col += 1
+
         current_row += 1
 
     # Save File
@@ -243,39 +211,43 @@ def area_to_excel_file(filename, data, headers=None, sheetname=None):
 
 
 '''
-    Exports given cell data to a comma separated value file
-    @param filename: Name of File to append to or save data to. Should end with extension .csv and contain full path as necessary
-    @param data: 2d iterable object containing data about each cell
-    @param headers: iterable object containing headers for each column
+    Exports given cell areas to an excel spreadsheet
+    @param filename: Name of excel file to edit or write to. Should end with extension .xls or .xlsx
+    @param stats: Dictionary of stats gathered about a culture. Keys will be used as headers
+    @param sheetname Name of the created sheet in excel document
 '''
-def to_csv_file(filename, data, headers=None):
-    if headers is None:
-        headers = []
+def culture_stats_to_excel_file(filename, stats, sheetname=None):
+    current_col = 1
+
     # If filename does not end in .xls extension exit
-    if not filename.endswith(".csv"):
-        raise Exception("File must be of type .csv")
+    if not (filename.endswith(".xls") or filename.endswith(".xlsx")):
+        raise Exception("File must be of type .xls or .xlsx")
 
-    # If file already exists, append data to the end
+    # If file already exists, create a new sheet to store data on
     if os.path.exists(f"{filename}"):
-        # Open csv file in append mode
-        with open(filename, "a") as file:
-            csvwriter = csv.writer(file)
-
-            # Loop through data and write each row
-            for row in data:
-                csvwriter.writerow(row)
-
-    # Otherwise create a new csv file to write to
+        # Open excel file for reading and writing
+        wb = openpyxl.load_workbook(filename)
     else:
-        with open(filename, "w") as file:
-            csvwriter = csv.writer(file)
+        # Otherwise create a new excel file to write to
+        # Create Workbook to store all sheets and their data
+        wb = openpyxl.Workbook()
 
-            # Write headers
-            csvwriter.writerow(headers)
+    # Add Sheet to store column/row data about this iteration
+    sheet = wb.create_sheet(sheetname)
 
-            # Loop through data and write each row
-            for row in data:
-                csvwriter.writerow(row)
+    # Loop Through Stats and add them to excel sheet
+    for key, value in stats.items():
+        # Add Header
+        current_row = 1
+        sheet.cell(current_row, current_col, key)
+        current_row += 1
+
+        # Add Data
+        sheet.cell(current_row, current_col, value)
+        current_col += 1
+
+    # Save File
+    wb.save(f"{filename}")
 
 
 '''
@@ -318,12 +290,12 @@ def calc_individual_cell_statistics(data, time_between_frames):
             speeds.append(distance/time_between_frames)
             # calc angle of direction from last point. Because of the way opencv stores coordinates
             # ((0,0) would be the top left) we need to convert the angle by subtracting 360 degrees by it
-            angle = 360 - (math.atan2(y - prevy, x - prevx) * (180 / math.pi))
+            angle = 360 - ((math.atan2(y - prevy, x - prevx) * (180 / math.pi)) % 360)
             angle_of_direction.append(angle)
 
             # If on final coordinate calculate angle between this and origin point
             if i == (len(data) - 1):
-                final_angle = 360 - (math.atan2(y - origin_y, x - origin_x) * (180 / math.pi))
+                final_angle = 360 - ((math.atan2(y - origin_y, x - origin_x) * (180 / math.pi)) % 360)
 
         # Total Displacement (Total Distance Traveled)
         stats["Total Displacement (mm)"] = sum(distances)
@@ -339,13 +311,113 @@ def calc_individual_cell_statistics(data, time_between_frames):
         stats["Average Speed (mm/min)"] = sum(speeds)/len(speeds)
         # Average Angle of direction from origin in degrees
         stats["Average Angle of Direction from Origin (degrees)"] = sum(angle_of_direction)/len(angle_of_direction)
-        # TODO determine direction of movement
         # Angle of direction from origin to final point
         stats["Angle of Direction between Origin and Final Point (degrees)"] = final_angle
+        # Categorize Direction of Movement
+        compass_brackets = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"]
+        compass_lookup = round(final_angle / 45)
+        stats["Direction Moved"] = compass_brackets[compass_lookup]
     else:
         raise Exception("Empy Data Set Given")
 
     return stats
+
+
+'''
+    Calculates Statistics averaging out data from all cells
+    Total Displacement: Total distance moved, Final Distance from origin, maximum distance from origin, average distance from origin,
+    Maximum speed, average speed, average angle of direction, and final angle of direction between final point and origin
+    @param data Dictionary indexed by cell id containing a list of tuples/list containing x/y coordinates of given cells location
+    @param time_between_frames Time in minutes between each frame of cell growth video
+    @return Dictionary containing statistics generated 
+'''
+def calc_culture_cell_statistics(positional_data, time_between_frames):
+    # Create dictionary to hold all calculated statistics
+    stats = {}
+    distances = []
+    # In mm / min
+    speeds = []
+    # Angle in degrees between last and current point
+    angle_of_direction = []
+
+    for key, data in positional_data.items():
+        if data is not None:
+            data = tuple(data)
+            # Grab origin point
+            origin_x = data[0][0]
+            origin_y = data[0][1]
+            x = 0
+            y = 0
+
+            # Loop through all positions and calculate stats between points
+            for i in range(1, len(data)):
+                # Grab x and y coordinates
+                x = data[i][0]
+                y = data[i][1]
+                prevx = data[i-1][0]
+                prevy = data[i-1][1]
+
+                # Calc distance from origin
+                distance = math.dist([origin_x, origin_y], [x, y])
+                distances.append(distance)
+                # calc current speed
+                speeds.append(distance/time_between_frames)
+
+                # If on final coordinate calculate angle between this and origin point
+                # Because of the way opencv stores coordinates
+                # ((0,0) would be the top left) we need to convert the angle by subtracting 360 degrees by it
+                if i == (len(data) - 1):
+                    final_angle = 360 - ((math.atan2(y - origin_y, x - origin_x) * (180 / math.pi)) % 360)
+                    angle_of_direction.append(final_angle)
+
+    # Total Displacement (Total Distance Traveled)
+    stats["Average Final Distance from Origin (mm)"] = sum(distances)/len(distances)
+    # Average Speed
+    stats["Average Speed (mm/min)"] = sum(speeds)/len(speeds)
+    # Angle of direction from origin to final point
+    stats["Average Angle of Direction between Origin and Final Point (degrees)"] = sum(angle_of_direction)/len(angle_of_direction)
+    # Categorize Direction of Movement
+    compass_brackets = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"]
+    compass_lookup = round(stats["Average Angle of Direction between Origin and Final Point (degrees)"] / 45)
+    stats["Average Direction Moved"] = compass_brackets[compass_lookup]
+
+    return stats
+
+
+'''
+    Exports given cell data to a comma separated value file
+    @param filename: Name of File to append to or save data to. Should end with extension .csv and contain full path as necessary
+    @param data: 2d iterable object containing data about each cell
+    @param headers: iterable object containing headers for each column
+'''
+def to_csv_file(filename, data, headers=None):
+    if headers is None:
+        headers = []
+    # If filename does not end in .xls extension exit
+    if not filename.endswith(".csv"):
+        raise Exception("File must be of type .csv")
+
+    # If file already exists, append data to the end
+    if os.path.exists(f"{filename}"):
+        # Open csv file in append mode
+        with open(filename, "a") as file:
+            csvwriter = csv.writer(file)
+
+            # Loop through data and write each row
+            for row in data:
+                csvwriter.writerow(row)
+
+    # Otherwise create a new csv file to write to
+    else:
+        with open(filename, "w") as file:
+            csvwriter = csv.writer(file)
+
+            # Write headers
+            csvwriter.writerow(headers)
+
+            # Loop through data and write each row
+            for row in data:
+                csvwriter.writerow(row)
 
 
 '''

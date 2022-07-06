@@ -13,7 +13,7 @@ from collections import OrderedDict
 # Define Constants
 PATH = '../videos/'
 VIDEO = 'Sample_cell_culture_4.mp4'
-EXPORT_FILE = "../data/detect_shapes_v2_data.xlsx"
+EXPORT_FILE = "../data/test_data.xlsx"
 SCALE = 0.25
 CONTRAST = 1.25
 BRIGHTNESS = 0.1
@@ -25,12 +25,13 @@ MAX_CELL_SIZE = 600
 VIDEO_HEIGHT_MM = 150
 VIDEO_WIDTH_MM = 195.9
 
+# Minutes Passed between each frame in video
+TIME_BETWEEN_FRAMES = 10
+
 # Elliptical Kernel
 #ELIPTICAL_KERNEL = cv.getStructuringElement(cv.MORPH_ELLIPSE,(5,5))
 
-# TODO Determine approx shape of Cell
-# TODO Determine Direction Cells are moving
-# TODO Record Data About Location and size Separately
+
 def main():
     # Print opencv version
     print("Your OpenCV version is: " + cv.__version__)
@@ -53,9 +54,11 @@ def main():
 
         # Initialize Objects to store data on cell size and location
         # Indexed by cell ID given by centroid tracker and set to size = num frames
+        # Each Key contains a dictionary with data about the cells x position, y position, and area)
+        cell_data = OrderedDict()
         cell_positions_mm = OrderedDict()
         cell_sizes_mm = OrderedDict()
-        positional_headers = ["Cell ID", "Initial Position"]
+        positional_headers = ["Cell ID", "Initial X Position (mm)", "Initial Y Position (mm)"]
         size_headers = ["Cell ID", "Initial Size (mm^2)"]
         frame_num = 0
 
@@ -91,7 +94,7 @@ def main():
             # Update Centroid tracker with list of rectangles
             #print(f"num rectangles: {len(rectangles)}")
             cell_locations, cell_areas = tracker.update(shapes)
-            print(f"Tracked Cells: {cell_locations}\nAreas: {cell_areas}")
+            #print(f"Tracked Cells: {cell_locations}\nAreas: {cell_areas}")
 
 
             # Record Data about Cell position, and cell size
@@ -137,16 +140,16 @@ def main():
         # Generate Headers
         for i in range(1, frame_num):
             size_headers.append(f"Frame {i} Size")
-            positional_headers.append(f"Frame {i} Position")
+            positional_headers.append(f"Frame {i} X Position")
+            positional_headers.append(f"Frame {i} Y Position")
+
         # Add Final Columns for calculations
-        positional_headers.append("Distance between Initial Position and Final Position")
+        # positional_headers.append("Distance between Initial Position and Final Position")
         size_headers.append("Final Growth")
         size_headers.append("Largest Growth in one interval")
 
-        # Export Positional Data to excel sheet
-        export.coordinates_to_excel_file(EXPORT_FILE, cell_positions_mm, positional_headers, "Locations")
-        # Export Area Data to same excel sheet
-        export.area_to_excel_file(EXPORT_FILE, cell_sizes_mm, size_headers, "Sizes")
+        # Export Data to excel sheet
+        export.culture_to_excel_file(EXPORT_FILE, cell_positions_mm, cell_sizes_mm, TIME_BETWEEN_FRAMES, positional_headers, size_headers)
 
 
 main()
