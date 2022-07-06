@@ -3,6 +3,8 @@
 import os
 import csv
 import openpyxl
+import math
+
 
 
 '''
@@ -64,7 +66,7 @@ def to_excel_file(filename, data, headers=None, sheetname=None):
     @param data: Dictionary containing data about the cell
     @param headers: iterable object containing headers for each column
 '''
-def individual_to_excel_file(filename, data:dict, sheetname=None):
+def individual_to_excel_file(filename, data:dict, time_between_frames, sheetname=None):
     current_row = 1
     current_col = 1
 
@@ -88,17 +90,30 @@ def individual_to_excel_file(filename, data:dict, sheetname=None):
     # Loop through dictionary. For every key write all of its values within the same column then move onto the next
     for key, value in data.items():
         current_row = 1
-
+        # Add Header
         sheet.cell(current_row, current_col, key)
         current_row += 1
 
+        # Add Data
         for entry in value:
-            # Convert to string and remove illegal characters to format it correctly for Excel
-            entry = str(entry).replace("[", "")
-            entry = str(entry).replace("]", "")
-            sheet.cell(current_row, current_col, entry)
+            sheet.cell(current_row, current_col, str(entry))
             current_row += 1
 
+        current_col += 1
+
+    # Generate Statistics using positional data about cells and export that to same excel sheet
+    coordinates = merge(data["X Position (mm)"], data["Y Position (mm)"])
+    stats = calc_individual_cell_statistics(coordinates, time_between_frames)
+
+    # Loop Through Stats and add them to excel sheet
+    for key, value in stats.items():
+        # Add Header
+        current_row = 1
+        sheet.cell(current_row, current_col, key)
+        current_row += 1
+
+        # Add Data
+        sheet.cell(current_row, current_col, value)
         current_col += 1
 
     # Save File
@@ -262,6 +277,86 @@ def to_csv_file(filename, data, headers=None):
             for row in data:
                 csvwriter.writerow(row)
 
-# '''
-# '''
-# def generate_individual_cell_statistics(data):
+
+'''
+    Calculates Statistics from positional data from one cell. These Stats include:
+    Total Displacement: Total distance moved, Final Distance from origin, maximum distance from origin, average distance from origin,
+    Maximum speed, average speed, average angle of direction, and final angle of direction between final point and origin
+    @param data List of tuples/list containing x/y coordinates of given cells location
+    @param time_between_frames Time in minutes between each frame of cell growth video
+    @return Dictionary containing statistics generated 
+'''
+def calc_individual_cell_statistics(data, time_between_frames):
+    # Create dictionary to hold all calculated statistics
+    stats = {}
+    distances = []
+    # In mm / min
+    speeds = []
+    # Angle in degrees between last and current point
+    angle_of_direction = []
+    final_angle = 0
+
+    if data is not None:
+        # Grab origin point
+        origin_x = data[0][0]
+        origin_y = data[0][1]
+        x = 0
+        y = 0
+
+        # Loop through all positions and calculate stats between points
+        for i in range(1, len(data)):
+            # Grab x and y coordinates
+            x = data[i][0]
+            y = data[i][1]
+            prevx = data[i-1][0]
+            prevy = data[i-1][1]
+
+            # Calc distance from origin
+            distance = math.dist([origin_x, origin_y], [x, y])
+            distances.append(distance)
+            # calc current speed
+            speeds.append(distance/time_between_frames)
+            # calc angle of direction from last point
+            angle = math.atan2(y - prevy, x - prevx) * (180 / math.pi)
+            angle_of_direction.append(angle)
+
+            # If on final coordinate calculate angle between this and origin point
+            if i == (len(data) - 1):
+                final_angle = math.atan2(y - origin_y, x - origin_x) * (180 / math.pi)
+
+        # Total Displacement (Total Distance Traveled)
+        stats["Total Displacement (mm)"] = sum(distances)
+        # Final Distace from Origin
+        stats["Final Distance from Origin (mm)"] = math.dist([origin_x, origin_y], [x, y])
+        # Maximum Distance from origin
+        stats["Maximum Distance from Origin (mm)"] = max(distances)
+        # Average Distance from origin
+        stats["Average Distance from Origin (mm)"] = sum(distances)/len(distances)
+        # Max Speed (distance/time)
+        stats["Maximum Speed (mm/min)"] = max(speeds)
+        # Average Speed
+        stats["Average Speed (mm/min)"] = sum(speeds)/len(speeds)
+        # Average Angle of direction from origin in degrees
+        stats["Average Angle of Direction from Origin (degrees)"] = sum(angle_of_direction)/len(angle_of_direction)
+        # TODO determine direction of movement
+        # Angle of direction from origin to final point
+        stats["Angle of Direction between Origin and Final Point (degrees)"] = final_angle
+    else:
+        raise Exception("Empy Data Set Given")
+
+    return stats
+
+
+'''
+    Combines two lists together into one list containing tuples of (list1[i], list2[i])
+    @param list1 List of elements the same length as list2
+    @param list2 List of elements the same length as list1
+    @return Merged List of tuples
+'''
+def merge(list1, list2):
+    merged_list = [(list1[i], list2[i]) for i in range(0, len(list1))]
+    return merged_list
+
+
+# stats = calc_individual_cell_statistics([[1, 2], [3, 4], [6, 7], [8, 9]], 5)
+# print(stats)
