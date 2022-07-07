@@ -12,10 +12,10 @@ import math
     @param areas: dictionary indexed by cell id containing areas
     @param headers: iterable object containing headers for each column
 '''
-def culture_to_excel_file(filename, coordinates, areas, time_between_frames, coordinate_headers=None, area_headers=None):
+def culture_to_excel_file(filename, coordinates, areas, time_between_frames, area_of_frame, coordinate_headers=None, area_headers=None):
     coordinates_to_excel_file(filename, coordinates, coordinate_headers, "Positions")
     area_to_excel_file(filename, areas, area_headers, "Areas")
-    stats = calc_culture_cell_statistics(coordinates, time_between_frames)
+    stats = calc_culture_cell_statistics(coordinates, areas, time_between_frames, area_of_frame)
     culture_stats_to_excel_file(filename, stats, "Culture Stats")
 
 
@@ -137,7 +137,7 @@ def coordinates_to_excel_file(filename, data, headers=None, sheetname=None):
         # TODO distance between initial and final, direction between initial and final
         # TODO Direction moved (Up, Down, Left, Right)
         # Insert Excel Formula to display Euclidean Distance between the cell's initial and final position
-        #distance_formula = f'=SQRT((((LEFT(INDIRECT(ADDRESS({current_row}, {current_col - 1})),FIND(",",INDIRECT(ADDRESS({current_row}, {current_col - 1})))-1))-(LEFT(INDIRECT(ADDRESS({current_row}, 2)),FIND(",",INDIRECT(ADDRESS({current_row}, 2)))-1)))^2) + (((RIGHT(INDIRECT(ADDRESS({current_row}, {current_col - 1})),LEN(INDIRECT(ADDRESS({current_row}, {current_col - 1})))-FIND(",",INDIRECT(ADDRESS({current_row}, {current_col - 1})))-1)) - (RIGHT(INDIRECT(ADDRESS({current_row}, 2)),LEN(INDIRECT(ADDRESS({current_row}, 2)))-FIND(",",INDIRECT(ADDRESS({current_row}, 2)))-1)))^2))'
+        #distance_formula = f'=SQRT((((INDIRECT(ADDRESS({current_row}, {current_col - 1}),FIND(",",INDIRECT(ADDRESS({current_row}, {current_col - 1})))-1))-(LEFT(INDIRECT(ADDRESS({current_row}, 2)),FIND(",",INDIRECT(ADDRESS({current_row}, 2)))-1)))^2) + (((RIGHT(INDIRECT(ADDRESS({current_row}, {current_col - 1})),LEN(INDIRECT(ADDRESS({current_row}, {current_col - 1})))-FIND(",",INDIRECT(ADDRESS({current_row}, {current_col - 1})))-1)) - (RIGHT(INDIRECT(ADDRESS({current_row}, 2)),LEN(INDIRECT(ADDRESS({current_row}, 2)))-FIND(",",INDIRECT(ADDRESS({current_row}, 2)))-1)))^2))'
         #sheet.cell(current_row, current_col, distance_formula)
         #current_col += 1
 
@@ -331,7 +331,7 @@ def calc_individual_cell_statistics(data, time_between_frames):
     @param time_between_frames Time in minutes between each frame of cell growth video
     @return Dictionary containing statistics generated 
 '''
-def calc_culture_cell_statistics(positional_data, time_between_frames):
+def calc_culture_cell_statistics(positional_data, area_data, time_between_frames, area_of_frame):
     # Create dictionary to hold all calculated statistics
     stats = {}
     distances = []
@@ -339,6 +339,9 @@ def calc_culture_cell_statistics(positional_data, time_between_frames):
     speeds = []
     # Angle in degrees between last and current point
     angle_of_direction = []
+    final_sizes = []
+    growth = []
+
 
     for key, data in positional_data.items():
         if data is not None:
@@ -370,6 +373,22 @@ def calc_culture_cell_statistics(positional_data, time_between_frames):
                     final_angle = 360 - ((math.atan2(y - origin_y, x - origin_x) * (180 / math.pi)) % 360)
                     angle_of_direction.append(final_angle)
 
+    # Generate Stats based on Cell Size
+    for key, value in area_data.items():
+        value = list(value)
+        # Record Final Size for the cell
+        final_sizes.append(value[len(value)-1])
+        # Record difference between the initial cell and its final size
+        growth.append(value[len(value) - 1] - value[0])
+
+
+    # Calculate Final Frame's Confluency
+    # Percentage of Frame the cells take up
+    stats["Final Frame's Confluency"] = sum(final_sizes)/area_of_frame
+    # Average Size of Cells
+    stats["Average Final Size of Cell (mm^2)"] = sum(final_sizes)/len(final_sizes)
+    # Average cell growth/shrinkage
+    stats["Average Change in Cell Size (mm^2)"] = sum(growth)/len(growth)
     # Total Displacement (Total Distance Traveled)
     stats["Average Final Distance from Origin (mm)"] = sum(distances)/len(distances)
     # Average Speed

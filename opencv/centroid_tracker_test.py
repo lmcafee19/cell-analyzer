@@ -149,7 +149,8 @@ def main():
         size_headers.append("Largest Growth in one interval")
 
         # Export Data to excel sheet
-        export.culture_to_excel_file(EXPORT_FILE, cell_positions_mm, cell_sizes_mm, TIME_BETWEEN_FRAMES, positional_headers, size_headers)
+        export.culture_to_excel_file(EXPORT_FILE, cell_positions_mm, cell_sizes_mm, TIME_BETWEEN_FRAMES,
+                                    (VIDEO_HEIGHT_MM * VIDEO_WIDTH_MM), positional_headers, size_headers)
 
 
 main()
