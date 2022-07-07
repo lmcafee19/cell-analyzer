@@ -14,6 +14,7 @@ PATH = '../videos/'
 VIDEO = 'Sample_cell_culture_4.mp4'
 EXCEL_FILE = "../data/Individual_cell_data.xlsx"
 PDF_FILE = "../data/"
+IMAGE_FILE = "../data/"
 SCALE = 0.25
 CONTRAST = 1.25
 BRIGHTNESS = 0.1
@@ -39,6 +40,15 @@ def main():
         capture = cv.VideoCapture(videoFile)
         total_frames = int(capture.get(cv.CAP_PROP_FRAME_COUNT))
 
+        # Grab last frame for processing later TOO SLOW!!
+        # Fast forward to last frame
+        # capture.set(cv.CAP_PROP_POS_FRAMES, total_frames - 1)
+        #
+        # valid, final_frame = capture.read()
+        #
+        # # Rewind Video to first frame
+        # capture.set(cv.CAP_PROP_POS_FRAMES, 0)
+
         # Initialize Centroid tracker
         tracker = ct.CentroidTracker()
         # Frame Dimensions
@@ -51,6 +61,11 @@ def main():
         # Keep Track of our tracked cell's coordinates in pixels
         tracked_cell_coords = OrderedDict()
         frame_num = 0
+        final_frame = None
+        Xmin = None
+        Ymin = None
+        Xmax = 0
+        Ymax = 0
 
         # Open First Frame of Video and Detect all cells within it, making sure to label them
         valid, frame = capture.read()
@@ -113,6 +128,8 @@ def main():
                 # If next frame is not found exit program
                 if not valid:
                     break
+                # Keep track of previous frame
+                final_frame = frame
 
                 # Process Image to better detect cells
                 processed = analysis.process_image(frame, analysis.Algorithm.CANNY, SCALE, CONTRAST, BRIGHTNESS,
@@ -127,6 +144,19 @@ def main():
                 # Update Tracking information
                 # Record data about tracked cell
                 tracked_cell_coords[tracked_cell_id].append(list(cell_locations[tracked_cell_id]))
+
+                # Keep Track of min/max x/y value the tracked cell is at
+                if Xmin is None or cell_locations[tracked_cell_id][0] < Xmin:
+                    Xmin = cell_locations[tracked_cell_id][0]
+
+                if cell_locations[tracked_cell_id][0] > Xmax:
+                    Xmax = cell_locations[tracked_cell_id][0]
+
+                if Ymin is None or cell_locations[tracked_cell_id][1] < Ymin:
+                    Ymin = cell_locations[tracked_cell_id][1]
+
+                if cell_locations[tracked_cell_id][1] > Ymax:
+                    Ymax = cell_locations[tracked_cell_id][1]
 
                 # Convert area to mm^2
                 area_mm = cell_areas[tracked_cell_id] * (pixels_to_mm ** 2)
@@ -159,7 +189,7 @@ def main():
                 if frame_num < total_frames - 1:
                     # Adjust waitKey to change time each frame is displayed
                     # Press q to exit out of opencv early
-                    if cv.waitKey(50) & 0xFF == ord('q'):
+                    if cv.waitKey(10) & 0xFF == ord('q'):
                         break
                 else:
                     # if on the last frame display it until the q key is pressed
@@ -167,22 +197,60 @@ def main():
                     if k == ord('q'):
                         break
 
-            # Export data to excel
-            export.individual_to_excel_file(EXCEL_FILE, tracked_cell_data, TIME_BETWEEN_FRAMES, f"Cell {tracked_cell_id}")
-            # Draw Graph charting cell's size
-            matplotlib_graphing.export_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Area_Graph.pdf",
-                                                            tracked_cell_data, "Time", "Area (mm^2)",
-                                                            title=f"Cell {tracked_cell_id}: Area vs Time")
-            # Draw Graph charting cell's movement
-            matplotlib_graphing.export_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Movement_Graph.pdf",
-                                                            tracked_cell_data, "X Position (mm)", "Y Position (mm)",
-                                                            labels=tracked_cell_data["Time"], title=f"Cell {tracked_cell_id}: Movement")
+            # Create Color Image containing the path the tracked cell took
+            # Scale image to match
+            final_photo = analysis.rescale_frame(final_frame, SCALE)
+            # Draw an arrow for every frame of movement going from its last position to its next position
+            for i in range(1, len(tracked_cell_coords[tracked_cell_id])):
+                cv.arrowedLine(final_photo, tracked_cell_coords[tracked_cell_id][i - 1], tracked_cell_coords[tracked_cell_id][i],
+                               (255, 255, 255), 2, cv.LINE_AA, 0, 0.1)
 
-            # Draw Simplified version of graph charting cell's movement
-            matplotlib_graphing.export_simplified_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Simple_Movement_Graph.pdf",
-                                                            tracked_cell_data, "X Position (mm)", "Y Position (mm)", 15,
-                                                            labels=tracked_cell_data["Time"],
-                                                            title=f"Cell {tracked_cell_id}: Movement")
+
+            # TODO FIX Cropping
+            # Crop Image to have path take up majority of photo
+            border_pixels = 100
+            print(f"minx: {Xmin}, maxx: {Xmax}, miny: {Ymin}, maxy: {Ymax}")
+            print(final_photo.shape)
+            Xmid = round(final_photo.shape[0]/2)
+            Ymid = round(final_photo.shape[1]/2)
+            # Convert coordinates
+            if Xmin < Xmid:
+                Xmin = Xmid + (Xmid - Xmin)
+                Xmax = Xmid + (Xmid - Xmax)
+            else:
+                Xmax = Xmid - (Xmin - Xmid)
+                Xmin = Xmid - (Xmax - Xmid)
+
+            if Ymin < Ymid:
+                Ymax = Ymid + (Ymid - Ymin)
+                Ymin = Ymid + (Ymid - Ymax)
+            else:
+                Ymax = Ymid - (Ymin - Ymid)
+                Ymin = Ymid - (Ymax - Ymid)
+
+            print(f"minx: {Xmin}, maxx: {Xmax}, miny: {Ymin}, maxy: {Ymax}")
+
+            #final_photo = final_photo[(final_photo.shape[0] - Xmax):(final_photo.shape[0] - Xmin), (final_photo.shape[1] - Ymax):(final_photo.shape[1] - Ymin)]
+            final_photo = final_photo[Xmax - border_pixels:Xmin + border_pixels, Ymin - border_pixels:Ymax + border_pixels]
+            # Save Image
+            cv.imwrite(f"{IMAGE_FILE}Cell{tracked_cell_id}_Path.png", final_photo)
+
+            # Export data to excel
+            # export.individual_to_excel_file(EXCEL_FILE, tracked_cell_data, TIME_BETWEEN_FRAMES, f"Cell {tracked_cell_id}")
+            # # Draw Graph charting cell's size
+            # matplotlib_graphing.export_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Area_Graph.pdf",
+            #                                                 tracked_cell_data, "Time", "Area (mm^2)",
+            #                                                 title=f"Cell {tracked_cell_id}: Area vs Time")
+            # # Draw Graph charting cell's movement
+            # matplotlib_graphing.export_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Movement_Graph.pdf",
+            #                                                 tracked_cell_data, "X Position (mm)", "Y Position (mm)",
+            #                                                 labels=tracked_cell_data["Time"], title=f"Cell {tracked_cell_id}: Movement")
+            #
+            # # Draw Simplified version of graph charting cell's movement
+            # matplotlib_graphing.export_simplified_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Simple_Movement_Graph.pdf",
+            #                                                 tracked_cell_data, "X Position (mm)", "Y Position (mm)", 15,
+            #                                                 labels=tracked_cell_data["Time"],
+            #                                                 title=f"Cell {tracked_cell_id}: Movement")
 
 
 '''
