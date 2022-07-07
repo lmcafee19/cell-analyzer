@@ -314,7 +314,7 @@ def calc_individual_cell_statistics(data, time_between_frames):
         # Angle of direction from origin to final point
         stats["Angle of Direction between Origin and Final Point (degrees)"] = final_angle
         # Categorize Direction of Movement
-        compass_brackets = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"]
+        compass_brackets = ["E", "NE", "N", "NW", "W", "SW", "S", "SE", "E"]
         compass_lookup = round(final_angle / 45)
         stats["Direction Moved"] = compass_brackets[compass_lookup]
     else:
@@ -377,7 +377,7 @@ def calc_culture_cell_statistics(positional_data, time_between_frames):
     # Angle of direction from origin to final point
     stats["Average Angle of Direction between Origin and Final Point (degrees)"] = sum(angle_of_direction)/len(angle_of_direction)
     # Categorize Direction of Movement
-    compass_brackets = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"]
+    compass_brackets = ["E", "NE", "N", "NW", "W", "SW", "S", "SE", "E"]
     compass_lookup = round(stats["Average Angle of Direction between Origin and Final Point (degrees)"] / 45)
     stats["Average Direction Moved"] = compass_brackets[compass_lookup]
 
