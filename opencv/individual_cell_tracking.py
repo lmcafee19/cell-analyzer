@@ -128,8 +128,7 @@ def main():
                 # If next frame is not found exit program
                 if not valid:
                     break
-                # Keep track of previous frame
-                final_frame = frame
+
 
                 # Process Image to better detect cells
                 processed = analysis.process_image(frame, analysis.Algorithm.CANNY, SCALE, CONTRAST, BRIGHTNESS,
@@ -185,6 +184,9 @@ def main():
                 # Increment Frame Counter
                 frame_num += 1
 
+                # Keep track of previous frame
+                final_frame = frame
+
                 # if not the last frame display it for only a short amount of time
                 if frame_num < total_frames - 1:
                     # Adjust waitKey to change time each frame is displayed
@@ -205,35 +207,40 @@ def main():
                 cv.arrowedLine(final_photo, tracked_cell_coords[tracked_cell_id][i - 1], tracked_cell_coords[tracked_cell_id][i],
                                (255, 255, 255), 2, cv.LINE_AA, 0, 0.1)
 
-
-            # TODO FIX Cropping
             # Crop Image to have path take up majority of photo
-            border_pixels = 100
+            # TODO FIX Cropping
+            w = final_photo.shape[0]
+            h = final_photo.shape[1]
+            final_dimensions = (1920, 1080)
+
+            # Calculate border around cell's path using specified percentage
+            border_percent = .25
+            border_pixels_height = int(border_percent * h)
+            border_pixels_width = int(border_percent * w)
+
             print(f"minx: {Xmin}, maxx: {Xmax}, miny: {Ymin}, maxy: {Ymax}")
             print(final_photo.shape)
+            #(h, w) = final_photo.shape[:2]
+
             Xmid = round(final_photo.shape[0]/2)
             Ymid = round(final_photo.shape[1]/2)
-            # Convert coordinates
-            if Xmin < Xmid:
-                Xmin = Xmid + (Xmid - Xmin)
-                Xmax = Xmid + (Xmid - Xmax)
-            else:
-                Xmax = Xmid - (Xmin - Xmid)
-                Xmin = Xmid - (Xmax - Xmid)
-
-            if Ymin < Ymid:
-                Ymax = Ymid + (Ymid - Ymin)
-                Ymin = Ymid + (Ymid - Ymax)
-            else:
-                Ymax = Ymid - (Ymin - Ymid)
-                Ymin = Ymid - (Ymax - Ymid)
-
-            print(f"minx: {Xmin}, maxx: {Xmax}, miny: {Ymin}, maxy: {Ymax}")
 
             #final_photo = final_photo[(final_photo.shape[0] - Xmax):(final_photo.shape[0] - Xmin), (final_photo.shape[1] - Ymax):(final_photo.shape[1] - Ymin)]
-            final_photo = final_photo[Xmax - border_pixels:Xmin + border_pixels, Ymin - border_pixels:Ymax + border_pixels]
+            #final_photo = final_photo[Xmin - border_pixels:Xmax + border_pixels, Ymin - border_pixels:Ymax + border_pixels]
+
+            # Image Cropping [ymin: ymax, xmin:xmax]
+            crop = final_photo[Ymin - border_pixels_height:h, Xmin - border_pixels_width:Xmax + border_pixels_width]
+            # Display Image
+            cv.imshow("Cropped Path", crop)
+            # Resize Image to desired final diemensions
+            resized = cv.resize(crop, final_dimensions, interpolation=cv.INTER_AREA)
+            cv.imshow("Resized", resized)
+
+            cv.imshow("OG", final_photo)
+            cv.waitKey(0)
+
             # Save Image
-            cv.imwrite(f"{IMAGE_FILE}Cell{tracked_cell_id}_Path.png", final_photo)
+            #cv.imwrite(f"{IMAGE_FILE}Cell{tracked_cell_id}_Path.png", final_photo)
 
             # Export data to excel
             # export.individual_to_excel_file(EXCEL_FILE, tracked_cell_data, TIME_BETWEEN_FRAMES, f"Cell {tracked_cell_id}")
