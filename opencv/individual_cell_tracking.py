@@ -205,59 +205,72 @@ def main():
             # Draw an arrow for every frame of movement going from its last position to its next position
             for i in range(1, len(tracked_cell_coords[tracked_cell_id])):
                 cv.arrowedLine(final_photo, tracked_cell_coords[tracked_cell_id][i - 1], tracked_cell_coords[tracked_cell_id][i],
-                               (255, 255, 255), 2, cv.LINE_AA, 0, 0.1)
+                               (255, 0, 0), 2, cv.LINE_AA, 0, 0.2)
 
             # Crop Image to have path take up majority of photo
-            # TODO FIX Cropping
-            w = final_photo.shape[0]
-            h = final_photo.shape[1]
-            final_dimensions = (1920, 1080)
+            # TODO FIX Cropping and Upscaling of image to be sharper
+            # w = final_photo.shape[0]
+            # h = final_photo.shape[1]
+            # final_dimensions = (1920, 1080)
+            #
+            # # Calculate border around cell's path using specified percentage
+            # border_percent = .25
+            # border_pixels_height = int(border_percent * h)
+            # border_pixels_width = int(border_percent * w)
+            #
+            # print(f"minx: {Xmin}, maxx: {Xmax}, miny: {Ymin}, maxy: {Ymax}")
+            # print(final_photo.shape)
+            #
+            # # Image Cropping [ymin: ymax, xmin:xmax]
+            # # Crop Image to center around path of cell
+            # crop = final_photo[Ymin - border_pixels_height:h, Xmin - border_pixels_width:Xmax + border_pixels_width]
+            #
+            # # Display Image
+            # cv.imshow("Cropped Path", crop)
 
-            # Calculate border around cell's path using specified percentage
-            border_percent = .25
-            border_pixels_height = int(border_percent * h)
-            border_pixels_width = int(border_percent * w)
-
-            print(f"minx: {Xmin}, maxx: {Xmax}, miny: {Ymin}, maxy: {Ymax}")
-            print(final_photo.shape)
-            #(h, w) = final_photo.shape[:2]
-
-            Xmid = round(final_photo.shape[0]/2)
-            Ymid = round(final_photo.shape[1]/2)
-
-            #final_photo = final_photo[(final_photo.shape[0] - Xmax):(final_photo.shape[0] - Xmin), (final_photo.shape[1] - Ymax):(final_photo.shape[1] - Ymin)]
-            #final_photo = final_photo[Xmin - border_pixels:Xmax + border_pixels, Ymin - border_pixels:Ymax + border_pixels]
-
-            # Image Cropping [ymin: ymax, xmin:xmax]
-            crop = final_photo[Ymin - border_pixels_height:h, Xmin - border_pixels_width:Xmax + border_pixels_width]
-            # Display Image
-            cv.imshow("Cropped Path", crop)
-            # Resize Image to desired final diemensions
-            resized = cv.resize(crop, final_dimensions, interpolation=cv.INTER_AREA)
-            cv.imshow("Resized", resized)
+            # # Resize Image to desired final dimensions and then redraw the path ontop
+            # resized = cv.resize(crop, final_dimensions, interpolation=cv.INTER_AREA)
+            #
+            # # Calculate Ratio between old pixel dimensions and final
+            # dimension_ratio_x = final_dimensions[0]/final_photo.shape[0]
+            # dimension_ratio_y = final_dimensions[1]/final_photo.shape[1]
+            #
+            # # Draw an arrow for every frame of movement going from its last position to its next position
+            # for i in range(1, len(tracked_cell_coords[tracked_cell_id])):
+            #     # Determine new coordinates for resized images
+            #     Xprev = int(tracked_cell_coords[tracked_cell_id][i][0] * dimension_ratio_x)
+            #     Yprev = int(tracked_cell_coords[tracked_cell_id][i][1] * dimension_ratio_y)
+            #     Xcur = int(tracked_cell_coords[tracked_cell_id][i][0] * dimension_ratio_x)
+            #     Ycur = int(tracked_cell_coords[tracked_cell_id][i][1] * dimension_ratio_y)
+            #     # Draw Arrow
+            #     cv.arrowedLine(resized, (Xprev, Yprev),
+            #                    (Xcur, Ycur),
+            #                    (255, 0, 0), 2, cv.LINE_AA, 1, .5)
+            #
+            # cv.imshow("Resized", resized)
 
             cv.imshow("OG", final_photo)
             cv.waitKey(0)
 
             # Save Image
-            #cv.imwrite(f"{IMAGE_FILE}Cell{tracked_cell_id}_Path.png", final_photo)
+            cv.imwrite(f"{IMAGE_FILE}Cell{tracked_cell_id}_Path.png", final_photo)
 
             # Export data to excel
-            # export.individual_to_excel_file(EXCEL_FILE, tracked_cell_data, TIME_BETWEEN_FRAMES, f"Cell {tracked_cell_id}")
-            # # Draw Graph charting cell's size
-            # matplotlib_graphing.export_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Area_Graph.pdf",
-            #                                                 tracked_cell_data, "Time", "Area (mm^2)",
-            #                                                 title=f"Cell {tracked_cell_id}: Area vs Time")
-            # # Draw Graph charting cell's movement
-            # matplotlib_graphing.export_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Movement_Graph.pdf",
-            #                                                 tracked_cell_data, "X Position (mm)", "Y Position (mm)",
-            #                                                 labels=tracked_cell_data["Time"], title=f"Cell {tracked_cell_id}: Movement")
-            #
-            # # Draw Simplified version of graph charting cell's movement
-            # matplotlib_graphing.export_simplified_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Simple_Movement_Graph.pdf",
-            #                                                 tracked_cell_data, "X Position (mm)", "Y Position (mm)", 15,
-            #                                                 labels=tracked_cell_data["Time"],
-            #                                                 title=f"Cell {tracked_cell_id}: Movement")
+            export.individual_to_excel_file(EXCEL_FILE, tracked_cell_data, TIME_BETWEEN_FRAMES, f"Cell {tracked_cell_id}")
+            # Draw Graph charting cell's size
+            matplotlib_graphing.export_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Area_Graph.pdf",
+                                                            tracked_cell_data, "Time", "Area (mm^2)",
+                                                            title=f"Cell {tracked_cell_id}: Area vs Time")
+            # Draw Graph charting cell's movement
+            matplotlib_graphing.export_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Movement_Graph.pdf",
+                                                            tracked_cell_data, "X Position (mm)", "Y Position (mm)",
+                                                            labels=tracked_cell_data["Time"], title=f"Cell {tracked_cell_id}: Movement")
+
+            # Draw Simplified version of graph charting cell's movement
+            matplotlib_graphing.export_simplified_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Simple_Movement_Graph.pdf",
+                                                            tracked_cell_data, "X Position (mm)", "Y Position (mm)", 15,
+                                                            labels=tracked_cell_data["Time"],
+                                                            title=f"Cell {tracked_cell_id}: Movement")
 
 
 '''
