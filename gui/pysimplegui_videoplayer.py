@@ -31,34 +31,54 @@ class App:
 
         # Main Menu Layout
         layout1 = [[sg.Menu(menu_def)],
-                  [sg.Text('Select video')], [sg.Input(key="_FILEPATH_"), sg.Button("Browse")],
-                  [sg.Canvas(size=(500, 500), key="canvas", background_color="red")],
-                  [sg.Slider(size=(30, 20), range=(0, 100), resolution=100, key="slider", orientation="h",
-                             enable_events=True), sg.T("0", key="counter", size=(10, 1))],
-                  [sg.Button('Next frame'), sg.Button("Pause", key="Play"), sg.Button('Exit')]]
+                  [sg.Text('Select video')], [sg.Input(key="_FILEPATH_"), sg.Button("Browse")],                         # File Selector
+                  [sg.Text('Select Type of Cell Analysis'), sg.Push(), sg.Text('Settings')],                            # Section to select type of analysis with radio buttons
+                  [sg.R('Individual Cell Tracking', 1), sg.Push(),
+                   sg.Text('Real World Width of the Video (mm)'), sg.Input(key="video_width_mm")],                      # Take Input for Constants
+                  [sg.R('Full Culture Tracking', 1), sg.Push(),
+                   sg.Text('Real World Height of the Video (mm)'), sg.Input(key="video_height_mm")],
+                  [sg.Push(), sg.Text('Time Between Images (mins)'), sg.Input(key="time_between_frames")],
+                  [sg.Button('Run'), sg.Button('Exit')]]
 
         # Video Player Layout
         layout2 = [[sg.Menu(menu_def)],
-                  [sg.Text('Select video')], [sg.Input(key="_FILEPATH_"), sg.Button("Browse")],
-                  [sg.Canvas(size=(500, 500), key="canvas", background_color="red")],
+                  [sg.Text('Original Video'), sg.Push(), sg.Text('Tracker Video', justification='r')],                  # Titles for each video window
+                  [sg.Canvas(size=(400, 300), key="canvas", background_color="blue"),
+                   sg.Canvas(size=(400, 300), key="edited_video", background_color="blue")],                            # Windows for edited/original video to play
                   [sg.Slider(size=(30, 20), range=(0, 100), resolution=100, key="slider", orientation="h",
-                             enable_events=True), sg.T("0", key="counter", size=(10, 1))],
-                  [sg.Button('Next frame'), sg.Button("Pause", key="Play"), sg.Button('Exit')]]
+                             enable_events=True), sg.T("0", key="counter", size=(10, 1))],                              # Frame Slider
+                  [sg.Button('Next frame'), sg.Button("Pause", key="Play")],                                            # Play/Pause Buttons, Next Frame Button
+                  [sg.Button('Export Data', disabled=True), sg.Button('Exit', disabled=True)]]                          # Export/Quit buttons. Disabled by default but comes online when video is done playing
 
         # Cell Selection (For Individual Tracking)
-        layout3 = [[]]
+        layout3 = [[sg.Menu(menu_def)],
+                  [sg.Text('Select video')], [sg.Input(key="_FILEPATH_"), sg.Button("Browse")],
+                  [sg.Text('Original Video'), sg.Push(), sg.Text('Tracker Video', justification='r')],                  # Titles for each video window
+                  [sg.Canvas(size=(400, 300), key="canvas", background_color="blue"),
+                   sg.Canvas(size=(400, 300), key="edited_video", background_color="blue")],                            # Windows for edited/original video to play
+                  [sg.Slider(size=(30, 20), range=(0, 100), resolution=100, key="slider", orientation="h",
+                             enable_events=True), sg.T("0", key="counter", size=(10, 1))],                              # Frame Slider
+                  [sg.Text('Enter Id number of cell you wish to track:'), sg.Input(key="cell_id")],                     # Take input of Cell ID Number
+                  [sg.Button('Track', key="track_individual"), sg.Button("Cancel", key="Cancel")]]                      # Run and Cancel Buttons
 
         # Export Data Menu
-        layout4 = [[]]
+        layout4 = [[sg.Menu(menu_def)],
+                   [sg.Text("Select Export Settings")],
+                   [sg.Check('Export Data to Excel Sheet')],
+                   [sg.Text('Excel File to Export to (.xls):'), sg.Input(key="excel_filename")],
+                   [sg.Text('Select Graphs to Export:')],
+                   [sg.Check('Time vs Size')],
+                   [sg.Check('Movement over Time')],
+                   [sg.Check('Simplified Movement')]]
 
         num_layouts = 4
 
         # ----------- Create actual layout using Columns and a row of Buttons ------------- #
         layout = [[sg.Column(layout1, key='-COL1-'), sg.Column(layout2, visible=False, key='-COL2-'),
                    sg.Column(layout3, visible=False, key='-COL3-'), sg.Column(layout4, visible=False, key='-COL4-')],
-                  [sg.Button('Cycle Layout'), sg.Button('1'), sg.Button('2'), sg.Button('3'), sg.Button('Exit')]]
+                  [sg.Button('Cycle Layout'), sg.Button('1'), sg.Button('2'), sg.Button('3'), sg.Button('4'), sg.Button('Exit')]]
 
-        self.window = sg.Window('Window Title', layout).Finalize()
+        self.window = sg.Window('Cell Analyzer', layout, resizable=True, size=(800, 600)).Finalize()
         # set return_keyboard_events=True to make hotkeys for video playback
         # Get the tkinter canvas for displaying the video
         canvas = self.window.Element("canvas")
@@ -71,9 +91,10 @@ class App:
         layout = 1
         while True:  # Main event Loop
             event, values = self.window.Read()
+            print(event)
 
             # print(event, values)
-            if event is None or event == 'Exit':
+            if event is None or event == 'Exit' or event == 'Cancel':
                 """Handle exit"""
                 break
             if event == "Browse":
@@ -126,15 +147,19 @@ class App:
 
             if event == "slider":
                 # self.play = False
-                self.set_frame(int(values["slider"]))
+                # Set video to frame at percentage of slider
+                percent = values["slider"]/100 * self.frames
+                self.set_frame(int(percent))
                 # print(values["slider"])
 
             # Event to change layout, at the moment just jumps to the next layout
             if event == 'Cycle Layout':
                 self.window[f'-COL{layout}-'].update(visible=False)
-                layout = ((layout + 1) % num_layouts) + 1
+                layout = ((layout + 1) % num_layouts)
+                if layout == 0:
+                    layout += 1
                 self.window[f'-COL{layout}-'].update(visible=True)
-            elif event in '123':
+            elif event in '1234':
                 self.window[f'-COL{layout}-'].update(visible=False)
                 layout = int(event)
                 self.window[f'-COL{layout}-'].update(visible=True)
