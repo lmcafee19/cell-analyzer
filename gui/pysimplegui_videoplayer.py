@@ -32,10 +32,10 @@ class App:
         # Main Menu Layout
         layout1 = [[sg.Menu(menu_def)],
                   [sg.Text('Select video')], [sg.Input(key="_FILEPATH_"), sg.Button("Browse")],                         # File Selector
-                  [sg.Text('Select Type of Cell Analysis'), sg.Push(), sg.Text('Settings')],                            # Section to select type of analysis with radio buttons
-                  [sg.R('Individual Cell Tracking', 1), sg.Push(),
+                  [sg.Text('Select Type of Cell Tracking'), sg.Push(), sg.Text('Settings')],                            # Section to select type of analysis with radio buttons
+                  [sg.R('Individual Cell Tracking', 1, key="individual_radio"), sg.Push(),
                    sg.Text('Real World Width of the Video (mm)'), sg.Input(key="video_width_mm")],                      # Take Input for Constants
-                  [sg.R('Full Culture Tracking', 1), sg.Push(),
+                  [sg.R('Full Culture Tracking', 1, key="culture_radio"), sg.Push(),
                    sg.Text('Real World Height of the Video (mm)'), sg.Input(key="video_height_mm")],
                   [sg.Push(), sg.Text('Time Between Images (mins)'), sg.Input(key="time_between_frames")],
                   [sg.Button('Run'), sg.Button('Exit')]]
@@ -47,29 +47,38 @@ class App:
                    sg.Canvas(size=(400, 300), key="edited_video", background_color="blue")],                            # Windows for edited/original video to play
                   [sg.Slider(size=(30, 20), range=(0, 100), resolution=100, key="slider", orientation="h",
                              enable_events=True), sg.T("0", key="counter", size=(10, 1))],                              # Frame Slider
-                  [sg.Button('Next frame'), sg.Button("Pause", key="Play")],                                            # Play/Pause Buttons, Next Frame Button
-                  [sg.Button('Export Data', disabled=True), sg.Button('Exit', disabled=True)]]                          # Export/Quit buttons. Disabled by default but comes online when video is done playing
+                  [sg.Button('Next frame'), sg.Button("Pause", key="Play"),
+                   sg.Button('Export Data', disabled=False), sg.Button('Exit')]]                                         # Play/Pause Buttons, Next Frame Button
+                                                                                                                        # Export/Quit buttons. Disabled by default but comes online when video is done playing
 
         # Cell Selection (For Individual Tracking)
         layout3 = [[sg.Menu(menu_def)],
                   [sg.Text('Select video')], [sg.Input(key="_FILEPATH_"), sg.Button("Browse")],
                   [sg.Text('Original Video'), sg.Push(), sg.Text('Tracker Video', justification='r')],                  # Titles for each video window
-                  [sg.Canvas(size=(400, 300), key="canvas", background_color="blue"),
-                   sg.Canvas(size=(400, 300), key="edited_video", background_color="blue")],                            # Windows for edited/original video to play
-                  [sg.Slider(size=(30, 20), range=(0, 100), resolution=100, key="slider", orientation="h",
-                             enable_events=True), sg.T("0", key="counter", size=(10, 1))],                              # Frame Slider
+                  [sg.Canvas(size=(400, 300), key="original_first_frame", background_color="blue"),
+                   sg.Canvas(size=(400, 300), key="edited_first_frame", background_color="blue")],                      # Windows for edited/original video to play
                   [sg.Text('Enter Id number of cell you wish to track:'), sg.Input(key="cell_id")],                     # Take input of Cell ID Number
-                  [sg.Button('Track', key="track_individual"), sg.Button("Cancel", key="Cancel")]]                      # Run and Cancel Buttons
+                  [sg.Button('Track', key="track_individual"), sg.Button("Exit")]]                                      # Run and Exit Buttons
 
         # Export Data Menu
         layout4 = [[sg.Menu(menu_def)],
                    [sg.Text("Select Export Settings")],
-                   [sg.Check('Export Data to Excel Sheet')],
+                   [sg.Check('Export Data to Excel Sheet', key='excel_export')],
                    [sg.Text('Excel File to Export to (.xls):'), sg.Input(key="excel_filename")],
                    [sg.Text('Select Graphs to Export:')],
-                   [sg.Check('Time vs Size')],
-                   [sg.Check('Movement over Time')],
-                   [sg.Check('Simplified Movement')]]
+                   [sg.Check('Time vs Size', key="Time vs Size")],
+                   [sg.Check('Movement over Time', key='Movement over Time')],
+                   [sg.Check('Simplified Movement', key='Simplified Movement')],
+                   [sg.Text('Select Images to Export', key="images_label", visible=False)],
+                   [sg.Check('Export Final Path of Tracked Cell', key="image_tracked", visible=False)],
+                   [sg.Button('Export'), sg.Button("Cancel", key="Cancel")],                                            # Export Button finishes script and program, Cancel returns to previous page
+                   [sg.Text("Data Currently Exporting. Application will close once process is finished", key="export_message", text_color="red", visible=False)]]
+
+        # State Constants
+        MAIN_MENU = 1
+        VIDEO_PLAYER = 2
+        CELL_SELECTION = 3
+        EXPORT = 4
 
         num_layouts = 4
 
@@ -91,12 +100,29 @@ class App:
         layout = 1
         while True:  # Main event Loop
             event, values = self.window.Read()
-            print(event)
+            print(event, values)
 
-            # print(event, values)
-            if event is None or event == 'Exit' or event == 'Cancel':
+            # ---- Global Events ---- #
+            # Event to change layout, at the moment just jumps to the next layout
+            if event == 'Cycle Layout':
+                self.window[f'-COL{layout}-'].update(visible=False)
+                layout = ((layout + 1) % num_layouts)
+                if layout == 0:
+                    layout += 1
+                self.window[f'-COL{layout}-'].update(visible=True)
+            elif event in '1234':
+                self.window[f'-COL{layout}-'].update(visible=False)
+                layout = int(event)
+                self.window[f'-COL{layout}-'].update(visible=True)
+
+            # Exit Event
+            if event is None or event.startswith('Exit'):
                 """Handle exit"""
                 break
+
+
+            # ---- Main Menu Events ---- #
+            # File Selection Browse Button
             if event == "Browse":
                 """Browse for files when the Browse button is pressed"""
                 # Open a file dialog and get the file path
@@ -133,6 +159,39 @@ class App:
                     # Update the video path text field
                     self.window.Element("_FILEPATH_").Update(video_path)
 
+            # Check input values then run subsequent tracking script
+            if event == "Run":
+                # If individual tracking has been selected
+                if self.window.Element("individual_radio").get():
+                    print("Individual")
+                    # TODO Grab Variables and stuff
+                    # Continue to Individual Cell Selection Page
+                    self.window[f'-COL{MAIN_MENU}-'].update(visible=False)
+                    self.window[f'-COL{CELL_SELECTION}-'].update(visible=True)
+
+                # Culture Tracking is selected
+                elif self.window.Element("culture_radio").get():
+                    # Continue to video player page
+                    self.window[f'-COL{MAIN_MENU}-'].update(visible=False)
+                    self.window[f'-COL{VIDEO_PLAYER}-'].update(visible=True)
+
+                # No Method is Selected do not run
+                else:
+                    sg.PopupError("Method of Tracking must be selected before running")
+
+            # ---- Cell Selection Events ---- #
+            if event == "track_individual":
+                # Ensure Valid Cell ID has been entered
+                # TODO or not isValidID(values['cell_id'])
+                if values['cell_id'] is None:
+                    sg.PopupError("Invalid or Missing Cell ID Number")
+                # Valid Cell Id given move onto video player with appropriate tracking values
+                else:
+                    # Continue to video player page
+                    self.window[f'-COL{CELL_SELECTION}-'].update(visible=False)
+                    self.window[f'-COL{VIDEO_PLAYER}-'].update(visible=True)
+
+            # ---- Video Player Events ---- #
             if event == "Play":
                 if self.play:
                     self.play = False
@@ -152,17 +211,38 @@ class App:
                 self.set_frame(int(percent))
                 # print(values["slider"])
 
-            # Event to change layout, at the moment just jumps to the next layout
-            if event == 'Cycle Layout':
-                self.window[f'-COL{layout}-'].update(visible=False)
-                layout = ((layout + 1) % num_layouts)
-                if layout == 0:
-                    layout += 1
-                self.window[f'-COL{layout}-'].update(visible=True)
-            elif event in '1234':
-                self.window[f'-COL{layout}-'].update(visible=False)
-                layout = int(event)
-                self.window[f'-COL{layout}-'].update(visible=True)
+            # TODO set trigger within video player to enable the export/exit buttons when finished playing video
+            if event == "Export Data":
+                # Continue to export interface
+                self.window[f'-COL{VIDEO_PLAYER}-'].update(visible=False)
+                self.window[f'-COL{EXPORT}-'].update(visible=True)
+                # Enable individual cell tracking specifics exports if it meets the reqs
+                if self.window.Element("individual_radio").get():
+                    self.window['images_label'].update(visible=True)
+                    self.window['image_tracked'].update(visible=True)
+
+            # ---- Export Events ---- #
+            if event == "Export":
+                # Display Export Message
+                self.window['export_message'].update(visible=True)
+
+                # Grab all values for exports
+                exportExcel = self.window.Element("excel_export").get()
+                excelfile = self.window.Element("excel_filename").get()
+                exportgraph_size = self.window.Element("Time vs Size").get()
+                exportgraph_movement = self.window.Element("Movement over Time").get()
+                exportgraph_simple = self.window.Element("Simplified Movement").get()
+
+                # Contine Script and Export Data
+
+                # Close app
+                break
+
+            # Return to previous page
+            if event == "Cancel":
+                # Continue to export interface
+                self.window[f'-COL{EXPORT}-'].update(visible=False)
+                self.window[f'-COL{VIDEO_PLAYER}-'].update(visible=True)
 
         # Exiting
         print("bye :)")
