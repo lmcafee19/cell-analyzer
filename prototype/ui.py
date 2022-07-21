@@ -14,12 +14,10 @@ from tracker_library import cell_analysis_functions as analysis
 from tracker_library import export_data as export
 from tracker_library import matplotlib_graphing
 
-
 class App:
     """
     TODO: change slider resolution based on vid length
     TODO: make top menu actually do something :P    """
-
     def __init__(self):
 
         # ------ App states ------ #
@@ -301,6 +299,7 @@ class App:
         self.window.Close()
         sys.exit()
 
+
     #################
     # Video methods #
     #################
@@ -463,12 +462,6 @@ class MyVideoCapture:
             self.vid.release()
 
 
-
-
-
-
-
-
 '''
     Checks if the given tracker parameters are valid
     @param videofile The path to the video file to check
@@ -477,8 +470,6 @@ class MyVideoCapture:
     @time_between_frames Time in minutes between each image in the video
     @return True if all given parameters are valid, false if not
 '''
-
-
 def isValidParameters(videofile, width, height, time_between_frames):
     valid = False
 
