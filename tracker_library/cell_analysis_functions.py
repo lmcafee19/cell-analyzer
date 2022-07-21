@@ -396,6 +396,25 @@ def detect_shape_v2(img):
 
 
 '''
+Uses coordinates found from the centroid tracker to label each cell with its unique id
+@param img Photo to add labels onto
+@param cell_coors Ordered dict containing a mapping between each cell id and its coordinates
+'''
+def label_cells(img, cell_coords):
+    # Create copy of img as to not edit the original
+    photo = img.copy()
+
+    # Unpack Dictionary to grab coordinates
+    # Record initial position / data needed to redraw outline
+    for cell_id, coordinates in cell_coords.items():
+        coord = tuple(coordinates)
+
+        cv.putText(photo, str(cell_id), (coord[0], coord[1]), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
+
+    return photo
+
+
+'''
     Calculates the area of the given rectangle
     @param rectangle: List Containing starting x coordinate, starting y, ending x, and ending y in that order
     @return The area of the given rectangle

@@ -7,6 +7,12 @@ from PIL import Image, ImageTk
 import cv2
 import os
 import PySimpleGUI as sg
+from collections import OrderedDict
+from tracker_library import TrackerClasses
+from tracker_library import centroid_tracker as ct
+from tracker_library import cell_analysis_functions as analysis
+from tracker_library import export_data as export
+from tracker_library import matplotlib_graphing
 
 
 class App:
@@ -25,7 +31,10 @@ class App:
         self.edited_vid = None
         self.vid = None
         self.photo = None
+        self.edited = None
         self.next = "1"
+        # ------ Tracker Instances ------- #
+        self.video_player = None
         # ------ Menu Definition ------ #
         menu_def = [['&File', ['&Open', '&Save', '---', 'Properties', 'E&xit']],
                     ['&Edit', ['Paste', ['Special', 'Normal', ], 'Undo'], ],
@@ -33,33 +42,41 @@ class App:
 
         # Main Menu Layout
         layout1 = [[sg.Menu(menu_def)],
-                  [sg.Text('Select video')], [sg.Input(key="_FILEPATH_"), sg.Button("Browse")],                         # File Selector
-                  [sg.Text('Select Type of Cell Tracking'), sg.Push(), sg.Text('Settings')],                            # Section to select type of analysis with radio buttons
-                  [sg.R('Individual Cell Tracking', 1, key="individual_radio"), sg.Push(),
-                   sg.Text('Real World Width of the Video (mm)'), sg.Input(key="video_width_mm")],                      # Take Input for Constants
-                  [sg.R('Full Culture Tracking', 1, key="culture_radio"), sg.Push(),
-                   sg.Text('Real World Height of the Video (mm)'), sg.Input(key="video_height_mm")],
-                  [sg.Push(), sg.Text('Time Between Images (mins)'), sg.Input(key="time_between_frames")],
-                  [sg.Button('Run'), sg.Button('Exit')]]
+                   [sg.Text('Select video')], [sg.Input(key="_FILEPATH_"), sg.Button("Browse")],  # File Selector
+                   [sg.Text('Select Type of Cell Tracking'), sg.Push(), sg.Text('Settings')],
+                   # Section to select type of analysis with radio buttons
+                   [sg.R('Individual Cell Tracking', 1, key="individual_radio"), sg.Push(),
+                    sg.Text('Real World Width of the Video (mm)'), sg.Input(key="video_width_mm")],
+                   # Take Input for Constants
+                   [sg.R('Full Culture Tracking', 1, key="culture_radio"), sg.Push(),
+                    sg.Text('Real World Height of the Video (mm)'), sg.Input(key="video_height_mm")],
+                   [sg.Push(), sg.Text('Time Between Images (mins)'), sg.Input(key="time_between_frames")],
+                   [sg.Button('Run'), sg.Button('Exit')]]
 
         # Video Player Layout
         layout2 = [[sg.Menu(menu_def)],
-                  [sg.Text('Original Video'), sg.Push(), sg.Text('Tracker Video', justification='r')],                  # Titles for each video window
-                  [sg.Canvas(size=(400, 300), key="canvas", background_color="blue"),
-                   sg.Canvas(size=(400, 300), key="edited_video", background_color="blue")],                            # Windows for edited/original video to play
-                  [sg.Slider(size=(30, 20), range=(0, 100), resolution=100, key="slider", orientation="h",
-                             enable_events=True), sg.T("0", key="counter", size=(10, 1))],                              # Frame Slider
-                  [sg.Button('Next frame'), sg.Button("Pause", key="Play"),
-                   sg.Button('Export Data', disabled=False), sg.Button('Exit')]]                                        # Play/Pause Buttons, Next Frame Button
-                                                                                                                        # Export/Quit buttons. Disabled by default but comes online when video is done playing
+                   [sg.Text('Original Video'), sg.Push(), sg.Text('Tracker Video', justification='r')],
+                   # Titles for each video window
+                   [sg.Canvas(size=(400, 300), key="canvas", background_color="blue"),
+                    sg.Canvas(size=(400, 300), key="edited_video", background_color="blue")],
+                   # Windows for edited/original video to play
+                   [sg.Slider(size=(30, 20), range=(0, 100), resolution=100, key="slider", orientation="h",
+                              enable_events=True), sg.T("0", key="counter", size=(10, 1))],  # Frame Slider
+                   [sg.Button('Next frame'), sg.Button("Pause", key="Play"),
+                    sg.Button('Export Data', disabled=False),
+                    sg.Button('Exit')]]  # Play/Pause Buttons, Next Frame Button
+        # Export/Quit buttons. Disabled by default but comes online when video is done playing
 
         # Cell Selection (For Individual Tracking)
         layout3 = [[sg.Menu(menu_def)],
-                  [sg.Text('Original Video'), sg.Push(), sg.Text('Tracker Video', justification='r')],                  # Titles for each video window
-                  [sg.Canvas(size=(400, 300), key="original_first_frame", background_color="blue"),
-                   sg.Canvas(size=(400, 300), key="edited_first_frame", background_color="blue")],                      # Windows for edited/original video to play
-                  [sg.Text('Enter Id number of cell you wish to track:'), sg.Input(key="cell_id")],                     # Take input of Cell ID Number
-                  [sg.Button('Track', key="track_individual"), sg.Button("Exit")]]                                      # Run and Exit Buttons
+                   [sg.Text('Original Video'), sg.Push(), sg.Text('Tracker Video', justification='r')],
+                   # Titles for each video window
+                   [sg.Canvas(size=(400, 300), key="original_first_frame", background_color="blue"),
+                    sg.Canvas(size=(400, 300), key="edited_first_frame", background_color="blue")],
+                   # Windows for edited/original video to play
+                   [sg.Text('Enter Id number of cell you wish to track:'), sg.Input(key="cell_id")],
+                   # Take input of Cell ID Number
+                   [sg.Button('Track', key="track_individual"), sg.Button("Exit")]]  # Run and Exit Buttons
 
         # Export Data Menu
         layout4 = [[sg.Menu(menu_def)],
@@ -72,8 +89,10 @@ class App:
                    [sg.Check('Simplified Movement', key='Simplified Movement')],
                    [sg.Text('Select Images to Export', key="images_label", visible=False)],
                    [sg.Check('Export Final Path of Tracked Cell', key="image_tracked", visible=False)],
-                   [sg.Button('Export'), sg.Button("Cancel", key="Cancel")],                                            # Export Button finishes script and program, Cancel returns to previous page
-                   [sg.Text("Data Currently Exporting. Application will close once process is finished", key="export_message", text_color="red", visible=False)]]
+                   [sg.Button('Export'), sg.Button("Cancel", key="Cancel")],
+                   # Export Button finishes script and program, Cancel returns to previous page
+                   [sg.Text("Data Currently Exporting. Application will close once process is finished",
+                            key="export_message", text_color="red", visible=False)]]
 
         # State Constants
         MAIN_MENU = 1
@@ -86,17 +105,20 @@ class App:
         # ----------- Create actual layout using Columns and a row of Buttons ------------- #
         layout = [[sg.Column(layout1, key='-COL1-'), sg.Column(layout2, visible=False, key='-COL2-'),
                    sg.Column(layout3, visible=False, key='-COL3-'), sg.Column(layout4, visible=False, key='-COL4-')],
-                  [sg.Button('Cycle Layout'), sg.Button('1'), sg.Button('2'), sg.Button('3'), sg.Button('4'), sg.Button('Exit')]]
+                  [sg.Button('Cycle Layout'), sg.Button('1'), sg.Button('2'), sg.Button('3'), sg.Button('4'),
+                   sg.Button('Exit')]]
 
         self.window = sg.Window('Cell Analyzer', layout, resizable=True, size=(800, 600)).Finalize()
         # set return_keyboard_events=True to make hotkeys for video playback
         # Get the tkinter canvas for displaying the video
         canvas = self.window.Element("canvas")
         self.canvas = canvas.TKCanvas
+        self.edited_canvas = self.window.Element("edited_video").TKCanvas
+        self.first_frame_orig = self.window.Element("original_first_frame").TKCanvas
+        self.first_frame_edited = self.window.Element("edited_first_frame").TKCanvas
 
         # Start video display thread
         self.load_video()
-
 
         layout = 1
         while True:  # Main event Loop
@@ -120,7 +142,6 @@ class App:
             if event is None or event.startswith('Exit'):
                 """Handle exit"""
                 break
-
 
             # ---- Main Menu Events ---- #
             # File Selection Browse Button
@@ -163,24 +184,33 @@ class App:
             # Check input values then run subsequent tracking script
             if event == "Run":
                 # Grab References to each field
-                file = str(self.window["_FILEPATH_"])
-                width = self.window["video_width_mm"]
-                height = self.window["video_height_mm"]
-                mins = self.window["time_between_frames"]
+                file = self.window["_FILEPATH_"].get()
+                width = self.window["video_width_mm"].get()
+                height = self.window["video_height_mm"].get()
+                mins = self.window["time_between_frames"].get()
 
                 # Check that all fields have been filled out with valid data then determine next action based on tracking type
                 if isValidParameters(file, width, height, mins):
+                    # TODO maybe Initialize Video. This will likely be covered by indiv/culture trackers
+
                     # If individual tracking has been selected
                     if self.window.Element("individual_radio").get():
+                        # Initialize Individual Tracker
+                        self.video_player = TrackerClasses.IndividualTracker(file, width, height, mins)
+
                         # Continue to Individual Cell Selection Page
                         self.window[f'-COL{MAIN_MENU}-'].update(visible=False)
                         self.window[f'-COL{CELL_SELECTION}-'].update(visible=True)
 
                         # TODO Display First Frame of Edited and UnEdited Video on Cell Selection View
+                        self.display_first_frame(self.video_player)
 
 
                     # Culture Tracking is selected
                     elif self.window.Element("culture_radio").get():
+                        # Initialize Culture Tracker
+                        #self.video_player = TrackerClasses.CultureTracker(file, width, height, mins)
+
                         # Continue to video player page
                         self.window[f'-COL{MAIN_MENU}-'].update(visible=False)
                         self.window[f'-COL{VIDEO_PLAYER}-'].update(visible=True)
@@ -209,7 +239,6 @@ class App:
 
                     # TODO Play Unedited and Edited Video on Video Player View
 
-
             # ---- Video Player Events ---- #
             if event == "Play":
                 if self.play:
@@ -226,7 +255,7 @@ class App:
             if event == "slider":
                 # self.play = False
                 # Set video to frame at percentage of slider
-                percent = values["slider"]/100 * self.frames
+                percent = values["slider"] / 100 * self.frames
                 self.set_frame(int(percent))
                 # print(values["slider"])
 
@@ -243,7 +272,6 @@ class App:
                     self.window['images_label'].update(visible=True)
                     self.window['image_tracked'].update(visible=True)
 
-
             # ---- Export Events ---- #
             if event == "Export":
                 # Display Export Message
@@ -258,7 +286,6 @@ class App:
 
                 # TODO Call export functions based on what boxes were checked
                 # Continue Script and Export Data
-
 
                 # Close app once Export is finished
                 break
@@ -326,6 +353,61 @@ class App:
         self.window.Element("slider").Update(value=frame)
         self.window.Element("counter").Update("{}/{}".format(frame, self.frames))
 
+    '''
+        Outputs first frame to the cell selection screen
+    '''
+
+    def display_first_frame(self, individual_tracker: TrackerClasses.IndividualTracker):
+        # Grab First Frame from video
+        ret, frame = individual_tracker.get_frame()
+
+        # Process Image to better detect cells
+        processed = analysis.process_image(frame, analysis.Algorithm.CANNY, individual_tracker.scale,
+                                           individual_tracker.contrast, individual_tracker.brightness,
+                                           individual_tracker.blur_intensity)
+
+        # Detect minimum cell boundaries and display edited photo
+        cont, shapes = analysis.detect_shape_v2(processed)
+
+        # Use Tracker to label and record coordinates of all cells
+        cell_locations, cell_areas = individual_tracker.tracker.update(shapes)
+
+        # Label all cells with cell id
+        processed = analysis.label_cells(processed, cell_locations)
+
+        # Calculate new video dimensions
+        self.vid_width = 400
+        self.vid_height = 300
+        self.frames = int(self.vid.frames)
+
+        # Update slider to match amount of frames
+        self.window.Element("slider").Update(range=(0, int(self.frames)), value=0)
+        # Update right side of counter
+        self.window.Element("counter").Update("0/%i" % self.frames)
+        # change canvas size approx to video size
+        #self.canvas.config(width=self.vid_width, height=self.vid_height)
+
+        # Reset frame count
+        self.frame = 0
+        self.delay = 1 / self.vid.fps
+
+        # Display Original photo in left frame of selected view
+        # scale image to fit inside the frame
+        self.photo = PIL.ImageTk.PhotoImage(
+            image=PIL.Image.fromarray(frame).resize((self.vid_width, self.vid_height), Image.NEAREST)
+        )
+        self.first_frame_orig.create_image(0, 0, image=self.photo, anchor=tk.NW)
+
+        # Display edited photo in right frame of selected window
+        self.edited = PIL.ImageTk.PhotoImage(
+            image=PIL.Image.fromarray(processed).resize((self.vid_width, self.vid_height), Image.NEAREST)
+        )
+        self.first_frame_edited.create_image(0, 0, image=self.edited, anchor=tk.NW)
+
+        self.frame += 1
+        self.update_counter(self.frame)
+
+
 
 class MyVideoCapture:
     """
@@ -381,57 +463,11 @@ class MyVideoCapture:
             self.vid.release()
 
 
-class IndividualTracker:
-    """
-    Defines a new video loader with openCV
-    Original code from https://solarianprogrammer.com/2018/04/21/python-opencv-show-video-tkinter-window/
-    Modified by me
-    """
 
-    def __init__(self, video_source):
-        # Open the video source
-        self.vid = cv2.VideoCapture(video_source)
-        if not self.vid.isOpened():
-            raise ValueError("Unable to open video source", video_source)
 
-        # Get video source width and height
-        self.width = self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
-        self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
-        self.frames = self.vid.get(cv2.CAP_PROP_FRAME_COUNT)
 
-    def get_frame(self):
-        """
-        Return the next frame
-        """
-        if self.vid.isOpened():
-            ret, frame = self.vid.read()
-            if ret:
-                # Return a boolean success flag and the current frame converted to BGR
-                return ret, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            else:
-                return ret, None
-        else:
-            return 0, None
 
-    def goto_frame(self, frame_no):
-        """
-        Go to specific frame
-        """
-        if self.vid.isOpened():
-            self.vid.set(cv2.CAP_PROP_POS_FRAMES, frame_no)  # Set current frame
-            ret, frame = self.vid.read()  # Retrieve frame
-            if ret:
-                # Return a boolean success flag and the current frame converted to BGR
-                return ret, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            else:
-                return ret, None
-        else:
-            return 0, None
 
-    # Release the video source when the object is destroyed
-    def __del__(self):
-        if self.vid.isOpened():
-            self.vid.release()
 
 '''
     Checks if the given tracker parameters are valid
@@ -441,6 +477,8 @@ class IndividualTracker:
     @time_between_frames Time in minutes between each image in the video
     @return True if all given parameters are valid, false if not
 '''
+
+
 def isValidParameters(videofile, width, height, time_between_frames):
     valid = False
 
@@ -457,7 +495,7 @@ def isValidParameters(videofile, width, height, time_between_frames):
 '''
 def isValidVideo(videofile):
     valid = False
-    if videofile and os.path.exists(videofile) and videofile.endswith(".mp4"):
+    if os.path.exists(videofile) and videofile.endswith(".mp4"):
         valid = True
     return valid
 
@@ -503,7 +541,7 @@ def isValidTime(mins):
     @return True if cellID is
 '''
 def isValidID(cellID):
-    #return (0 <= int(cellID) < numcells (maybe found from len(Cell_locations)
+    # return (0 <= int(cellID) < numcells (maybe found from len(Cell_locations)
     try:
         valid = 0 <= int(cellID)
     except ValueError:
