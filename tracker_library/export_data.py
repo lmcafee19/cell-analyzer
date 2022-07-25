@@ -60,9 +60,9 @@ def individual_to_excel_file(filename, data:dict, time_between_frames, sheetname
 
         current_col += 1
 
-    # Generate Statistics using positional data about cells and export that to same excel sheet
+    # Generate Statistics using positional and area data about cells and export that to same excel sheet
     coordinates = merge(data["X Position (mm)"], data["Y Position (mm)"])
-    stats = calc_individual_cell_statistics(coordinates, time_between_frames)
+    stats = calc_individual_cell_statistics(coordinates, data['Area (mm^2)'], time_between_frames)
 
     # Loop Through Stats and add them to excel sheet
     for key, value in stats.items():
@@ -135,6 +135,7 @@ def coordinates_to_excel_file(filename, data, headers=None, sheetname=None):
 
         # Todo Generate Stats for each cell and place it onto the end
         # TODO distance between initial and final, direction between initial and final
+        # TODO Direction moved (Up, Down, Left, Right)
         # TODO Direction moved (Up, Down, Left, Right)
         # Insert Excel Formula to display Euclidean Distance between the cell's initial and final position
         #distance_formula = f'=SQRT((((INDIRECT(ADDRESS({current_row}, {current_col - 1}),FIND(",",INDIRECT(ADDRESS({current_row}, {current_col - 1})))-1))-(LEFT(INDIRECT(ADDRESS({current_row}, 2)),FIND(",",INDIRECT(ADDRESS({current_row}, 2)))-1)))^2) + (((RIGHT(INDIRECT(ADDRESS({current_row}, {current_col - 1})),LEN(INDIRECT(ADDRESS({current_row}, {current_col - 1})))-FIND(",",INDIRECT(ADDRESS({current_row}, {current_col - 1})))-1)) - (RIGHT(INDIRECT(ADDRESS({current_row}, 2)),LEN(INDIRECT(ADDRESS({current_row}, 2)))-FIND(",",INDIRECT(ADDRESS({current_row}, 2)))-1)))^2))'
@@ -255,13 +256,15 @@ def culture_stats_to_excel_file(filename, stats, sheetname=None):
     Total Displacement: Total distance moved, Final Distance from origin, maximum distance from origin, average distance from origin,
     Maximum speed, average speed, average angle of direction, and final angle of direction between final point and origin
     @param data List of tuples/list containing x/y coordinates of given cells location
+    @param area a list of all recorded areas the cell had each frame
     @param time_between_frames Time in minutes between each frame of cell growth video
     @return Dictionary containing statistics generated 
 '''
-def calc_individual_cell_statistics(data, time_between_frames):
+def calc_individual_cell_statistics(data, areas, time_between_frames):
     # Create dictionary to hold all calculated statistics
     stats = {}
     distances = []
+    origin_distances = []
     # In mm / min
     speeds = []
     # Angle in degrees between last and current point
@@ -283,9 +286,11 @@ def calc_individual_cell_statistics(data, time_between_frames):
             prevx = data[i-1][0]
             prevy = data[i-1][1]
 
-            # Calc distance from origin
-            distance = math.dist([origin_x, origin_y], [x, y])
+            # Calc distance from traveled between each step
+            distance = math.dist([prevx, prevy], [x, y])
             distances.append(distance)
+            # Calc distance between origin and current step
+            origin_distances.append(math.dist([origin_x, origin_y], [x, y]))
             # calc current speed
             speeds.append(distance/time_between_frames)
             # calc angle of direction from last point. Because of the way opencv stores coordinates
@@ -302,9 +307,11 @@ def calc_individual_cell_statistics(data, time_between_frames):
         # Final Distace from Origin
         stats["Final Distance from Origin (mm)"] = math.dist([origin_x, origin_y], [x, y])
         # Maximum Distance from origin
-        stats["Maximum Distance from Origin (mm)"] = max(distances)
+        stats["Maximum Distance from Origin (mm)"] = max(origin_distances)
         # Average Distance from origin
-        stats["Average Distance from Origin (mm)"] = sum(distances)/len(distances)
+        stats["Average Distance from Origin (mm)"] = sum(origin_distances)/len(origin_distances)
+        # Maximum Distance Traveled in one Interval
+        stats["Maximum Distance Traveled in one Interval (mm)"] = max(distances)
         # Max Speed (distance/time)
         stats["Maximum Speed (mm/min)"] = max(speeds)
         # Average Speed
@@ -317,6 +324,14 @@ def calc_individual_cell_statistics(data, time_between_frames):
         compass_brackets = ["E", "NE", "N", "NW", "W", "SW", "S", "SE", "E"]
         compass_lookup = round(final_angle / 45)
         stats["Direction Moved"] = compass_brackets[compass_lookup]
+        # Calc change in size of the cell between first and last frame
+        stats["Change in Cell Size (mm^2)"] = areas[len(areas) - 1] - areas[0]
+        # Calc Average Change in growth between each time interval
+        change = 0
+        for i in range(1, len(areas)):
+            change += areas[i] - areas[i-1]
+        avg_change = change/len(areas)
+        stats["Average Change in Cell Size Between one Interval (mm^2)"] = avg_change
     else:
         raise Exception("Empy Data Set Given")
 
@@ -334,7 +349,8 @@ def calc_individual_cell_statistics(data, time_between_frames):
 def calc_culture_cell_statistics(positional_data, area_data, time_between_frames, area_of_frame):
     # Create dictionary to hold all calculated statistics
     stats = {}
-    distances = []
+    displacements = []
+    final_distances = []
     # In mm / min
     speeds = []
     # Angle in degrees between last and current point
@@ -351,6 +367,7 @@ def calc_culture_cell_statistics(positional_data, area_data, time_between_frames
             origin_y = data[0][1]
             x = 0
             y = 0
+            distances = []
 
             # Loop through all positions and calculate stats between points
             for i in range(1, len(data)):
@@ -360,18 +377,26 @@ def calc_culture_cell_statistics(positional_data, area_data, time_between_frames
                 prevx = data[i-1][0]
                 prevy = data[i-1][1]
 
-                # Calc distance from origin
-                distance = math.dist([origin_x, origin_y], [x, y])
+
+                # Calc Distance traveled between frames
+                distance = math.dist([prevx, prevy], [x, y])
                 distances.append(distance)
+
                 # calc current speed
                 speeds.append(distance/time_between_frames)
 
-                # If on final coordinate calculate angle between this and origin point
+                # If on final coordinate calculate total displacement, angle and distance between this and origin point
                 # Because of the way opencv stores coordinates
                 # ((0,0) would be the top left) we need to convert the angle by subtracting 360 degrees by it
                 if i == (len(data) - 1):
                     final_angle = 360 - ((math.atan2(y - origin_y, x - origin_x) * (180 / math.pi)) % 360)
                     angle_of_direction.append(final_angle)
+
+                    # Calc final distance from origin
+                    final_distances.append(math.dist([origin_x, origin_y], [x, y]))
+
+                    # Record total displacement
+                    displacements.append(sum(distances))
 
     # Generate Stats based on Cell Size
     for key, value in area_data.items():
@@ -384,13 +409,15 @@ def calc_culture_cell_statistics(positional_data, area_data, time_between_frames
 
     # Calculate Final Frame's Confluency
     # Percentage of Frame the cells take up
-    stats["Final Frame's Confluency"] = sum(final_sizes)/area_of_frame
+    stats["Final Frame's Confluency (%)"] = sum(final_sizes)/area_of_frame
     # Average Size of Cells
     stats["Average Final Size of Cell (mm^2)"] = sum(final_sizes)/len(final_sizes)
     # Average cell growth/shrinkage
     stats["Average Change in Cell Size (mm^2)"] = sum(growth)/len(growth)
-    # Total Displacement (Total Distance Traveled)
-    stats["Average Final Distance from Origin (mm)"] = sum(distances)/len(distances)
+    # Average Total Displacement (distance traveled throughout whole video)
+    stats["Average Total Displacement (mm)"] = sum(displacements)/len(displacements)
+    # Average Distance from origin
+    stats["Average Final Distance from Origin (mm)"] = sum(final_distances)/len(final_distances)
     # Average Speed
     stats["Average Speed (mm/min)"] = sum(speeds)/len(speeds)
     # Angle of direction from origin to final point
