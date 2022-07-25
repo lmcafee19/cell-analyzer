@@ -82,7 +82,7 @@ def main():
         cell_locations, cell_areas = tracker.update(shapes)
 
         # Label all cells with cell id
-        labeled_img = label_cells(processed, cell_locations)
+        labeled_img = analysis.label_cells(processed, cell_locations)
 
         # Display edited photo
         cv.imshow("First Frame", labeled_img)
@@ -271,25 +271,5 @@ def main():
                                                             tracked_cell_data, "X Position (mm)", "Y Position (mm)", 15,
                                                             labels=tracked_cell_data["Time"],
                                                             title=f"Cell {tracked_cell_id}: Movement")
-
-
-'''
-Uses coordinates found from the centroid tracker to label each cell with its unique id
-@param img Photo to add labels onto
-@param cell_coors Ordered dict containing a mapping between each cell id and its coordinates
-'''
-def label_cells(img, cell_coords):
-    # Create copy of img as to not edit the original
-    photo = img.copy()
-
-    # Unpack Dictionary to grab coordinates
-    # Record initial position / data needed to redraw outline
-    for cell_id, coordinates in cell_coords.items():
-        coord = tuple(coordinates)
-
-        cv.putText(photo, str(cell_id), (coord[0], coord[1]), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
-
-    return photo
-
 
 main()

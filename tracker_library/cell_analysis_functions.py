@@ -409,7 +409,7 @@ def label_cells(img, cell_coords):
     for cell_id, coordinates in cell_coords.items():
         coord = tuple(coordinates)
 
-        cv.putText(photo, str(cell_id), (coord[0], coord[1]), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
+        cv.putText(photo, str(cell_id), (coord[0] + 10, coord[1] + 10), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
 
     return photo
 

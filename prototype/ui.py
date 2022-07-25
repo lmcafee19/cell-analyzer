@@ -41,7 +41,7 @@ class App:
         # Main Menu Layout
         layout1 = [[sg.Menu(menu_def)],
                    [sg.Text('Select video')], [sg.Input(key="_FILEPATH_"), sg.Button("Browse")],  # File Selector
-                   [sg.Text('Select Type of Cell Tracking'), sg.Push(), sg.Text('Settings')],
+                   [sg.Text('Select Type of Cell Tracking'), sg.Push(), sg.Text('Tracker Settings')],
                    # Section to select type of analysis with radio buttons
                    [sg.R('Individual Cell Tracking', 1, key="individual_radio"), sg.Push(),
                     sg.Text('Real World Width of the Video (mm)'), sg.Input(key="video_width_mm")],
@@ -49,6 +49,11 @@ class App:
                    [sg.R('Full Culture Tracking', 1, key="culture_radio"), sg.Push(),
                     sg.Text('Real World Height of the Video (mm)'), sg.Input(key="video_height_mm")],
                    [sg.Push(), sg.Text('Time Between Images (mins)'), sg.Input(key="time_between_frames")],
+                   [sg.Push(), sg.Text('Min Cell Size (Positive Integer. Default = 10)'), sg.Input(key="min_size")],
+                   [sg.Push(), sg.Text('Max Cell Size (Positive Integer. Default = 500)'), sg.Input(key="max_size")],
+                   [sg.Push(), sg.Text('Contrast (Positive Floating Point. Default = 1.25)'), sg.Input(key="contrast")],
+                   [sg.Push(), sg.Text('Brightness (Positive Floating Point. 0 leaves the brightness unchanged. Default = .1)'), sg.Input(key="brightness")],
+                   [sg.Push(), sg.Text('Blur Intensity (Positive Integer. Default = 10)'), sg.Input(key="blur")],
                    [sg.Button('Run'), sg.Button('Exit')]]
 
         # Video Player Layout
