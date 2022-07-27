@@ -372,8 +372,8 @@ def detect_shape_v2(img):
                 centroids[centroid] = area
 
                 # Draw circle and label
-                cv.circle(photo, centroid, int(radius), (255, 255, 255), 2)
-                cv.putText(photo, "Circle", (int(x + radius), int(y + radius)), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
+                #cv.circle(photo, centroid, int(radius), (255, 255, 255), 2)
+                #cv.putText(photo, "Circle", (int(x + radius), int(y + radius)), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
 
             else:
                 # Detected contour is rectangular
@@ -389,10 +389,65 @@ def detect_shape_v2(img):
                 centroids[centroid] = area
 
                 # Draw rectangle and label found onto image in white
-                cv.drawContours(photo, [box], 0, (255, 255, 255), 2)
-                cv.putText(photo, "Rectangle", centroid, cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
+                #cv.drawContours(photo, [box], 0, (255, 255, 255), 2)
+                #cv.putText(photo, "Rectangle", centroid, cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
 
     return photo, centroids
+
+
+'''
+Finds the initial boundary of a cell from the given coordinates(centroid) and then draws that shape onto the given image
+@param first_frame First frame of the video used to determine which cell to track, edited the same way as when it had the shapes intially detected
+@param point Tuple of (x,y) coordinates
+@param color RGB value used to draw cell boundary. Default = white
+@return Image with drawn on cell boundary
+'''
+def draw_initial_cell_boundary(first_frame, point:tuple, img, color=(255, 255, 255)):
+    # Create copy of image as to not edit the original
+    photo = img.copy()
+
+    threshold_val, thrash = cv.threshold(first_frame, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+    # Grab all contours not surrounded by another contour
+    contours, hierarchy = cv.findContours(thrash, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+    # Determine which contour is closest to given point
+    closest_contour = None
+    for contour in contours:
+        # Determines if point lies inside(1), outside(-1), or on the boundary(0) of the contour
+        dist = cv.pointPolygonTest(contour, point, False)
+
+        # If point lies on or inside contour save it and break loop
+        if dist == 1 or dist == 0:
+            closest_contour = contour
+            break
+
+    # Minimum rectangle needed to cover contour, will be angled
+    # Rect format: (center(x, y), (width, height), angle of rotation)
+    rect = cv.minAreaRect(closest_contour)
+
+    # Box returns list of four tuples containing coordinates of the vertices of the rectangle
+    # First value in each tuple is x, and second is y
+    box = cv.boxPoints(rect)
+    box = np.int0(box)
+
+    # Use the height/width ratio to figure out if the cell is closer to a rectangle or circle
+    ratio = rect[1][1] / rect[1][0]
+    # A perfect circle would have a ratio of 1, so we accept values around it
+    if 1 - CIRCLE_RATIO_RANGE < ratio < 1 + CIRCLE_RATIO_RANGE:
+        # Detected contour is a circle, measure it with the smallest enclosing circle
+        (x, y), radius = cv.minEnclosingCircle(closest_contour)
+        centroid = (int(x), int(y))
+        radius = float(radius)
+
+        # Draw circle and label
+        cv.circle(photo, centroid, int(radius), color, 2)
+
+    else:
+        # Detected contour is rectangular
+        # Draw rectangle found onto image in white
+        cv.drawContours(photo, [box], 0, color, 2)
+
+    return photo
 
 
 '''
