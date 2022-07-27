@@ -7,7 +7,7 @@ from tracker_library import centroid_tracker as ct
 Defines class that manages the tracking of a specified individual cell
 """
 class IndividualTracker:
-    def __init__(self, video_source, width_mm, height_mm, time_between_frames):
+    def __init__(self, video_source, width_mm, height_mm, time_between_frames, scale=0.25, contrast=1.25, brightness=0.1, blur_intensity=10):
         # Open the video source
         self.vid = cv2.VideoCapture(video_source)
         if not self.vid.isOpened():
@@ -23,10 +23,10 @@ class IndividualTracker:
         self.time_between_frames = time_between_frames
 
         # Define Constants for video editing
-        self.scale = 0.25
-        self.contrast = 1.25
-        self.brightness = 0.1
-        self.blur_intensity = 10
+        self.scale = scale
+        self.contrast = contrast
+        self.brightness = brightness
+        self.blur_intensity = blur_intensity
 
         # Keep track of cell id
         self.tracker = ct.CentroidTracker()

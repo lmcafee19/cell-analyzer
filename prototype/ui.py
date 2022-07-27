@@ -51,6 +51,7 @@ class App:
                    [sg.Push(), sg.Text('Time Between Images (mins)'), sg.Input(key="time_between_frames")],
                    [sg.Push(), sg.Text('Min Cell Size (Positive Integer. Default = 10)'), sg.Input(key="min_size")],
                    [sg.Push(), sg.Text('Max Cell Size (Positive Integer. Default = 500)'), sg.Input(key="max_size")],
+                   [sg.Push(), sg.Text('Video Editor Settings. Leave Blank for Defaults')],
                    [sg.Push(), sg.Text('Contrast (Positive Floating Point. Default = 1.25)'), sg.Input(key="contrast")],
                    [sg.Push(), sg.Text('Brightness (Positive Floating Point. 0 leaves the brightness unchanged. Default = .1)'), sg.Input(key="brightness")],
                    [sg.Push(), sg.Text('Blur Intensity (Positive Integer. Default = 10)'), sg.Input(key="blur")],
@@ -63,8 +64,7 @@ class App:
                    [sg.Canvas(size=(400, 300), key="canvas", background_color="blue"),
                     sg.Canvas(size=(400, 300), key="edited_video", background_color="blue")],
                    # Windows for edited/original video to play
-                   [sg.Slider(size=(30, 20), range=(0, 100), resolution=100, key="slider", orientation="h",
-                              enable_events=True), sg.T("0", key="counter", size=(10, 1))],  # Frame Slider
+                   [sg.T("0", key="counter", size=(10, 1))], # Frame Counter
                    [sg.Button('Next frame'), sg.Button("Pause", key="Play"),
                     sg.Button('Export Data', disabled=False),
                     sg.Button('Exit')]]  # Play/Pause Buttons, Next Frame Button
@@ -120,8 +120,8 @@ class App:
         self.first_frame_orig = self.window.Element("original_first_frame").TKCanvas
         self.first_frame_edited = self.window.Element("edited_first_frame").TKCanvas
 
-        # Start video display thread
-        self.load_video()
+        # Start video display thread TODO make my own thread for each video
+        #self.load_video()
 
         layout = 1
         while True:  # Main event Loop
@@ -170,8 +170,6 @@ class App:
                     # print(int(self.vid.frames))
                     self.frames = int(self.vid.frames)
 
-                    # Update slider to match amount of frames
-                    self.window.Element("slider").Update(range=(0, int(self.frames)), value=0)
                     # Update right side of counter
                     self.window.Element("counter").Update("0/%i" % self.frames)
                     # change canvas size approx to video size
@@ -255,13 +253,6 @@ class App:
                 # Jump forward a frame TODO: let user decide how far to jump
                 self.set_frame(self.frame + 1)
 
-            if event == "slider":
-                # self.play = False
-                # Set video to frame at percentage of slider
-                percent = values["slider"] / 100 * self.frames
-                self.set_frame(int(percent))
-                # print(values["slider"])
-
             # TODO set trigger within video player to enable the export/exit buttons when finished playing video
             if event == "video_finished":
                 self.window["Export Data"].update(visible=True)
@@ -314,6 +305,7 @@ class App:
         thread.daemon = 1
         thread.start()
 
+    # create second version of this method to run the edited video
     def update(self):
         """Update the canvas element with the next video frame recursively"""
         start_time = time.time()
@@ -354,7 +346,6 @@ class App:
 
     def update_counter(self, frame):
         """Helper function for updating slider and frame counter elements"""
-        self.window.Element("slider").Update(value=frame)
         self.window.Element("counter").Update("{}/{}".format(frame, self.frames))
 
     '''
@@ -384,8 +375,6 @@ class App:
         self.vid_height = 300
         self.frames = int(self.vid.frames)
 
-        # Update slider to match amount of frames
-        self.window.Element("slider").Update(range=(0, int(self.frames)), value=0)
         # Update right side of counter
         self.window.Element("counter").Update("0/%i" % self.frames)
         # change canvas size approx to video size
@@ -397,9 +386,12 @@ class App:
 
         # Display Original photo in left frame of selected view
         # scale image to fit inside the frame
+        # convert image from BGR to RGB so that it is read correctly by PIL
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         self.photo = PIL.ImageTk.PhotoImage(
             image=PIL.Image.fromarray(frame).resize((self.vid_width, self.vid_height), Image.NEAREST)
         )
+
         self.first_frame_orig.create_image(0, 0, image=self.photo, anchor=tk.NW)
 
         # Display edited photo in right frame of selected window
@@ -410,7 +402,6 @@ class App:
 
         self.frame += 1
         self.update_counter(self.frame)
-
 
 
 class MyVideoCapture:
