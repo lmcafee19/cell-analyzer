@@ -37,13 +37,16 @@ def individual_to_excel_file(filename, data:dict, time_between_frames, sheetname
     if os.path.exists(f"{filename}"):
         # Open excel file for reading and writing
         wb = openpyxl.load_workbook(filename)
+        # Create new sheet to use for this data
+        sheet = wb.create_sheet(sheetname)
+
     else:
         # Otherwise create a new excel file to write to
         # Create Workbook to store all sheets and their data
         wb = openpyxl.Workbook()
-
-    # Add Sheet to store column/row data about this iteration
-    sheet = wb.create_sheet(sheetname)
+        # Rename Default sheet and set it as our active one
+        sheet = wb.active
+        sheet.title = sheetname
 
     # Write Data to sheet
     # Loop through dictionary. For every key write all of its values within the same column then move onto the next
@@ -100,13 +103,17 @@ def coordinates_to_excel_file(filename, data, headers=None, sheetname=None):
     if os.path.exists(f"{filename}"):
         # Open excel file for reading and writing
         wb = openpyxl.load_workbook(filename)
+        # Add Sheet to store column/row data about this iteration
+        sheet = wb.create_sheet(sheetname)
     else:
         # Otherwise create a new excel file to write to
         # Create Workbook to store all sheets and their data
         wb = openpyxl.Workbook()
+        # Rename default sheet created and continue
+        sheet = wb.active
+        sheet.title = sheetname
 
-    # Add Sheet to store column/row data about this iteration
-    sheet = wb.create_sheet(sheetname)
+
 
     # Write Data to sheet
     # Create Headers
