@@ -421,31 +421,33 @@ def draw_initial_cell_boundary(first_frame, point:tuple, img, color=(255, 255, 2
             closest_contour = contour
             break
 
-    # Minimum rectangle needed to cover contour, will be angled
-    # Rect format: (center(x, y), (width, height), angle of rotation)
-    rect = cv.minAreaRect(closest_contour)
+    # If no contour is found by the given coordinate do not draw anything
+    if closest_contour is not None:
+        # Minimum rectangle needed to cover contour, will be angled
+        # Rect format: (center(x, y), (width, height), angle of rotation)
+        rect = cv.minAreaRect(closest_contour)
 
-    # Box returns list of four tuples containing coordinates of the vertices of the rectangle
-    # First value in each tuple is x, and second is y
-    box = cv.boxPoints(rect)
-    box = np.int0(box)
+        # Box returns list of four tuples containing coordinates of the vertices of the rectangle
+        # First value in each tuple is x, and second is y
+        box = cv.boxPoints(rect)
+        box = np.int0(box)
 
-    # Use the height/width ratio to figure out if the cell is closer to a rectangle or circle
-    ratio = rect[1][1] / rect[1][0]
-    # A perfect circle would have a ratio of 1, so we accept values around it
-    if 1 - CIRCLE_RATIO_RANGE < ratio < 1 + CIRCLE_RATIO_RANGE:
-        # Detected contour is a circle, measure it with the smallest enclosing circle
-        (x, y), radius = cv.minEnclosingCircle(closest_contour)
-        centroid = (int(x), int(y))
-        radius = float(radius)
+        # Use the height/width ratio to figure out if the cell is closer to a rectangle or circle
+        ratio = rect[1][1] / rect[1][0]
+        # A perfect circle would have a ratio of 1, so we accept values around it
+        if 1 - CIRCLE_RATIO_RANGE < ratio < 1 + CIRCLE_RATIO_RANGE:
+            # Detected contour is a circle, measure it with the smallest enclosing circle
+            (x, y), radius = cv.minEnclosingCircle(closest_contour)
+            centroid = (int(x), int(y))
+            radius = float(radius)
 
-        # Draw circle and label
-        cv.circle(photo, centroid, int(radius), color, 2)
+            # Draw circle and label
+            cv.circle(photo, centroid, int(radius), color, 2)
 
-    else:
-        # Detected contour is rectangular
-        # Draw rectangle found onto image in white
-        cv.drawContours(photo, [box], 0, color, 2)
+        else:
+            # Detected contour is rectangular
+            # Draw rectangle found onto image in white
+            cv.drawContours(photo, [box], 0, color, 2)
 
     return photo
 

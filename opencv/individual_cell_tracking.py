@@ -10,8 +10,7 @@ from tracker_library import matplotlib_graphing
 from collections import OrderedDict
 
 # Define Constants
-PATH = '../videos/'
-VIDEO = 'Sample_cell_culture_4.mp4'
+VIDEO = '../videos/Sample_cell_culture_4.mp4'
 EXCEL_FILE = "../data/Individual_cell_data.xlsx"
 PDF_FILE = "../data/"
 IMAGE_FILE = "../data/"
@@ -19,6 +18,9 @@ SCALE = 0.25
 CONTRAST = 1.25
 BRIGHTNESS = 0.1
 BLUR_INTENSITY = 10
+PATH_COLOR = (255, 255, 255)
+START_COLOR = (255, 0, 0)
+END_COLOR = (0,0,255)
 
 # Real World size of frame in mm
 VIDEO_HEIGHT_MM = 150
@@ -31,7 +33,7 @@ def main():
     # Print opencv version
     print("Your OpenCV version is: " + cv.__version__)
 
-    videoFile = f'{PATH}{VIDEO}'
+    videoFile = f'{VIDEO}'
     # Check if video exists
     if not os.path.exists(videoFile):
         raise Exception("File cannot be found")
@@ -61,6 +63,7 @@ def main():
         # Keep Track of our tracked cell's coordinates in pixels
         tracked_cell_coords = OrderedDict()
         frame_num = 0
+        first_frame = None
         final_frame = None
         Xmin = None
         Ymin = None
@@ -74,6 +77,9 @@ def main():
 
         # Process Image to better detect cells
         processed = analysis.process_image(frame, analysis.Algorithm.CANNY, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
+
+        # Save Reference to edited first frame for later
+        first_frame = processed
 
         # Detect minimum cell boundaries and display edited photo
         cont, shapes = analysis.detect_shape_v2(processed)
@@ -202,10 +208,24 @@ def main():
             # Create Color Image containing the path the tracked cell took
             # Scale image to match
             final_photo = analysis.rescale_frame(final_frame, SCALE)
+
+            # Draw Boundary for Cell's starting position
+            final_photo = analysis.draw_initial_cell_boundary(first_frame, tracked_cell_coords[tracked_cell_id][0],
+                                                              final_photo, START_COLOR)
             # Draw an arrow for every frame of movement going from its last position to its next position
             for i in range(1, len(tracked_cell_coords[tracked_cell_id])):
-                cv.arrowedLine(final_photo, tracked_cell_coords[tracked_cell_id][i - 1], tracked_cell_coords[tracked_cell_id][i],
-                               (255, 0, 0), 2, cv.LINE_AA, 0, 0.2)
+                cv.line(final_photo, tracked_cell_coords[tracked_cell_id][i - 1], tracked_cell_coords[tracked_cell_id][i],
+                        PATH_COLOR, 2)
+
+            # Draw dot at final centroid
+            cv.circle(final_photo, tracked_cell_coords[tracked_cell_id][len(tracked_cell_coords[tracked_cell_id]) - 1], 4, END_COLOR, cv.FILLED)
+
+
+            # Draw an arrow for every frame of movement going from its last position to its next position
+            # for i in range(1, len(tracked_cell_coords[tracked_cell_id])):
+            #     cv.arrowedLine(final_photo, tracked_cell_coords[tracked_cell_id][i - 1], tracked_cell_coords[tracked_cell_id][i],
+            #                    (255, 0, 0), 2, cv.LINE_AA, 0, 0.2)
+
 
             # Crop Image to have path take up majority of photo
             # TODO FIX Cropping and Upscaling of image to be sharper
@@ -253,23 +273,28 @@ def main():
             cv.waitKey(0)
 
             # Save Image
-            cv.imwrite(f"{IMAGE_FILE}Cell{tracked_cell_id}_Path.png", final_photo)
+            #cv.imwrite(f"{IMAGE_FILE}Cell{tracked_cell_id}_Path.png", final_photo)
 
             # Export data to excel
-            export.individual_to_excel_file(EXCEL_FILE, tracked_cell_data, TIME_BETWEEN_FRAMES, f"Cell {tracked_cell_id}")
-            # Draw Graph charting cell's size
-            matplotlib_graphing.export_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Area_Graph.pdf",
-                                                            tracked_cell_data, "Time", "Area (mm^2)",
-                                                            title=f"Cell {tracked_cell_id}: Area vs Time")
-            # Draw Graph charting cell's movement
-            matplotlib_graphing.export_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Movement_Graph.pdf",
-                                                            tracked_cell_data, "X Position (mm)", "Y Position (mm)",
+            # export.individual_to_excel_file(EXCEL_FILE, tracked_cell_data, TIME_BETWEEN_FRAMES, f"Cell {tracked_cell_id}")
+            # # Draw Graph charting cell's size
+            # matplotlib_graphing.export_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Area_Graph.pdf",
+            #                                                 tracked_cell_data, "Time", "Area (mm^2)",
+            #                                                 title=f"Cell {tracked_cell_id}: Area vs Time")
+            # # Draw Graph charting cell's movement
+            matplotlib_graphing.export_individual_cell_data(tracked_cell_data, "X Position (mm)", "Y Position (mm)",
+                                                            filename=f"{PDF_FILE}Cell{tracked_cell_id}_Movement_Graph.pdf",
                                                             labels=tracked_cell_data["Time"], title=f"Cell {tracked_cell_id}: Movement")
 
-            # Draw Simplified version of graph charting cell's movement
-            matplotlib_graphing.export_simplified_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Simple_Movement_Graph.pdf",
-                                                            tracked_cell_data, "X Position (mm)", "Y Position (mm)", 15,
+            matplotlib_graphing.export_individual_cell_data(tracked_cell_data, "X Position (mm)", "Y Position (mm)",
+
                                                             labels=tracked_cell_data["Time"],
                                                             title=f"Cell {tracked_cell_id}: Movement")
+            #
+            # # Draw Simplified version of graph charting cell's movement
+            # matplotlib_graphing.export_simplified_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Simple_Movement_Graph.pdf",
+            #                                                 tracked_cell_data, "X Position (mm)", "Y Position (mm)", 15,
+            #                                                 labels=tracked_cell_data["Time"],
+            #                                                 title=f"Cell {tracked_cell_id}: Movement")
 
 main()

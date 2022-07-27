@@ -11,8 +11,7 @@ from tracker_library import export_data as export
 from collections import OrderedDict
 
 # Define Constants
-PATH = '../videos/'
-VIDEO = 'Sample_cell_culture_4.mp4'
+VIDEO = '../videos/Sample_cell_culture_4.mp4'
 EXPORT_FILE = "../data/test_data.xlsx"
 SCALE = 0.25
 CONTRAST = 1.25
@@ -36,7 +35,7 @@ def main():
     # Print opencv version
     print("Your OpenCV version is: " + cv.__version__)
 
-    videoFile = f'{PATH}{VIDEO}'
+    videoFile = f'{VIDEO}'
     # Check if video exists
     if not os.path.exists(videoFile):
         raise Exception("File cannot be found")
