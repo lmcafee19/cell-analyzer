@@ -14,6 +14,12 @@ from tracker_library import cell_analysis_functions as analysis
 from tracker_library import export_data as export
 from tracker_library import matplotlib_graphing
 
+# State Constants
+MAIN_MENU = 1
+VIDEO_PLAYER = 2
+CELL_SELECTION = 3
+EXPORT = 4
+
 class App:
     """
     TODO: change slider resolution based on vid length
@@ -97,11 +103,6 @@ class App:
                    [sg.Text("Data Currently Exporting. Application will close once process is finished",
                             key="export_message", text_color="red", visible=False)]]
 
-        # State Constants
-        MAIN_MENU = 1
-        VIDEO_PLAYER = 2
-        CELL_SELECTION = 3
-        EXPORT = 4
 
         num_layouts = 4
 
@@ -121,7 +122,7 @@ class App:
         self.first_frame_edited = self.window.Element("edited_first_frame").TKCanvas
 
         # Start video display thread TODO make my own thread for each video
-        #self.load_video()
+        self.load_video()
 
         layout = 1
         while True:  # Main event Loop
@@ -305,28 +306,33 @@ class App:
         thread.daemon = 1
         thread.start()
 
-    # create second version of this method to run the edited video
+    #TODO create second version of this method to run the edited video
     def update(self):
         """Update the canvas element with the next video frame recursively"""
         start_time = time.time()
         if self.vid:
-            if self.play:
+            # Only Update video while it is visible on video player interface
+            if self.window[f'-COL{VIDEO_PLAYER}-'].visible:
+                if self.play:
+                    # Load next frame for unedited video
 
-                # Get a frame from the video source only if the video is supposed to play
-                ret, frame = self.vid.get_frame()
+                    # Load next frame for edited video and run tracker stuff with it
 
-                if ret:
-                    self.photo = PIL.ImageTk.PhotoImage(
-                        image=PIL.Image.fromarray(frame).resize((self.vid_width, self.vid_height), Image.NEAREST)
-                    )
-                    self.canvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
+                    # Get a frame from the video source only if the video is supposed to play
+                    ret, frame = self.vid.get_frame()
 
-                    self.frame += 1
-                    self.update_counter(self.frame)
+                    if ret:
+                        self.photo = PIL.ImageTk.PhotoImage(
+                            image=PIL.Image.fromarray(frame).resize((self.vid_width, self.vid_height), Image.NEAREST)
+                        )
+                        self.canvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
 
-            # Uncomment these to be able to manually count fps
-            # print(str(self.next) + " It's " + str(time.ctime()))
-            # self.next = int(self.next) + 1
+                        self.frame += 1
+                        self.update_counter(self.frame)
+
+                # Uncomment these to be able to manually count fps
+                # print(str(self.next) + " It's " + str(time.ctime()))
+                # self.next = int(self.next) + 1
         # The tkinter .after method lets us recurse after a delay without reaching recursion limit. We need to wait
         # between each frame to achieve proper fps, but also count the time it took to generate the previous frame.
         self.canvas.after(abs(int((self.delay - (time.time() - start_time)) * 1000)), self.update)
@@ -351,24 +357,9 @@ class App:
     '''
         Outputs first frame to the cell selection screen
     '''
-
     def display_first_frame(self, individual_tracker: TrackerClasses.IndividualTracker):
-        # Grab First Frame from video
-        ret, frame = individual_tracker.get_frame()
-
-        # Process Image to better detect cells
-        processed = analysis.process_image(frame, analysis.Algorithm.CANNY, individual_tracker.scale,
-                                           individual_tracker.contrast, individual_tracker.brightness,
-                                           individual_tracker.blur_intensity)
-
-        # Detect minimum cell boundaries and display edited photo
-        cont, shapes = analysis.detect_shape_v2(processed)
-
-        # Use Tracker to label and record coordinates of all cells
-        cell_locations, cell_areas = individual_tracker.tracker.update(shapes)
-
-        # Label all cells with cell id
-        processed = analysis.label_cells(processed, cell_locations)
+        # Use Individual Tracker to grab and display the edited first frame
+        unedited, processed = individual_tracker.get_first_frame()
 
         # Calculate new video dimensions
         self.vid_width = 400
@@ -387,7 +378,7 @@ class App:
         # Display Original photo in left frame of selected view
         # scale image to fit inside the frame
         # convert image from BGR to RGB so that it is read correctly by PIL
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame = cv2.cvtColor(unedited, cv2.COLOR_BGR2RGB)
         self.photo = PIL.ImageTk.PhotoImage(
             image=PIL.Image.fromarray(frame).resize((self.vid_width, self.vid_height), Image.NEAREST)
         )
