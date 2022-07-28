@@ -62,7 +62,7 @@ def main():
         tracked_cell_data = {'Time': [0], 'X Position (mm)': [], 'Y Position (mm)': [], 'Area (mm^2)': []}
         # Keep Track of our tracked cell's coordinates in pixels
         tracked_cell_coords = OrderedDict()
-        frame_num = 0
+        frame_num = 1
         first_frame = None
         final_frame = None
         Xmin = None
@@ -194,7 +194,7 @@ def main():
                 final_frame = frame
 
                 # if not the last frame display it for only a short amount of time
-                if frame_num < total_frames - 1:
+                if frame_num < total_frames:
                     # Adjust waitKey to change time each frame is displayed
                     # Press q to exit out of opencv early
                     if cv.waitKey(10) & 0xFF == ord('q'):
@@ -212,7 +212,7 @@ def main():
             # Draw Boundary for Cell's starting position
             final_photo = analysis.draw_initial_cell_boundary(first_frame, tracked_cell_coords[tracked_cell_id][0],
                                                               final_photo, START_COLOR)
-            # Draw an arrow for every frame of movement going from its last position to its next position
+            # Draw a line for every frame of movement going from its last position to its next position
             for i in range(1, len(tracked_cell_coords[tracked_cell_id])):
                 cv.line(final_photo, tracked_cell_coords[tracked_cell_id][i - 1], tracked_cell_coords[tracked_cell_id][i],
                         PATH_COLOR, 2)
