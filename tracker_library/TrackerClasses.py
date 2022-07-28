@@ -194,6 +194,7 @@ class IndividualTracker:
         # Return unedited first frame and the img with cell ids labeled
         return frame, labeled_img
 
+
     '''
     Initializes coordinate and area data found in the first frame about the currently tracked cell into the 
     self.tracked_cell_data and self.tracked_cell_coords data structures

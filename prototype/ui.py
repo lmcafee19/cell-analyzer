@@ -125,7 +125,9 @@ class App:
         self.load_video()
 
         layout = 1
-        while True:  # Main event Loop
+        running = True
+        # Main event Loop
+        while running:
             event, values = self.window.Read()
             print(event, values)
 
@@ -145,7 +147,7 @@ class App:
             # Exit Event
             if event is None or event.startswith('Exit'):
                 """Handle exit"""
-                break
+                running = False
 
             # ---- Main Menu Events ---- #
             # File Selection Browse Button
@@ -205,7 +207,7 @@ class App:
                         self.window[f'-COL{CELL_SELECTION}-'].update(visible=True)
 
                         # TODO Display First Frame of Edited and UnEdited Video on Cell Selection View
-                        self.display_first_frame(self.video_player)
+                        self.display_first_frame()
 
 
                     # Culture Tracking is selected
@@ -229,17 +231,17 @@ class App:
 
             # ---- Cell Selection Events ---- #
             if event == "track_individual":
-                # Ensure Valid Cell ID has been entered
-                #
-                if not isValidID(values['cell_id']):
-                    sg.PopupError("Invalid or Missing Cell ID Number")
-                # Valid Cell Id given move onto video player with appropriate tracking values
-                else:
-                    # Continue to video player page
+                # When Track button is pressed update the individual tracker to keep track of the input cell
+                # and then attempt to move forward to video player stage
+
+                selected = self.select_cell()
+
+                # If user has entered a valid cell id and the tracker has been updated Continue to video player page
+                if selected:
                     self.window[f'-COL{CELL_SELECTION}-'].update(visible=False)
                     self.window[f'-COL{VIDEO_PLAYER}-'].update(visible=True)
+                    # Video should start playing due to self.update method
 
-                    # TODO Play Unedited and Edited Video on Video Player View
 
             # ---- Video Player Events ---- #
             if event == "Play":
@@ -251,7 +253,7 @@ class App:
                     self.window.Element("Play").Update("Pause")
 
             if event == 'Next frame':
-                # Jump forward a frame TODO: let user decide how far to jump
+                # Jump forward a frame
                 self.set_frame(self.frame + 1)
 
             # TODO set trigger within video player to enable the export/exit buttons when finished playing video
@@ -283,7 +285,7 @@ class App:
                 # Continue Script and Export Data
 
                 # Close app once Export is finished
-                break
+                runnning = False
 
             # Return to previous page
             if event == "Cancel":
@@ -306,17 +308,22 @@ class App:
         thread.daemon = 1
         thread.start()
 
-    #TODO create second version of this method to run the edited video
+    #TODO Create handling for once the video has finished playing
     def update(self):
         """Update the canvas element with the next video frame recursively"""
         start_time = time.time()
         if self.vid:
-            # Only Update video while it is visible on video player interface
+            # Only Update video while it is visible on video player interface and is supposed to play
             if self.window[f'-COL{VIDEO_PLAYER}-'].visible:
                 if self.play:
-                    # Load next frame for unedited video
+                    # Retrieve the next frame from the video
+                    original, edited = self.video_player.next_frame()
+                    # Display next frame for unedited video
 
-                    # Load next frame for edited video and run tracker stuff with it
+                    # Display next frame for edited video
+
+                    # Update Tracker information
+
 
                     # Get a frame from the video source only if the video is supposed to play
                     ret, frame = self.vid.get_frame()
@@ -357,9 +364,9 @@ class App:
     '''
         Outputs first frame to the cell selection screen
     '''
-    def display_first_frame(self, individual_tracker: TrackerClasses.IndividualTracker):
+    def display_first_frame(self):
         # Use Individual Tracker to grab and display the edited first frame
-        unedited, processed = individual_tracker.get_first_frame()
+        unedited, processed = self.video_player.get_first_frame()
 
         # Calculate new video dimensions
         self.vid_width = 400
@@ -393,6 +400,39 @@ class App:
 
         self.frame += 1
         self.update_counter(self.frame)
+
+    '''
+    Selects the cell to track 
+    if valid the id will be saved and the tracking data will be initialized based on info from the first frame, 
+    otherwise it will display an error
+    @:return True if the entered cell id is valid and the tracker has been successfully updated. Otherwise returns false
+    '''
+    def select_cell(self):
+        success = False
+        # Check if selected id is valid
+        cell_id = self.window["cell_id"].get()
+
+        try:
+            cell_id = int(cell_id)
+
+            if not self.video_player.is_valid_id(cell_id):
+                # if invalid display error message
+                sg.PopupError("Invalid Cell ID")
+            else:
+                # if selection is valid, set the tracker's cell id
+                self.video_player.set_tracked_cell(cell_id)
+
+                # Initialize tracker info
+                self.video_player.initialize_tracker_data()
+                success = True
+
+        except ValueError:
+            # if invalid display error message
+            sg.PopupError("Cell ID must be an integer")
+
+        return success
+
+
 
 
 class MyVideoCapture:
