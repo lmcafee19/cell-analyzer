@@ -22,6 +22,10 @@ PATH_COLOR = (255, 255, 255)
 START_COLOR = (255, 0, 0)
 END_COLOR = (0,0,255)
 
+# Define Constants for cell size. These indicate the size range in which we should detect and track cells
+MIN_CELL_SIZE = 10
+MAX_CELL_SIZE = 600
+
 # Real World size of frame in mm
 VIDEO_HEIGHT_MM = 150
 VIDEO_WIDTH_MM = 195.9
@@ -82,7 +86,7 @@ def main():
         first_frame = processed
 
         # Detect minimum cell boundaries and display edited photo
-        cont, shapes = analysis.detect_shape_v2(processed)
+        cont, shapes = analysis.detect_shape_v2(processed, MIN_CELL_SIZE, MAX_CELL_SIZE)
 
         # Use Tracker to label and record coordinates of all cells
         cell_locations, cell_areas = tracker.update(shapes)
@@ -141,7 +145,7 @@ def main():
                                                    BLUR_INTENSITY)
 
                 # Detect minimum cell boundaries and display edited photo
-                cont, shapes = analysis.detect_shape_v2(processed)
+                cont, shapes = analysis.detect_shape_v2(processed, MIN_CELL_SIZE, MAX_CELL_SIZE)
 
                 # Use Tracker to label and record coordinates of all cells
                 cell_locations, cell_areas = tracker.update(shapes)

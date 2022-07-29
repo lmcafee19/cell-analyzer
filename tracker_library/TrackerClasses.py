@@ -11,7 +11,7 @@ from datetime import datetime
 Defines class that manages the tracking of a specified individual cell
 """
 class IndividualTracker:
-    def __init__(self, video_source, width_mm, height_mm, time_between_frames, scale=.25, contrast=1.25, brightness=0.1,
+    def __init__(self, video_source, width_mm, height_mm, time_between_frames, pixels_per_mm=None, min_cell_size=10, max_cell_size=600, scale=.25, contrast=1.25, brightness=0.1,
                  blur_intensity=10):
         # Open the video source
         self.vid = cv.VideoCapture(video_source)
@@ -26,6 +26,10 @@ class IndividualTracker:
         self.width_mm = int(width_mm)
         # Real world time in minutes that pass between each image being taken
         self.time_between_frames = time_between_frames
+
+        # Max/Min Size of Objects to detect as cells within video
+        self.min_cell_size = min_cell_size
+        self.max_cell_size = max_cell_size
 
         # Define Constants for video editing
         self.scale = scale
@@ -44,7 +48,7 @@ class IndividualTracker:
         self.cell_areas = None
 
         # Keep Track of Photo Data for exports later
-        self.pixels_to_mm = None
+        self.pixels_to_mm = pixels_per_mm
         self.frame_num = 1
         self.first_frame = None
         self.final_frame = None
@@ -101,7 +105,7 @@ class IndividualTracker:
                                             self.brightness, self.blur_intensity)
 
         # Detect minimum cell boundaries and their centroids for tracker
-        cont, shapes = analysis.detect_shape_v2(processed)
+        cont, shapes = analysis.detect_shape_v2(processed, self.min_cell_size, self.max_cell_size)
 
         # Draw a line for every frame of movement going from its last position to its next position
         for i in range(1, len(self.tracked_cell_coords[self.tracked_cell_id])):
@@ -176,7 +180,7 @@ class IndividualTracker:
         self.first_frame = processed
 
         # Detect minimum cell boundaries and display edited photo
-        cont, shapes = analysis.detect_shape_v2(processed)
+        cont, shapes = analysis.detect_shape_v2(processed, self.min_cell_size, self.max_cell_size)
 
         # Use Tracker to label and record coordinates of all cells
         self.cell_locations, self.cell_areas = self.tracker.update(shapes)
@@ -184,9 +188,15 @@ class IndividualTracker:
         # Label all cells with cell id
         labeled_img = analysis.label_cells(processed, self.cell_locations)
 
-        # Grab Frame's dimensions in order to convert pixels to mm
-        (h, w) = labeled_img.shape[:2]
-        self.pixels_to_mm = ((self.height_mm / h) + (self.width_mm / w))/2
+        if self.pixels_to_mm is None or self.pixels_to_mm == 0:
+            # Grab Frame's dimensions in order to convert pixels to mm
+            (h, w) = labeled_img.shape[:2]
+            # If instead the dimensions of the image were given then calculate the pixel conversion using those
+            self.pixels_to_mm = ((self.height_mm / h) + (self.width_mm / w)) / 2
+        else:
+            # If pixels to mm were already given, then convert it to our new scale for the image
+            self.pixels_to_mm = self.pixels_to_mm * self.scale
+
 
         # Increment Frame Counter
         self.frame_num += 1

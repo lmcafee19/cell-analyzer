@@ -332,7 +332,7 @@ def detect_cell_circles(img):
     @:param img: image to detect edges in
     @:returns edited image with shape labels, and dictionary between all centroids found and their encompassing shapes centroid
 '''
-def detect_shape_v2(img):
+def detect_shape_v2(img, min_size, max_size):
     # Create Dictionary Mapping detected centroids to their area
     centroids = {}
 
@@ -346,7 +346,7 @@ def detect_shape_v2(img):
     # Loop through each contour if they are large enough to be considered cells
     for contour in contours:
         # Filter out all contours not in specified range
-        if MIN_CELL_SIZE < cv.contourArea(contour) < MAX_CELL_SIZE:
+        if min_size < cv.contourArea(contour) < max_size:
 
             # Minimum rectangle needed to cover contour, will be angled
             # Rect format: (center(x, y), (width, height), angle of rotation)
@@ -372,7 +372,7 @@ def detect_shape_v2(img):
                 centroids[centroid] = area
 
                 # Draw circle and label
-                #cv.circle(photo, centroid, int(radius), (255, 255, 255), 2)
+                cv.circle(photo, centroid, int(radius), (255, 255, 255), 2)
                 #cv.putText(photo, "Circle", (int(x + radius), int(y + radius)), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
 
             else:
@@ -389,7 +389,7 @@ def detect_shape_v2(img):
                 centroids[centroid] = area
 
                 # Draw rectangle and label found onto image in white
-                #cv.drawContours(photo, [box], 0, (255, 255, 255), 2)
+                cv.drawContours(photo, [box], 0, (255, 255, 255), 2)
                 #cv.putText(photo, "Rectangle", centroid, cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
 
     return photo, centroids

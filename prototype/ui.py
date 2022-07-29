@@ -28,7 +28,7 @@ class App:
 
         # ------ App states ------ #
         self.play = True  # Is the video currently playing?
-        self.delay = 0.023  # Delay between frames - not sure what it should be, not accurate playback
+        self.delay = 0.003  # Delay between frames - not sure what it should be, not accurate playback
         self.frame = 1  # Current frame
         self.frames = None  # Number of frames
         # ------ Other vars ------ #
@@ -47,17 +47,18 @@ class App:
         # Main Menu Layout
         layout1 = [[sg.Menu(menu_def)],
                    [sg.Text('Select video')], [sg.Input(key="_FILEPATH_"), sg.Button("Browse")],  # File Selector
-                   [sg.Text('Select Type of Cell Tracking'), sg.Push(), sg.Text('Tracker Settings')],
+                   [sg.Text('Select Type of Cell Tracking'), sg.Push(), sg.Text('Tracker Settings. Leave Blank for Defaults')],
                    # Section to select type of analysis with radio buttons
                    [sg.R('Individual Cell Tracking', 1, key="individual_radio"), sg.Push(),
                     sg.Text('Real World Width of the Video (mm)'), sg.Input(key="video_width_mm")],
                    # Take Input for Constants
                    [sg.R('Full Culture Tracking', 1, key="culture_radio"), sg.Push(),
                     sg.Text('Real World Height of the Video (mm)'), sg.Input(key="video_height_mm")],
+                   [sg.Push(), sg.Text('Number of pixels per mm'), sg.Input(key='pixels_per_mm')],
                    [sg.Push(), sg.Text('Time Between Images (mins)'), sg.Input(key="time_between_frames")],
                    [sg.Push(), sg.Text('Min Cell Size (Positive Integer. Default = 10)'), sg.Input(key="min_size")],
                    [sg.Push(), sg.Text('Max Cell Size (Positive Integer. Default = 500)'), sg.Input(key="max_size")],
-                   [sg.Push(), sg.Text('Video Editor Settings. Leave Blank for Defaults')],
+                   [sg.Push(), sg.Text('Video Editor Settings')],
                    [sg.Push(), sg.Text('Contrast (Positive Floating Point. Default = 1.25)'), sg.Input(key="contrast")],
                    [sg.Push(), sg.Text('Brightness (Positive Floating Point. 0 leaves the brightness unchanged. Default = .1)'), sg.Input(key="brightness")],
                    [sg.Push(), sg.Text('Blur Intensity (Positive Integer. Default = 10)'), sg.Input(key="blur")],
@@ -177,7 +178,7 @@ class App:
                     # Update right side of counter
                     self.window.Element("counter").Update("0/%i" % self.frames)
                     # change canvas size approx to video size
-                    self.canvas.config(width=self.vid_width, height=self.vid_height)
+                    #self.canvas.config(width=self.vid_width, height=self.vid_height)
 
                     # Reset frame count
                     self.frame = 1
@@ -192,7 +193,13 @@ class App:
                 file = self.window["_FILEPATH_"].get()
                 width = self.window["video_width_mm"].get()
                 height = self.window["video_height_mm"].get()
+                pixels_per_mm = self.window["pixels_per_mm"].get()
                 mins = self.window["time_between_frames"].get()
+                min_size = self.window["min_size"].get()
+                max_size = self.window["max_size"].get()
+                contrast = self.window["contrast"].get()
+                brightness = self.window["brightness"].get()
+                blur = self.window["blur"].get()
 
                 # Check that all fields have been filled out with valid data then determine next action based on tracking type
                 if isValidParameters(file, width, height, mins):
@@ -349,7 +356,7 @@ class App:
                         # Make Export Button Clickable
                         self.window["Export Data"].update(disabled=False)
 
-                        print("OOF OUT OF FRAMES")
+                        print("OUT OF FRAMES")
 
         # The tkinter .after method lets us recurse after a delay without reaching recursion limit. We need to wait
         # between each frame to achieve proper fps, but also count the time it took to generate the previous frame.
@@ -385,7 +392,7 @@ class App:
         self.frames = int(self.vid.frames)
 
         # Update right side of counter
-        self.window.Element("counter").Update("0/%i" % self.frames)
+        self.window.Element("counter").Update("0/%i" % self.video_player.frames)
         # change canvas size approx to video size
         #self.canvas.config(width=self.vid_width, height=self.vid_height)
 
