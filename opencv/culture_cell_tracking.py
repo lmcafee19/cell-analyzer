@@ -87,8 +87,8 @@ def main():
 
             # Grab Frame's dimensions in order to convert pixels to mm
             if w is None or h is None:
-                (h, w) = frame.shape[:2]
-                pixels_to_mm = VIDEO_HEIGHT_MM/h
+                (h, w) = shapes_img.shape[:2]
+                pixels_to_mm = ((VIDEO_HEIGHT_MM/h) + (VIDEO_WIDTH_MM/w))/2
 
             # Update Centroid tracker with list of rectangles
             #print(f"num rectangles: {len(rectangles)}")

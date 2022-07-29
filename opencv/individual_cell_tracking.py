@@ -94,8 +94,8 @@ def main():
         cv.imshow("First Frame", labeled_img)
 
         # Grab Frame's dimensions in order to convert pixels to mm
-        (h, w) = frame.shape[:2]
-        pixels_to_mm = VIDEO_HEIGHT_MM / h
+        (h, w) = labeled_img.shape[:2]
+        pixels_to_mm = ((VIDEO_HEIGHT_MM / h) + (VIDEO_WIDTH_MM/w))/2
 
         # Show Frame until space bar is pressed
         k = cv.waitKey(0)

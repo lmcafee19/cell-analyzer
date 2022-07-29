@@ -185,8 +185,8 @@ class IndividualTracker:
         labeled_img = analysis.label_cells(processed, self.cell_locations)
 
         # Grab Frame's dimensions in order to convert pixels to mm
-        (h, w) = frame.shape[:2]
-        self.pixels_to_mm = self.height_mm / h
+        (h, w) = labeled_img.shape[:2]
+        self.pixels_to_mm = ((self.height_mm / h) + (self.width_mm / w))/2
 
         # Increment Frame Counter
         self.frame_num += 1
