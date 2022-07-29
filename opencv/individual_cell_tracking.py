@@ -11,10 +11,10 @@ from collections import OrderedDict
 
 # Define Constants
 VIDEO = '../videos/Sample_cell_culture_4.mp4'
-EXCEL_FILE = "../data/Individual_cell_data.xlsx"
+EXCEL_FILE = "../data/cell41_data.xlsx"
 PDF_FILE = "../data/"
 IMAGE_FILE = "../data/"
-SCALE = 0.25
+SCALE = .25
 CONTRAST = 1.25
 BRIGHTNESS = 0.1
 BLUR_INTENSITY = 10
@@ -276,20 +276,20 @@ def main():
             #cv.imwrite(f"{IMAGE_FILE}Cell{tracked_cell_id}_Path.png", final_photo)
 
             # Export data to excel
-            # export.individual_to_excel_file(EXCEL_FILE, tracked_cell_data, TIME_BETWEEN_FRAMES, f"Cell {tracked_cell_id}")
-            # # Draw Graph charting cell's size
-            # matplotlib_graphing.export_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Area_Graph.pdf",
+            export.individual_to_excel_file(EXCEL_FILE, tracked_cell_data, TIME_BETWEEN_FRAMES, f"Cell {tracked_cell_id}")
+            # Draw Graph charting cell's size
+            # matplotlib_graphing.export_individual_cell_data(
             #                                                 tracked_cell_data, "Time", "Area (mm^2)",
-            #                                                 title=f"Cell {tracked_cell_id}: Area vs Time")
+            #                                                 title=f"Cell {tracked_cell_id}: Area vs Time", filename=f"{PDF_FILE}Cell{tracked_cell_id}_Area_Graph.pdf")
             # # Draw Graph charting cell's movement
-            matplotlib_graphing.export_individual_cell_data(tracked_cell_data, "X Position (mm)", "Y Position (mm)",
-                                                            filename=f"{PDF_FILE}Cell{tracked_cell_id}_Movement_Graph.pdf",
-                                                            labels=tracked_cell_data["Time"], title=f"Cell {tracked_cell_id}: Movement")
-
-            matplotlib_graphing.export_individual_cell_data(tracked_cell_data, "X Position (mm)", "Y Position (mm)",
-
-                                                            labels=tracked_cell_data["Time"],
-                                                            title=f"Cell {tracked_cell_id}: Movement")
+            # matplotlib_graphing.export_individual_cell_data(tracked_cell_data, "X Position (mm)", "Y Position (mm)",
+            #                                                 filename=f"{PDF_FILE}Cell{tracked_cell_id}_Movement_Graph.pdf",
+            #                                                 labels=tracked_cell_data["Time"], title=f"Cell {tracked_cell_id}: Movement")
+            #
+            # matplotlib_graphing.export_individual_cell_data(tracked_cell_data, "X Position (mm)", "Y Position (mm)",
+            #
+            #                                                 labels=tracked_cell_data["Time"],
+            #                                                 title=f"Cell {tracked_cell_id}: Movement")
             #
             # # Draw Simplified version of graph charting cell's movement
             # matplotlib_graphing.export_simplified_individual_cell_data(f"{PDF_FILE}Cell{tracked_cell_id}_Simple_Movement_Graph.pdf",

@@ -58,7 +58,7 @@ def individual_to_excel_file(filename, data:dict, time_between_frames, sheetname
 
         # Add Data
         for entry in value:
-            sheet.cell(current_row, current_col, str(entry))
+            sheet.cell(current_row, current_col, float(entry))
             current_row += 1
 
         current_col += 1
@@ -67,16 +67,28 @@ def individual_to_excel_file(filename, data:dict, time_between_frames, sheetname
     coordinates = merge(data["X Position (mm)"], data["Y Position (mm)"])
     stats = calc_individual_cell_statistics(coordinates, data['Area (mm^2)'], time_between_frames)
 
+    # Keep Track of the column stats start on
+    stats_col = current_col
+    # Reset Row
+    current_row = 1
+
+    # Add Stats Headers
+    sheet.cell(current_row, current_col, "Statistic")
+    current_col += 1
+    sheet.cell(current_row, current_col, "Value")
+    current_col += 1
+    current_row += 1
+
     # Loop Through Stats and add them to excel sheet
     for key, value in stats.items():
         # Add Header
-        current_row = 1
+        current_col = stats_col
         sheet.cell(current_row, current_col, key)
-        current_row += 1
+        current_col += 1
 
         # Add Data
         sheet.cell(current_row, current_col, value)
-        current_col += 1
+        current_row += 1
 
     # Save File
     wb.save(f"{filename}")
@@ -135,19 +147,10 @@ def coordinates_to_excel_file(filename, data, headers=None, sheetname=None):
             y = val[1]
 
             # Place x coordinate in one column and y in the next
-            sheet.cell(current_row, current_col, x)
+            sheet.cell(current_row, current_col, float(x))
             current_col += 1
-            sheet.cell(current_row, current_col, y)
+            sheet.cell(current_row, current_col, float(y))
             current_col += 1
-
-        # Todo Generate Stats for each cell and place it onto the end
-        # TODO distance between initial and final, direction between initial and final
-        # TODO Direction moved (Up, Down, Left, Right)
-        # TODO Direction moved (Up, Down, Left, Right)
-        # Insert Excel Formula to display Euclidean Distance between the cell's initial and final position
-        #distance_formula = f'=SQRT((((INDIRECT(ADDRESS({current_row}, {current_col - 1}),FIND(",",INDIRECT(ADDRESS({current_row}, {current_col - 1})))-1))-(LEFT(INDIRECT(ADDRESS({current_row}, 2)),FIND(",",INDIRECT(ADDRESS({current_row}, 2)))-1)))^2) + (((RIGHT(INDIRECT(ADDRESS({current_row}, {current_col - 1})),LEN(INDIRECT(ADDRESS({current_row}, {current_col - 1})))-FIND(",",INDIRECT(ADDRESS({current_row}, {current_col - 1})))-1)) - (RIGHT(INDIRECT(ADDRESS({current_row}, 2)),LEN(INDIRECT(ADDRESS({current_row}, 2)))-FIND(",",INDIRECT(ADDRESS({current_row}, 2)))-1)))^2))'
-        #sheet.cell(current_row, current_col, distance_formula)
-        #current_col += 1
 
         current_row += 1
 
@@ -201,7 +204,8 @@ def area_to_excel_file(filename, data, headers=None, sheetname=None):
             # Remove [] from string to format it correctly for Excel
             val = str(val).replace("[", "")
             val = str(val).replace("]", "")
-            sheet.cell(current_row, current_col, val)
+            # Convert Area to float to avoid number stored as text
+            sheet.cell(current_row, current_col, float(val))
             current_col += 1
 
         # Insert Excel Formula to display Total Growth the cell Underwent
@@ -213,46 +217,6 @@ def area_to_excel_file(filename, data, headers=None, sheetname=None):
         sheet.cell(current_row, current_col, change_formula)
         current_col += 1
         current_row += 1
-
-    # Save File
-    wb.save(f"{filename}")
-
-
-'''
-    Exports given cell areas to an excel spreadsheet
-    @param filename: Name of excel file to edit or write to. Should end with extension .xls or .xlsx
-    @param stats: Dictionary of stats gathered about a culture. Keys will be used as headers
-    @param sheetname Name of the created sheet in excel document
-'''
-def culture_stats_to_excel_file(filename, stats, sheetname=None):
-    current_col = 1
-
-    # If filename does not end in .xls extension exit
-    if not (filename.endswith(".xls") or filename.endswith(".xlsx")):
-        raise Exception("File must be of type .xls or .xlsx")
-
-    # If file already exists, create a new sheet to store data on
-    if os.path.exists(f"{filename}"):
-        # Open excel file for reading and writing
-        wb = openpyxl.load_workbook(filename)
-    else:
-        # Otherwise create a new excel file to write to
-        # Create Workbook to store all sheets and their data
-        wb = openpyxl.Workbook()
-
-    # Add Sheet to store column/row data about this iteration
-    sheet = wb.create_sheet(sheetname)
-
-    # Loop Through Stats and add them to excel sheet
-    for key, value in stats.items():
-        # Add Header
-        current_row = 1
-        sheet.cell(current_row, current_col, key)
-        current_row += 1
-
-        # Add Data
-        sheet.cell(current_row, current_col, value)
-        current_col += 1
 
     # Save File
     wb.save(f"{filename}")
@@ -309,6 +273,7 @@ def calc_individual_cell_statistics(data, areas, time_between_frames):
             if i == (len(data) - 1):
                 final_angle = 360 - ((math.atan2(y - origin_y, x - origin_x) * (180 / math.pi)) % 360)
 
+        # Positional Stats
         # Total Displacement (Total Distance Traveled)
         stats["Total Displacement (mm)"] = sum(distances)
         # Final Distace from Origin
@@ -330,7 +295,15 @@ def calc_individual_cell_statistics(data, areas, time_between_frames):
         # Categorize Direction of Movement
         compass_brackets = ["E", "NE", "N", "NW", "W", "SW", "S", "SE", "E"]
         compass_lookup = round(final_angle / 45)
-        stats["Direction Moved"] = compass_brackets[compass_lookup]
+        stats["Compass Direction Moved"] = compass_brackets[compass_lookup]
+
+        # Area Stats
+        # Max Size
+        stats["Maximum Size (mm^2)"] = max(areas)
+        # Min Size
+        stats["Minimum Size (mm^2)"] = min(areas)
+        # Average Size
+        stats["Average Size (mm^2)"] = sum(areas)/len(areas)
         # Calc change in size of the cell between first and last frame
         stats["Change in Cell Size (mm^2)"] = areas[len(areas) - 1] - areas[0]
         # Calc Average Change in growth between each time interval
@@ -343,6 +316,54 @@ def calc_individual_cell_statistics(data, areas, time_between_frames):
         raise Exception("Empy Data Set Given")
 
     return stats
+
+
+'''
+    Exports given cell areas to an excel spreadsheet
+    @param filename: Name of excel file to edit or write to. Should end with extension .xls or .xlsx
+    @param stats: Dictionary of stats gathered about a culture. Keys will be used as headers
+    @param sheetname Name of the created sheet in excel document
+'''
+def culture_stats_to_excel_file(filename, stats, sheetname=None):
+    current_row = 1
+    current_col = 1
+
+    # If filename does not end in .xls extension exit
+    if not (filename.endswith(".xls") or filename.endswith(".xlsx")):
+        raise Exception("File must be of type .xls or .xlsx")
+
+    # If file already exists, create a new sheet to store data on
+    if os.path.exists(f"{filename}"):
+        # Open excel file for reading and writing
+        wb = openpyxl.load_workbook(filename)
+    else:
+        # Otherwise create a new excel file to write to
+        # Create Workbook to store all sheets and their data
+        wb = openpyxl.Workbook()
+
+    # Add Sheet to store column/row data about this iteration
+    sheet = wb.create_sheet(sheetname)
+
+    # Write Headers
+    sheet.cell(current_row, current_col, "Statistic")
+    current_col += 1
+    sheet.cell(current_row, current_col, "Value")
+    current_col += 1
+    current_row += 1
+
+    # Loop Through Stats and add them to excel sheet
+    for key, value in stats.items():
+        # Add Header
+        current_col = 1
+        sheet.cell(current_row, current_col, key)
+        current_col += 1
+
+        # Add Data
+        sheet.cell(current_row, current_col, value)
+        current_row += 1
+
+    # Save File
+    wb.save(f"{filename}")
 
 
 '''
@@ -364,6 +385,10 @@ def calc_culture_cell_statistics(positional_data, area_data, time_between_frames
     angle_of_direction = []
     final_sizes = []
     growth = []
+    max_cell_size = 0
+    max_cell_id = 0
+    min_cell_size = None
+    min_cell_id = 0
 
 
     for key, data in positional_data.items():
@@ -408,31 +433,52 @@ def calc_culture_cell_statistics(positional_data, area_data, time_between_frames
     # Generate Stats based on Cell Size
     for key, value in area_data.items():
         value = list(value)
+
+        # Check if this cell is the new largest or smallest cell in the culture
+        if min_cell_size is None or min(value) < min_cell_size:
+            min_cell_size = min(value)
+            min_cell_id = key
+        if max_cell_size < max(value):
+            max_cell_size = max(value)
+            max_cell_id = key
+
         # Record Final Size for the cell
         final_sizes.append(value[len(value)-1])
         # Record difference between the initial cell and its final size
         growth.append(value[len(value) - 1] - value[0])
 
 
-    # Calculate Final Frame's Confluency
-    # Percentage of Frame the cells take up
-    stats["Final Frame's Confluency (%)"] = sum(final_sizes)/area_of_frame
-    # Average Size of Cells
-    stats["Average Final Size of Cell (mm^2)"] = sum(final_sizes)/len(final_sizes)
-    # Average cell growth/shrinkage
-    stats["Average Change in Cell Size (mm^2)"] = sum(growth)/len(growth)
-    # Average Total Displacement (distance traveled throughout whole video)
+    # Total Displacement (distance traveled throughout whole video)
     stats["Average Total Displacement (mm)"] = sum(displacements)/len(displacements)
+    stats["Max Distance Traveled by one Cell (mm)"] = max(displacements)
+    stats["Min Distance Traveled by one Cell (mm)"] = min(displacements)
     # Average Distance from origin
     stats["Average Final Distance from Origin (mm)"] = sum(final_distances)/len(final_distances)
     # Average Speed
     stats["Average Speed (mm/min)"] = sum(speeds)/len(speeds)
+    # Maximum Recorded Speed
+    stats["Maximum Recorded Speed (mm/min)"] = max(speeds)
+    # Minimum Recorded Speed
+    stats["Minimum Recorded Speed (mm/min)"] = min(speeds)
     # Angle of direction from origin to final point
     stats["Average Angle of Direction between Origin and Final Point (degrees)"] = sum(angle_of_direction)/len(angle_of_direction)
     # Categorize Direction of Movement
     compass_brackets = ["E", "NE", "N", "NW", "W", "SW", "S", "SE", "E"]
     compass_lookup = round(stats["Average Angle of Direction between Origin and Final Point (degrees)"] / 45)
-    stats["Average Direction Moved"] = compass_brackets[compass_lookup]
+    stats["Average Compass Direction Moved"] = compass_brackets[compass_lookup]
+    # Calculate Final Frame's Confluency
+    # Percentage of Frame the cells take up
+    stats["Final Frame's Confluency (%)"] = sum(final_sizes) / area_of_frame
+    # Largest Recorded Cell
+    stats["Largest Cell (mm^2)"] = max_cell_size
+    stats["Largest Cell's ID"] = max_cell_id
+    # Smallest Recorded Cell
+    stats["Smallest Cell (mm^2)"] = min_cell_size
+    stats["Smallest Cell's ID"] = min_cell_id
+    # Average Size of Cells
+    stats["Average Final Size of Cell (mm^2)"] = sum(final_sizes) / len(final_sizes)
+    # Average cell growth/shrinkage
+    stats["Average Change in Cell Size (mm^2)"] = sum(growth) / len(growth)
 
     return stats
 

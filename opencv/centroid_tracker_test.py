@@ -12,7 +12,7 @@ from collections import OrderedDict
 
 # Define Constants
 VIDEO = '../videos/Sample_cell_culture_4.mp4'
-EXPORT_FILE = "../data/test_data.xlsx"
+EXPORT_FILE = "../data/culture_data.xlsx"
 SCALE = 0.25
 CONTRAST = 1.25
 BRIGHTNESS = 0.1
@@ -21,8 +21,8 @@ MIN_CELL_SIZE = 10
 MAX_CELL_SIZE = 600
 
 # Real World size of frame in mm
-VIDEO_HEIGHT_MM = 150
-VIDEO_WIDTH_MM = 195.9
+VIDEO_HEIGHT_MM = 5
+VIDEO_WIDTH_MM = 5.5
 
 # Minutes Passed between each frame in video
 TIME_BETWEEN_FRAMES = 10
@@ -71,7 +71,7 @@ def main():
             processed_canny = analysis.process_image(frame, analysis.Algorithm.CANNY, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
 
             # Display Proccessed Video
-            cv.imshow("Canny", processed_canny)
+            #cv.imshow("Canny", processed_canny)
 
             # Detect if cell is a circle or square and grab each objects centroid and area
             shapes_img, shapes = analysis.detect_shape_v2(processed_canny)

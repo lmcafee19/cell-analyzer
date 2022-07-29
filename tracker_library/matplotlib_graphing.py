@@ -136,6 +136,7 @@ def export_individual_cell_data(data: dict, xaxis, yaxis, filename=None, labels=
         # Display chart and prompt user to edit and save
         plt.show()
 
+
 '''
     Creates a simplified line chart visualizing a selected number of points from the data of an individual cell
     @param filename: Name of PDF file to save chart to
