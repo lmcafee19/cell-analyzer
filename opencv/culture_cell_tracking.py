@@ -11,7 +11,7 @@ from tracker_library import export_data as export
 from collections import OrderedDict
 
 # Define Constants
-VIDEO = '../videos/Sample_cell_culture_4.mp4'
+VIDEO = '../videos/Circular_high_contrast.avi'
 EXPORT_FILE = "../data/culture_data.xlsx"
 SCALE = 0.25
 CONTRAST = 1.25

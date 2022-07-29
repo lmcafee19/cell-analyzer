@@ -6,6 +6,7 @@ import PIL
 from PIL import Image, ImageTk
 import cv2
 import os
+import re
 import PySimpleGUI as sg
 from collections import OrderedDict
 from tracker_library import TrackerClasses
@@ -92,8 +93,8 @@ class App:
         # Export Data Menu
         layout4 = [[sg.Menu(menu_def)],
                    [sg.Text("Select Export Settings")],
-                   [sg.Check('Export Data to Excel Sheet', key='excel_export')],
-                   [sg.Text('Excel File to Export to (.xls):'), sg.Input(key="excel_filename")],
+                   [sg.Check('Export Data to Excel Sheet', key='excel_export', enable_events=True)],
+                   [sg.Text('Excel File to Export to (.xlsx):\n  Leave blank for auto generated filename', key='excel_file_label', visible=False), sg.Input(key="excel_filename", visible=False)],
                    [sg.Text('Select Graphs to Export:')],
                    [sg.Check('Time vs Size', key="Time vs Size")],
                    [sg.Check('Movement over Time', key='Movement over Time')],
@@ -108,6 +109,8 @@ class App:
 
         num_layouts = 4
 
+        # Set the theme
+        sg.theme()
         # ----------- Create actual layout using Columns and a row of Buttons ------------- #
         layout = [[sg.Column(layout1, key='-COL1-'), sg.Column(layout2, visible=False, key='-COL2-'),
                    sg.Column(layout3, visible=False, key='-COL3-'), sg.Column(layout4, visible=False, key='-COL4-')],
@@ -123,7 +126,7 @@ class App:
         self.first_frame_orig = self.window.Element("original_first_frame").TKCanvas
         self.first_frame_edited = self.window.Element("edited_first_frame").TKCanvas
 
-        # Start video display thread TODO make my own thread for each video
+        # Start video display thread
         self.load_video()
 
         layout = 1
@@ -202,19 +205,32 @@ class App:
                 blur = self.window["blur"].get()
 
                 # Check that all fields have been filled out with valid data then determine next action based on tracking type
-                if isValidParameters(file, width, height, mins):
-                    # TODO maybe Initialize Video. This will likely be covered by indiv/culture trackers
+                if isValidParameters(file, width, height, mins, pixels_per_mm):
+                    # TODO check all non essential parameters and display popup if they are invalid
 
                     # If individual tracking has been selected
                     if self.window.Element("individual_radio").get():
-                        # Initialize Individual Tracker
-                        self.video_player = TrackerClasses.IndividualTracker(file, width, height, mins)
+                        # Initialize Individual Tracker with given arguments
+                        self.video_player = TrackerClasses.IndividualTracker(file, float(width), float(height), int(mins), float(pixels_per_mm))
+
+                        # Set all extra input arguments if they are valid
+                        if isValidInt(min_size) and (min_size != "" or min_size is not None):
+                            self.video_player.set_min_size(int(min_size))
+                        if isValidInt(max_size) and (max_size != "" or max_size is not None):
+                            self.video_player.set_max_size(int(max_size))
+                        if isValidFloat(contrast) and (contrast != "" or contrast is not None):
+                            self.video_player.set_contrast(float(contrast))
+                        if isValidFloat(brightness) and (brightness != "" or brightness is not None):
+                            self.video_player.set_brightness(float(brightness))
+                        if isValidInt(blur) != "" or blur is not None:
+                            self.video_player.set_blur_intensity(int(blur))
+
 
                         # Continue to Individual Cell Selection Page
                         self.window[f'-COL{MAIN_MENU}-'].update(visible=False)
                         self.window[f'-COL{CELL_SELECTION}-'].update(visible=True)
 
-                        # TODO Display First Frame of Edited and UnEdited Video on Cell Selection View
+                        # Display First Frame of Edited and UnEdited Video on Cell Selection View
                         self.display_first_frame()
 
 
@@ -235,7 +251,7 @@ class App:
 
                 # If all Required field are not filled or have invalid input, show popup
                 else:
-                    sg.PopupError("Invalid Input in the Fields.")
+                    sg.PopupError("Invalid Parameters")
 
             # ---- Cell Selection Events ---- #
             if event == "track_individual":
@@ -274,22 +290,56 @@ class App:
                     self.window['image_tracked'].update(visible=True)
 
             # ---- Export Events ---- #
-            if event == "Export":
-                # Display Export Message
-                self.window['export_message'].update(visible=True)
+            if event == "excel_export":
+                # When Excel Export Checkbox is checked enable the input for a filename
+                if self.window['excel_filename'].visible:
+                    self.window['excel_file_label'].update(visible=False)
+                    self.window['excel_filename'].update(visible=False)
+                else:
+                    self.window['excel_file_label'].update(visible=True)
+                    self.window['excel_filename'].update(visible=True)
 
+            if event == "Export":
                 # Grab all values for exports
-                exportExcel = self.window.Element("excel_export").get()
+                export_excel = self.window.Element("excel_export").get()
                 excelfile = self.window.Element("excel_filename").get()
+                valid_filename = True
+
+                # If excel filename field is entered
+                if excelfile != '' and excelfile is not None:
+                    # Determine if file is in the correct format
+                    if re.match(".*[.]xlsx$", excelfile):
+                        valid_filename = True
+                    else:
+                        valid_filename = False
+                        sg.PopupError("Given Excel File Name is in an incorrect format.\nEnsure the filename ends in "
+                                      ".xlsx or leave the field blank for an autogenerated name")
+
                 exportgraph_size = self.window.Element("Time vs Size").get()
                 exportgraph_movement = self.window.Element("Movement over Time").get()
                 exportgraph_simple = self.window.Element("Simplified Movement").get()
 
-                # TODO Call export functions based on what boxes were checked
-                # Continue Script and Export Data
+                # Valid Inputs as needed
+                if isValidExportParameters() and valid_filename:
+                    # Display Export Message
+                    self.window['export_message'].update(visible=True)
 
-                # Close app once Export is finished
-                runnning = False
+                    # TODO Call export functions based on what boxes were checked
+                    # Continue Script and Export Data
+                    # If export raw excel data was selected call excel export data
+                    if export_excel:
+                        # If a filename was supplied pass it as a parameter
+                        if excelfile != '' and excelfile is not None:
+                            self.video_player.export_to_excel(excelfile)
+                        else:
+                            self.video_player.export_to_excel()
+
+                    # Graph Exports
+
+                    # Image Exports
+
+                    # Close app once Export is finished
+                    running = False
 
             # Return to previous page
             if event == "Cancel":
@@ -340,9 +390,6 @@ class App:
                                                                         Image.NEAREST)
                         )
                         self.edited_canvas.create_image(0, 0, image=self.edited, anchor=tk.NW)
-
-                        # Update Tracker information
-                        self.video_player.update_tracker_data()
 
                         # Update video frame counter
                         self.frame += 1
@@ -513,10 +560,10 @@ class MyVideoCapture:
     @time_between_frames Time in minutes between each image in the video
     @return True if all given parameters are valid, false if not
 '''
-def isValidParameters(videofile, width, height, time_between_frames):
+def isValidParameters(videofile, width, height, time_between_frames, pixels):
     valid = False
 
-    if isValidVideo(videofile) and isValidDimensions(width, height) and isValidTime(time_between_frames):
+    if isValidVideo(videofile) and isValidDimensions(width, height) and isValidTime(time_between_frames) and isValidPixels(pixels):
         valid = True
 
     return valid
@@ -529,8 +576,9 @@ def isValidParameters(videofile, width, height, time_between_frames):
 '''
 def isValidVideo(videofile):
     valid = False
-    if os.path.exists(videofile) and videofile.endswith(".mp4"):
-        valid = True
+    if os.path.exists(videofile):
+        if videofile.endswith(".avi") or videofile.endswith(".mp4"):
+            valid = True
     return valid
 
 
@@ -567,6 +615,55 @@ def isValidTime(mins):
         valid = False
 
     return valid
+
+'''
+Checks if given pixel per mm value is a positive float
+'''
+def isValidPixels(pixels):
+    valid = False
+    try:
+        val = float(pixels)
+        if 0 < val:
+            valid = True
+    except ValueError:
+        valid = False
+
+    return valid
+
+'''
+Checks if given value is a positive float
+'''
+def isValidFloat(var):
+    valid = False
+    try:
+        val = float(var)
+        if 0 < val:
+            valid = True
+    except ValueError:
+        valid = False
+
+    return valid
+
+
+'''
+Checks if given value is a positive int
+'''
+def isValidInt(var):
+    valid = False
+    try:
+        val = int(var)
+        if 0 < val:
+            valid = True
+    except ValueError:
+        valid = False
+
+    return valid
+
+'''
+Checks if given export parameters are valid
+'''
+def isValidExportParameters():
+    return True
 
 
 if __name__ == '__main__':

@@ -57,6 +57,47 @@ class IndividualTracker:
         self.Xmax = 0
         self.Ymax = 0
 
+    '''
+    Updates the currently tracked cell to that of the given ID.
+    @param tracked_cell_id Positive integer pertaining to the ID of one of the tracked cells
+    '''
+    def set_tracked_cell(self, tracked_cell_id:int):
+        self.tracked_cell_id = tracked_cell_id
+
+
+    '''
+    Updates the min_cell_size field
+    @param min_size Positive integer pertaining to smallest size cell to track
+    '''
+    def set_min_size(self, min_size:int):
+        self.min_cell_size = min_size
+
+
+    '''
+    Updates the max_cell_size field
+    @param min_size Positive integer pertaining to largest size cell to track
+    '''
+    def set_max_size(self, max_size:int):
+        self.max_cell_size = max_size
+
+    '''
+    Updates the contrast field
+    '''
+    def set_contrast(self, contrast):
+        self.contrast = contrast
+
+    '''
+    Updates the brightness field
+    '''
+    def set_brightness(self, brightness):
+        self.brightness = brightness
+
+    '''
+    Updates the blur_intensity field
+    '''
+    def set_blur_intensity(self, blur_intensity):
+        self.blur_intensity = blur_intensity
+
 
     def get_frame(self):
         """
@@ -224,14 +265,6 @@ class IndividualTracker:
         coordinates_mm[1] = float(coordinates_mm[1] * self.pixels_to_mm)
         self.tracked_cell_data['X Position (mm)'].append(coordinates_mm[0])
         self.tracked_cell_data['Y Position (mm)'].append(coordinates_mm[1])
-
-
-    '''
-    Updates the currently tracked cell to that of the given ID.
-    @param tracked_cell_id Positive integer pertaining to the ID of one of the tracked cells
-    '''
-    def set_tracked_cell(self, tracked_cell_id:int):
-        self.tracked_cell_id = tracked_cell_id
 
 
     '''
