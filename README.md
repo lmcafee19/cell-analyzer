@@ -1,2 +1,2 @@
 # cell-analyzer
-A machine learning program that can analyze and predict the growth and movement of cells grown in petri dishes when introduced to certain stimuli.
+A computer vision program that can analyze video and images containing the growth and movement of cells grown in petri dishes when introduced to certain stimuli.
