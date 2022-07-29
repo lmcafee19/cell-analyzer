@@ -71,8 +71,9 @@ class App:
                     sg.Canvas(size=(400, 300), key="edited_video", background_color="blue")],
                    # Windows for edited/original video to play
                    [sg.T("0", key="counter", size=(10, 1))], # Frame Counter
-                   [sg.Button('Next frame'), sg.Button("Pause", key="Play"),
-                    sg.Button('Export Data', disabled=False),
+                   [sg.Button("Pause", key="Play"), sg.Button('Next frame'),
+                    sg.Push(),
+                    sg.Button('Export Data', disabled=True),
                     sg.Button('Exit')]]  # Play/Pause Buttons, Next Frame Button
         # Export/Quit buttons. Disabled by default but comes online when video is done playing
 
@@ -179,7 +180,7 @@ class App:
                     self.canvas.config(width=self.vid_width, height=self.vid_height)
 
                     # Reset frame count
-                    self.frame = 0
+                    self.frame = 1
                     self.delay = 1 / self.vid.fps
 
                     # Update the video path text field
@@ -256,10 +257,6 @@ class App:
                 # Jump forward a frame
                 self.set_frame(self.frame + 1)
 
-            # TODO set trigger within video player to enable the export/exit buttons when finished playing video
-            if event == "video_finished":
-                self.window["Export Data"].update(visible=True)
-
             if event == "Export Data":
                 # Continue to export interface
                 self.window[f'-COL{VIDEO_PLAYER}-'].update(visible=False)
@@ -308,9 +305,9 @@ class App:
         thread.daemon = 1
         thread.start()
 
-    #TODO Create handling for once the video has finished playing
     def update(self):
-        """Update the canvas element with the next video frame recursively"""
+        """Update the canvas elements within the video player interface with the next video frame recursively"""
+        """Ran by Thread started by load_video"""
         start_time = time.time()
         if self.vid:
             # Only Update video while it is visible on video player interface and is supposed to play
@@ -319,30 +316,41 @@ class App:
                     # Retrieve the next frame from the video
                     original, edited = self.video_player.next_frame()
 
-                    # Display next frame for unedited video
-                            # TODO
-                    # Display next frame for edited video
-
-                    # Update Tracker information
-
-                    # Update video frame counter
-                    self.frame += 1
-                    self.update_counter(self.frame)
-
-                    # Get a frame from the video source only if the video is supposed to play
-                    ret, frame = self.vid.get_frame()
-
-                    if ret:
+                    # next_frame() will return values of None if all frames have already been read
+                    # If there are valid frames returned
+                    if original is not None and edited is not None:
+                        # Display next frame for unedited video
+                        # convert image from BGR to RGB so that it is read correctly by PIL
+                        original = cv2.cvtColor(original, cv2.COLOR_BGR2RGB)
                         self.photo = PIL.ImageTk.PhotoImage(
-                            image=PIL.Image.fromarray(frame).resize((self.vid_width, self.vid_height), Image.NEAREST)
+                            image=PIL.Image.fromarray(original).resize((self.vid_width, self.vid_height), Image.NEAREST)
                         )
                         self.canvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
 
+                        # Display next frame for edited video
+                        self.edited = PIL.ImageTk.PhotoImage(
+                            image=PIL.Image.fromarray(edited).resize((self.vid_width, self.vid_height),
+                                                                        Image.NEAREST)
+                        )
+                        self.edited_canvas.create_image(0, 0, image=self.edited, anchor=tk.NW)
 
+                        # Update Tracker information
+                        self.video_player.update_tracker_data()
 
-                # Uncomment these to be able to manually count fps
-                # print(str(self.next) + " It's " + str(time.ctime()))
-                # self.next = int(self.next) + 1
+                        # Update video frame counter
+                        self.frame += 1
+                        self.update_counter(self.frame)
+                    else:
+                        # Video is finished playing
+                        # Stop Video playback (Set to Pause)
+                        self.play = False
+                        self.window.Element("Play").Update("Play")
+
+                        # Make Export Button Clickable
+                        self.window["Export Data"].update(disabled=False)
+
+                        print("OOF OUT OF FRAMES")
+
         # The tkinter .after method lets us recurse after a delay without reaching recursion limit. We need to wait
         # between each frame to achieve proper fps, but also count the time it took to generate the previous frame.
         self.canvas.after(abs(int((self.delay - (time.time() - start_time)) * 1000)), self.update)
@@ -434,8 +442,6 @@ class App:
             sg.PopupError("Cell ID must be an integer")
 
         return success
-
-
 
 
 class MyVideoCapture:
@@ -553,20 +559,6 @@ def isValidTime(mins):
     except ValueError:
         valid = False
 
-    return valid
-
-
-'''
-    Checks if the given cellID is an integer corresponding to a known cell
-    @param cellID Integer
-    @return True if cellID is
-'''
-def isValidID(cellID):
-    # return (0 <= int(cellID) < numcells (maybe found from len(Cell_locations)
-    try:
-        valid = 0 <= int(cellID)
-    except ValueError:
-        valid = False
     return valid
 
 
