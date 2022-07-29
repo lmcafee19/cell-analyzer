@@ -11,7 +11,7 @@ from datetime import datetime
 Defines class that manages the tracking of a specified individual cell
 """
 class IndividualTracker:
-    def __init__(self, video_source, width_mm, height_mm, time_between_frames, scale=0.25, contrast=1.25, brightness=0.1,
+    def __init__(self, video_source, width_mm, height_mm, time_between_frames, scale=.25, contrast=1.25, brightness=0.1,
                  blur_intensity=10):
         # Open the video source
         self.vid = cv.VideoCapture(video_source)
@@ -185,7 +185,7 @@ class IndividualTracker:
         labeled_img = analysis.label_cells(processed, self.cell_locations)
 
         # Grab Frame's dimensions in order to convert pixels to mm
-        (h, w) = labeled_img.shape[:2]
+        (h, w) = frame.shape[:2]
         self.pixels_to_mm = self.height_mm / h
 
         # Increment Frame Counter

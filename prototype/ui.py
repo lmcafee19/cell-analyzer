@@ -318,12 +318,16 @@ class App:
                 if self.play:
                     # Retrieve the next frame from the video
                     original, edited = self.video_player.next_frame()
-                    # Display next frame for unedited video
 
+                    # Display next frame for unedited video
+                            # TODO
                     # Display next frame for edited video
 
                     # Update Tracker information
 
+                    # Update video frame counter
+                    self.frame += 1
+                    self.update_counter(self.frame)
 
                     # Get a frame from the video source only if the video is supposed to play
                     ret, frame = self.vid.get_frame()
@@ -334,8 +338,7 @@ class App:
                         )
                         self.canvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
 
-                        self.frame += 1
-                        self.update_counter(self.frame)
+
 
                 # Uncomment these to be able to manually count fps
                 # print(str(self.next) + " It's " + str(time.ctime()))

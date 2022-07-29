@@ -87,7 +87,7 @@ def main():
 
             # Grab Frame's dimensions in order to convert pixels to mm
             if w is None or h is None:
-                (h, w) = processed_canny.shape[:2]
+                (h, w) = frame.shape[:2]
                 pixels_to_mm = VIDEO_HEIGHT_MM/h
 
             # Update Centroid tracker with list of rectangles
@@ -150,6 +150,8 @@ def main():
         # Export Data to excel sheet
         export.culture_to_excel_file(EXPORT_FILE, cell_positions_mm, cell_sizes_mm, TIME_BETWEEN_FRAMES,
                                     (VIDEO_HEIGHT_MM * VIDEO_WIDTH_MM), positional_headers, size_headers)
+
+        # Export Graphs using Average Area and
 
 
 main()
