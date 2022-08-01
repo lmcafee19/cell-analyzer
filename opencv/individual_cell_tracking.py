@@ -63,7 +63,7 @@ def main():
         pixels_to_mm = None
 
         # Initialize Dictionary to store position and Area Data of tracked cell
-        tracked_cell_data = {'Time': [0], 'X Position (mm)': [], 'Y Position (mm)': [], 'Area (mm^2)': []}
+        tracked_cell_data = {'Time': [], 'X Position (mm)': [], 'Y Position (mm)': [], 'Area (mm^2)': []}
         # Keep Track of our tracked cell's coordinates in pixels
         tracked_cell_coords = OrderedDict()
         frame_num = 1
@@ -128,6 +128,9 @@ def main():
             tracked_cell_data['X Position (mm)'].append(coordinates_mm[0])
             tracked_cell_data['Y Position (mm)'].append(coordinates_mm[1])
 
+            # Record Time from start
+            tracked_cell_data['Time'].append((frame_num - 1) * TIME_BETWEEN_FRAMES)
+
             # Increment Frame Counter
             frame_num += 1
 
@@ -179,7 +182,7 @@ def main():
                 tracked_cell_data['Y Position (mm)'].append(coordinates_mm[1])
 
                 # Record Time from start
-                tracked_cell_data['Time'].append(frame_num * TIME_BETWEEN_FRAMES)
+                tracked_cell_data['Time'].append((frame_num - 1) * TIME_BETWEEN_FRAMES)
 
                 # Draw marker at cell's initial position
                 cv.circle(processed, tracked_cell_coords[tracked_cell_id][0], 2, (255, 255, 255), 3)

@@ -529,6 +529,3 @@ def merge(list1, list2):
     merged_list = [(list1[i], list2[i]) for i in range(0, len(list1))]
     return merged_list
 
-
-# stats = calc_individual_cell_statistics([[1, 2], [3, 4], [6, 7], [8, 9]], 5)
-# print(stats)

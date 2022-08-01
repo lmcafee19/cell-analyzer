@@ -201,7 +201,7 @@ class IndividualTracker:
         self.tracked_cell_data['Y Position (mm)'].append(coordinates_mm[1])
 
         # Record Time from start
-        self.tracked_cell_data['Time'].append(self.frame_num * self.time_between_frames)
+        self.tracked_cell_data['Time'].append((self.frame_num - 1) * self.time_between_frames)
 
 
     '''
@@ -266,6 +266,9 @@ class IndividualTracker:
         self.tracked_cell_data['X Position (mm)'].append(coordinates_mm[0])
         self.tracked_cell_data['Y Position (mm)'].append(coordinates_mm[1])
 
+        # Record Time from start
+        self.tracked_cell_data['Time'].append((self.frame_num - 1) * self.time_between_frames)
+
 
     '''
     Determines if the given cell id relates to a known cell
@@ -324,7 +327,8 @@ class IndividualTracker:
     def export_to_excel(self, filename=None):
         # Create default filename using the timestamp
         if filename is None:
-            filename = f"{str(datetime.now())}_Cell{self.tracked_cell_id}_Data.xlsx"
+            timestamp = datetime.now().strftime("%b%d_%Y_%H-%M-%S")
+            filename = f"{timestamp}_Cell{self.tracked_cell_id}_Data.xlsx"
 
         # Export data to excel
         export.individual_to_excel_file(filename, self.tracked_cell_data, self.time_between_frames, f"Cell {self.tracked_cell_id}")
