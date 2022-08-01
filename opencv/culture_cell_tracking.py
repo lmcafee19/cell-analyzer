@@ -58,7 +58,6 @@ def main():
         # Initialize Objects to store data on cell size and location
         # Indexed by cell ID given by centroid tracker and set to size = num frames
         # Each Key contains a dictionary with data about the cells x position, y position, and area)
-        cell_data = OrderedDict()
         cell_positions_mm = OrderedDict()
         cell_sizes_mm = OrderedDict()
         positional_headers = ["Cell ID", "Initial X Position (mm)", "Initial Y Position (mm)"]
@@ -101,7 +100,7 @@ def main():
 
 
             # Record Data about Cell position, and cell size
-            # Record positonal data given by tracker
+            # Record positional data given by tracker
             for cell_id, coordinates in cell_locations.items():
                 # If no entry exist for that cell create it
                 if not (cell_id in cell_positions_mm):

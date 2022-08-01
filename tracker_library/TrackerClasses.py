@@ -8,7 +8,7 @@ from collections import OrderedDict
 from datetime import datetime
 
 """
-Defines class that manages the tracking of a specified individual cell
+Defines class that manages the tracking of a specified individual cell within a video
 """
 class IndividualTracker:
     def __init__(self, video_source, time_between_frames, width_mm=0, height_mm=0, pixels_per_mm=None, min_cell_size=10, max_cell_size=600, scale=.25, contrast=1.25, brightness=0.1,
@@ -21,8 +21,10 @@ class IndividualTracker:
         # Get video source width and height
         self.width = self.vid.get(cv.CAP_PROP_FRAME_WIDTH)
         self.height = self.vid.get(cv.CAP_PROP_FRAME_HEIGHT)
+        self.pixels_to_mm = pixels_per_mm
+        self.frame_num = 1
         self.frames = self.vid.get(cv.CAP_PROP_FRAME_COUNT)
-        print(self.frames)
+
         self.height_mm = int(height_mm)
         self.width_mm = int(width_mm)
         # Real world time in minutes that pass between each image being taken
@@ -49,8 +51,6 @@ class IndividualTracker:
         self.cell_areas = None
 
         # Keep Track of Photo Data for exports later
-        self.pixels_to_mm = pixels_per_mm
-        self.frame_num = 1
         self.first_frame = None
         self.final_frame = None
         self.Xmin = None
@@ -339,6 +339,273 @@ class IndividualTracker:
         export.individual_to_excel_file(filename, self.tracked_cell_data, self.time_between_frames, f"Cell {self.tracked_cell_id}")
 
 
+    '''
+    Creates a line chart visualizing selected data of an individual cell
+    @param data: Dictionary containing data about the cell
+    @param xaxis Value to place on the xaxis, should also be key to data dictionary
+    @param yaxis Value to place on the yaxis, should also be key to data dictionary
+    @param filename Optional. Name of PDF file to save chart to. If not specified user will be prompted to edit and save graph
+    @param labels Optional. Iterable container of labels for each point
+    @param num_labels Optional. Number of points on the graph to label. By default only the first and last point will be labeled. 
+          if set to 1 only the first point will be labeled
+    @param Title Optional. Title of the chart
+    @param color Name of the color to plot the points with
+    '''
+    def export_graph(self, xaxis, yaxis, title=None, labels=None, num_labels=2, filename=None, color="blue"):
+        # Use matplotlib to graph given data
+        matplotlib_graphing.export_individual_cell_data(self.tracked_cell_data, xaxis, yaxis, filename, labels, num_labels, title, color)
+
+
+    '''
+    Creates a line chart with the tracked cell's x position on the x axis and its y position on the y axis, points are
+    labeled with their respective timestamps 
+    @param filename Optional. Name of PDF file to save chart to. If not specified user will be prompted to edit and save graph
+    @param num_labels Optional. Number of points on the graph to label. By default only the first and last point will be labeled. 
+          if set to 1 only the first point will be labeled
+    '''
+    def export_movement_graph(self, num_labels=2, filename=None):
+        self.export_graph("X Position (mm)", "Y Position (mm)", f"Cell {self.tracked_cell_id}: Movement", self.tracked_cell_data["Time"], num_labels, filename)
+
+
+    '''
+    Creates a line chart with the tracked cell's area on the x axis and time on the y axis
+    @param filename Optional. Name of PDF file to save chart to. If not specified user will be prompted to edit and save graph
+    @param num_labels Optional. Number of points on the graph to label. By default only the first and last point will be labeled. 
+          if set to 1 only the first point will be labeled
+    '''
+    def export_area_graph(self, num_labels=2, filename=None):
+        self.export_graph("Time", "Area (mm^2)", f"Cell {self.tracked_cell_id}: Area over Time", filename=filename)
+
+
+    # Release the video source when the object is destroyed
+    def __del__(self):
+        if self.vid.isOpened():
+            self.vid.release()
+
+
+"""
+Defines class that manages the tracking of raw data for an entire culture of cells within a video
+"""
+class CultureTracker:
+    def __init__(self, video_source, time_between_frames, width_mm=0, height_mm=0, pixels_per_mm=None, min_cell_size=10, max_cell_size=600, scale=.25, contrast=1.25, brightness=0.1,
+                 blur_intensity=10):
+        # Open the video source
+        self.vid = cv.VideoCapture(video_source)
+        if not self.vid.isOpened():
+            raise ValueError("Unable to open video source", video_source)
+
+        # Get video source width and height
+        self.width = self.vid.get(cv.CAP_PROP_FRAME_WIDTH)
+        self.height = self.vid.get(cv.CAP_PROP_FRAME_HEIGHT)
+        self.pixels_to_mm = pixels_per_mm
+        self.frame_num = 1
+        self.frames = self.vid.get(cv.CAP_PROP_FRAME_COUNT)
+
+        self.height_mm = int(height_mm)
+        self.width_mm = int(width_mm)
+        self.area_mm = None
+        # Real world time in minutes that pass between each image being taken
+        self.time_between_frames = time_between_frames
+
+        # Max/Min Size of Objects to detect as cells within video
+        self.min_cell_size = min_cell_size
+        self.max_cell_size = max_cell_size
+
+        # Define Constants for video editing
+        self.scale = scale
+        self.contrast = contrast
+        self.brightness = brightness
+        self.blur_intensity = blur_intensity
+
+        # Tracker to collect data about each cell each frame
+        self.tracker = ct.CentroidTracker()
+
+        # Keep track of last played frame's tracker data
+        self.cell_locations = None
+        self.cell_areas = None
+
+        # Dictionaries to keep track of raw data collected
+        self.cell_positions_mm = OrderedDict()
+        self.cell_sizes_mm = OrderedDict()
+
+        # Keep Excel Column Headers for exports
+        self.positional_headers = ["Cell ID", "Initial X Position (mm)", "Initial Y Position (mm)"]
+        self.size_headers = ["Cell ID", "Initial Size (mm^2)"]
+
+    '''
+    Updates the min_cell_size field
+    @param min_size Positive integer pertaining to smallest size cell to track
+    '''
+    def set_min_size(self, min_size:int):
+        self.min_cell_size = min_size
+
+
+    '''
+    Updates the max_cell_size field
+    @param min_size Positive integer pertaining to largest size cell to track
+    '''
+    def set_max_size(self, max_size:int):
+        self.max_cell_size = max_size
+
+
+    '''
+    Updates the contrast field
+    '''
+    def set_contrast(self, contrast):
+        self.contrast = contrast
+
+
+    '''
+    Updates the brightness field
+    '''
+    def set_brightness(self, brightness):
+        self.brightness = brightness
+
+
+    '''
+    Updates the blur_intensity field
+    '''
+    def set_blur_intensity(self, blur_intensity):
+        self.blur_intensity = blur_intensity
+
+
+    def get_frame(self):
+        """
+        Return the next frame
+        """
+        if self.vid.isOpened():
+            ret, frame = self.vid.read()
+            if ret:
+                # Return a boolean success flag and the current frame converted to BGR
+                return ret, frame
+            else:
+                return ret, None
+        else:
+            return 0, None
+
+
+    def goto_frame(self, frame_no):
+        """
+        Go to specific frame
+        """
+        if self.vid.isOpened():
+            self.vid.set(cv.CAP_PROP_POS_FRAMES, frame_no)  # Set current frame
+            ret, frame = self.vid.read()  # Retrieve frame
+            if ret:
+                # Return a boolean success flag and the current frame converted to BGR
+                return ret, cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+            else:
+                return ret, None
+        else:
+            return 0, None
+
+
+    '''
+    Retrieves the next frame of the current video and records data about the tracked cell. If no frame is found returns None instead
+    @:returns unedited frame, edited frame
+    '''
+    def next_frame(self):
+        valid, frame = self.vid.read()
+
+        # TODO If next frame is not found return None?
+        if not valid:
+            return None, None
+
+        # Process Image to better detect cells
+        processed = analysis.process_image(frame, analysis.Algorithm.CANNY, self.scale, self.contrast,
+                                            self.brightness, self.blur_intensity)
+
+        # Detect minimum cell boundaries and their centroids for tracker
+        processed, shapes = analysis.detect_shape_v2(processed, self.min_cell_size, self.max_cell_size)
+
+        # If this is the first frame find the pixels per mm measurement
+        if self.frame_num == 1:
+            # Grab Frame's dimensions in order to convert pixels to mm
+            (h, w) = processed.shape[:2]
+            if self.pixels_to_mm is None or self.pixels_to_mm == 0:
+                # If instead the dimensions of the image were given then calculate the pixel conversion using those
+                self.pixels_to_mm = ((self.height_mm / h) + (self.width_mm / w)) / 2
+                # Calculate the area of the video by multiplying the dimensions
+                self.area_mm = self.height_mm * self.width_mm
+
+            else:
+                # If pixels to mm were already given, then convert it to our new scale for the image
+                self.pixels_to_mm = self.pixels_to_mm * self.scale
+                # Calculate the area by converting the area in pixels to the area in mm
+                self.area_mm = (h * w) * (self.pixels_to_mm ** 2)
+
+
+        # Use Tracker to label and record coordinates of all cells
+        self.cell_locations, self.cell_areas = self.tracker.update(shapes)
+
+        # Update Tracking information
+        self.update_tracker_data()
+
+        # Increment Frame Counter
+        self.frame_num += 1
+
+        # Return original frame and one with all cells encompassed
+        return frame, processed
+
+
+    '''
+    Updates recorded data about the currently tracked cell based on data collected in the last frame 
+    '''
+    def update_tracker_data(self):
+        # Record Data about Cell position, and cell size
+        # Record positional data given by tracker
+        for cell_id, coordinates in self.cell_locations.items():
+            # If no entry exist for that cell create it
+            if not (cell_id in self.cell_positions_mm):
+                self.cell_positions_mm[cell_id] = list()
+
+            # Convert coordinates to mm
+            # Coordinates correspond to centroids distance from the left and top of the image
+            coordinates_mm = list(coordinates)
+            coordinates_mm[0] = float(coordinates_mm[0] * self.pixels_to_mm)
+            coordinates_mm[1] = float(coordinates_mm[1] * self.pixels_to_mm)
+
+            self.cell_positions_mm[cell_id].append(coordinates_mm)
+
+        # Record Area
+        for cell_id, area in self.cell_areas.items():
+            # If no entry exist for that cell create it
+            if not (cell_id in self.cell_sizes_mm):
+                self.cell_sizes_mm[cell_id] = list()
+
+            # Convert area to mm^2
+            area_mm = area * (self.pixels_to_mm ** 2)
+            self.cell_sizes_mm[cell_id].append(area_mm)
+
+
+    '''
+    Exports recorded positional, area, and statistical data about the tracked cell to an excel spreadsheet
+    @param filename Optional path + filename to save this data to, should end in extension .xlsx. 
+                    If not specified an autogenerated name will be used
+    '''
+    def export_to_excel(self, filename=None):
+        # Create default filename using the timestamp
+        if filename is None:
+            timestamp = datetime.now().strftime("%b%d_%Y_%H-%M-%S")
+            filename = f"{timestamp}_Cell{self.tracked_cell_id}_Data.xlsx"
+
+        # Generate Headers
+        for i in range(1, self.frame_num):
+            self.size_headers.append(f"Frame {i} Size")
+            self.positional_headers.append(f"Frame {i} X Position")
+            self.positional_headers.append(f"Frame {i} Y Position")
+
+        # Add Final Columns for calculations
+        # positional_headers.append("Distance between Initial Position and Final Position")
+        self.size_headers.append("Final Growth")
+        self.size_headers.append("Largest Growth in one interval")
+
+
+        # Export Data to excel sheet
+        export.culture_to_excel_file(filename, self.cell_positions_mm, self.cell_sizes_mm, self.time_between_frames,
+                                    (self.area_mm), self.positional_headers, self.size_headers)
+
+    # TODO Section on Graph exports
     '''
     Creates a line chart visualizing selected data of an individual cell
     @param data: Dictionary containing data about the cell
