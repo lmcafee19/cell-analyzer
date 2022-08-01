@@ -98,9 +98,9 @@ class App:
                    [sg.Text('Select Graphs to Export:')],
                    [sg.Check('Area over Time', key="Area over Time")],
                    [sg.Check('Movement over Time', key='Movement over Time', enable_events=True)],
-                   [sg.Text('Number of Points to Label.\n  By default only the First and Last point will be labeled, reducing this number improves visual clarity', size=8, key="num_labels_desc", visible=False), sg.Input(key='num_labels', visible=False)],
+                   [sg.Text('Number of Points to Label.\n  By default only the First and Last point will be labeled, reducing this number improves visual clarity', key="num_labels_desc", visible=False), sg.Input(key='num_labels', visible=False)],
                    [sg.Text('Select Images to Export', key="images_label", visible=False)],
-                   [sg.Check('Export Final Path of Tracked Cell', key="image_tracked", visible=False)],
+                   [sg.Check('Export Final Path of Tracked Cell', key="path_image", visible=False)],
                    [sg.Button('Export'), sg.Button("Cancel", key="Cancel")],
                    # Export Button finishes script and program, Cancel returns to previous page
                    [sg.Text("Data Currently Exporting. Application will close once process is finished",
@@ -205,13 +205,19 @@ class App:
                 blur = self.window["blur"].get()
 
                 # Check that all fields have been filled out with valid data then determine next action based on tracking type
-                if isValidParameters(file, width, height, mins, pixels_per_mm):
+                if isValidParameters(file, width, height, mins, pixels_per_mm, min_size, max_size, contrast, brightness, blur):
                     # TODO check all non essential parameters and display popup if they are invalid
 
                     # If individual tracking has been selected
                     if self.window.Element("individual_radio").get():
                         # Initialize Individual Tracker with given arguments
-                        self.video_player = TrackerClasses.IndividualTracker(file, float(width), float(height), int(mins), float(pixels_per_mm))
+                        # If valid pixels per mm were given then call the individual tracker with that parameter
+                        if isValidPixels(pixels_per_mm):
+                            self.video_player = TrackerClasses.IndividualTracker(file, int(mins),
+                                                                                 pixels_per_mm=float(pixels_per_mm))
+                        else:
+                            # Otherwise call it with the video's height/width
+                            self.video_player = TrackerClasses.IndividualTracker(file, int(mins), width_mm=float(width), height_mm=float(height))
 
                         # Set all extra input arguments if they are valid
                         if isValidInt(min_size) and (min_size != "" and min_size is not None):
@@ -237,21 +243,34 @@ class App:
                     # Culture Tracking is selected
                     elif self.window.Element("culture_radio").get():
                         # Initialize Culture Tracker
-                        #self.video_player = TrackerClasses.CultureTracker(file, width, height, mins)
+                        # If valid pixels per mm were given then call the individual tracker with that parameter
+                        # if isValidPixels(pixels_per_mm):
+                        #     self.video_player = TrackerClasses.IndividualTracker(file, int(mins),
+                        #                                                          pixels_per_mm=float(pixels_per_mm))
+                        # else:
+                        #     # Otherwise call it with the video's height/width
+                        #     self.video_player = TrackerClasses.IndividualTracker(file, int(mins), width_mm=float(width),
+                        #                                                          height_mm=float(height))
+                        #
+                        # # Set all extra input arguments if they are valid
+                        # if isValidInt(min_size) and (min_size != "" and min_size is not None):
+                        #     self.video_player.set_min_size(int(min_size))
+                        # if isValidInt(max_size) and (max_size != "" and max_size is not None):
+                        #     self.video_player.set_max_size(int(max_size))
+                        # if isValidFloat(contrast) and (contrast != "" and contrast is not None):
+                        #     self.video_player.set_contrast(float(contrast))
+                        # if isValidFloat(brightness) and (brightness != "" and brightness is not None):
+                        #     self.video_player.set_brightness(float(brightness))
+                        # if isValidInt(blur) and blur != "" and blur is not None:
+                        #     self.video_player.set_blur_intensity(int(blur))
 
                         # Continue to video player page
                         self.window[f'-COL{MAIN_MENU}-'].update(visible=False)
                         self.window[f'-COL{VIDEO_PLAYER}-'].update(visible=True)
 
-                        # TODO Play Unedited and Edited Video on Video Player View
-
                     # No Method is Selected do not run
                     else:
                         sg.PopupError("Method of Tracking must be selected before running")
-
-                # If all Required field are not filled or have invalid input, show popup
-                else:
-                    sg.PopupError("Invalid Parameters")
 
             # ---- Cell Selection Events ---- #
             if event == "track_individual":
@@ -287,7 +306,7 @@ class App:
                 # Enable individual cell tracking specifics exports if it meets the reqs
                 if self.window.Element("individual_radio").get():
                     self.window['images_label'].update(visible=True)
-                    self.window['image_tracked'].update(visible=True)
+                    self.window['path_image'].update(visible=True)
 
             # ---- Export Events ---- #
             if event == "excel_export":
@@ -326,6 +345,8 @@ class App:
 
                 exportgraph_area = self.window.Element("Area over Time").get()
                 exportgraph_movement = self.window.Element("Movement over Time").get()
+                num_labels = self.window.Element("num_labels").get()
+                exportpath_image = self.window.Element("path_image").get()
 
 
                 # Valid Inputs as needed
@@ -333,7 +354,7 @@ class App:
                     # Display Export Message
                     self.window['export_message'].update(visible=True)
 
-                    # TODO Call export functions based on what boxes were checked
+                    # TODO Allow User to input filenames for all different exports
                     # Continue Script and Export Data
                     # If export raw excel data was selected call excel export data
                     if export_excel:
@@ -344,8 +365,20 @@ class App:
                             self.video_player.export_to_excel()
 
                     # Graph Exports
+                    # Create Area vs Time graph
+                    if exportgraph_area:
+                        self.video_player.export_area_graph()
+                    # Create X vs Y Position graph
+                    if exportgraph_movement:
+                        # If a number of labels was supplied pass it as a parameter
+                        if num_labels != '' and num_labels is not None:
+                            self.video_player.export_movement_graph(num_labels=num_labels)
+                        else:
+                            self.video_player.export_movement_graph()
 
                     # Image Exports
+                    if exportpath_image:
+                        self.video_player.export_final_path()
 
                     # Close app once Export is finished
                     running = False
@@ -563,18 +596,72 @@ class MyVideoCapture:
 
 
 '''
-    Checks if the given tracker parameters are valid
+    Checks if the given tracker parameters are valid. User only needs valid height/width or pixels. 
+    Displays error popups if arguments given are invalid
     @param videofile The path to the video file to check
     @param width Width of the video frame in mm
     @param height Height of the video frame in mm
     @time_between_frames Time in minutes between each image in the video
+    @pixels Pixels per mm
     @return True if all given parameters are valid, false if not
 '''
-def isValidParameters(videofile, width, height, time_between_frames, pixels):
+def isValidParameters(videofile, width, height, time_between_frames, pixels, min_size, max_size, contrast, brightness, blur):
     valid = False
 
-    if isValidVideo(videofile) and isValidDimensions(width, height) and isValidTime(time_between_frames) and isValidPixels(pixels):
-        valid = True
+    # User is only required to enter valid dimensions or pixels so ensure one of them is correct
+    # Video Validation
+    if isValidVideo(videofile):
+        # Time Validation
+        if isValidTime(time_between_frames):
+            # Validate Dimensions or Pixel measurement
+            if isValidDimensions(width, height) or isValidPixels(pixels):
+                # If the optional parameter is filled and valid, or left empty proceed
+                # Validate min size
+                if (isValidInt(min_size) and (min_size != "" and min_size is not None)) or min_size == "":
+                    # Validate max size
+                    if (isValidInt(max_size) and (max_size != "" and max_size is not None)) or max_size == "":
+                        # Validate contrast
+                        if (isValidFloat(contrast) and (contrast != "" and contrast is not None)) or contrast =="":
+                            # Validate brightness
+                            if (isValidFloat(brightness) and (brightness != "" and brightness is not None)) or brightness =="":
+                                # Validate Blur
+                                if (isValidInt(blur) and blur != "" and blur is not None) or blur =="":
+                                    valid = True
+                                # Display Blur Error Messsage
+                                else:
+                                    sg.popup_error("Entered: Blur intensity is invalid. Blur intensity must be a positive integer or left empty for the default value")
+                            # Display brightness error message
+                            else:
+                                sg.popup_error(
+                                    "Entered: Brightness is invalid. Brightness must be a positive integer/float or left empty for the default value")
+                        # Contrast error message
+                        else:
+                            sg.popup_error(
+                                "Entered: Contrast is invalid. Contrast must be a positive integer or left empty for the default value")
+                    # Max Size error message
+                    else:
+                        sg.popup_error(
+                            "Entered: Max size is invalid. Max size must be a positive integer or left empty for the default value")
+                # Min size error message
+                else:
+                    sg.popup_error(
+                        "Entered: min size is invalid. Min size must be a positive integer or left empty for the default value")
+            # Dimensions/Pixel Measurement Error
+            else:
+                sg.popup_error("Entered: Dimensions or Pixels per mm is invalid. Either the width and height fields or the pixels per mm field must be filled. They must be a positive integer/float")
+        # Time Error Message
+        else:
+            sg.popup_error(
+                "Entered: time between frames is invalid. This Field must be filled with a positive integer.")
+    # Video Validation
+    else:
+        sg.popup_error(
+            "Entered: Video File is invalid. Supported File types: .mp4, .avi")
+
+
+
+    # if isValidVideo(videofile) and isValidTime(time_between_frames) and (isValidDimensions(width, height) or isValidPixels(pixels)):
+    #     valid = True
 
     return valid
 

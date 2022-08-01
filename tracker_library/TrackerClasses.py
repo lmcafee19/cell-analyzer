@@ -11,7 +11,7 @@ from datetime import datetime
 Defines class that manages the tracking of a specified individual cell
 """
 class IndividualTracker:
-    def __init__(self, video_source, width_mm, height_mm, time_between_frames, pixels_per_mm=None, min_cell_size=10, max_cell_size=600, scale=.25, contrast=1.25, brightness=0.1,
+    def __init__(self, video_source, time_between_frames, width_mm=0, height_mm=0, pixels_per_mm=None, min_cell_size=10, max_cell_size=600, scale=.25, contrast=1.25, brightness=0.1,
                  blur_intensity=10):
         # Open the video source
         self.vid = cv.VideoCapture(video_source)
@@ -22,6 +22,7 @@ class IndividualTracker:
         self.width = self.vid.get(cv.CAP_PROP_FRAME_WIDTH)
         self.height = self.vid.get(cv.CAP_PROP_FRAME_HEIGHT)
         self.frames = self.vid.get(cv.CAP_PROP_FRAME_COUNT)
+        print(self.frames)
         self.height_mm = int(height_mm)
         self.width_mm = int(width_mm)
         # Real world time in minutes that pass between each image being taken
@@ -40,7 +41,7 @@ class IndividualTracker:
         # Keep track of cell id
         self.tracker = ct.CentroidTracker()
         self.tracked_cell_id = -1
-        self.tracked_cell_data = {'Time': [0], 'X Position (mm)': [], 'Y Position (mm)': [], 'Area (mm^2)': []}
+        self.tracked_cell_data = {'Time': [], 'X Position (mm)': [], 'Y Position (mm)': [], 'Area (mm^2)': []}
         self.tracked_cell_coords = OrderedDict()
 
         # Keep track of last played frame's tracker data
@@ -80,17 +81,20 @@ class IndividualTracker:
     def set_max_size(self, max_size:int):
         self.max_cell_size = max_size
 
+
     '''
     Updates the contrast field
     '''
     def set_contrast(self, contrast):
         self.contrast = contrast
 
+
     '''
     Updates the brightness field
     '''
     def set_brightness(self, brightness):
         self.brightness = brightness
+
 
     '''
     Updates the blur_intensity field
@@ -159,12 +163,12 @@ class IndividualTracker:
         # Update Tracking information
         self.update_tracker_data()
 
+        # Increment Frame Counter
+        self.frame_num += 1
+
         # If this is the final frame of the video record it for export later
         if self.frame_num >= self.frames:
             self.final_frame = frame
-
-        # Increment Frame Counter
-        self.frame_num += 1
 
         return frame, processed
 
@@ -297,7 +301,8 @@ class IndividualTracker:
 
         # Create default filename using the timestamp
         if filename is None:
-            filename = f"{str(datetime.now())}_Cell{self.tracked_cell_id}_Path.png"
+            timestamp = datetime.now().strftime("%b%d_%Y_%H-%M-%S")
+            filename = f"{timestamp}_Cell{self.tracked_cell_id}_Path.png"
 
         # Create Color Image containing the path the tracked cell took
         # Scale image to match
