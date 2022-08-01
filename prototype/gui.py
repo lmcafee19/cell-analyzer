@@ -57,12 +57,12 @@ class App:
                     sg.Text('Real World Height of the Video (mm)'), sg.Input(key="video_height_mm")],
                    [sg.Push(), sg.Text('Number of pixels per mm'), sg.Input(key='pixels_per_mm')],
                    [sg.Push(), sg.Text('Time Between Images (mins)'), sg.Input(key="time_between_frames")],
-                   [sg.Push(), sg.Text('Min Cell Size (Positive Integer. Default = 10)'), sg.Input(key="min_size")],
-                   [sg.Push(), sg.Text('Max Cell Size (Positive Integer. Default = 500)'), sg.Input(key="max_size")],
+                   [sg.Push(), sg.Text('Min Cell Size (Default = 10)'), sg.Input(key="min_size")],
+                   [sg.Push(), sg.Text('Max Cell Size (Default = 500)'), sg.Input(key="max_size")],
                    [sg.Push(), sg.Text('Video Editor Settings')],
-                   [sg.Push(), sg.Text('Contrast (Positive Floating Point. Default = 1.25)'), sg.Input(key="contrast")],
-                   [sg.Push(), sg.Text('Brightness (Positive Floating Point. 0 leaves the brightness unchanged. Default = .1)'), sg.Input(key="brightness")],
-                   [sg.Push(), sg.Text('Blur Intensity (Positive Integer. Default = 10)'), sg.Input(key="blur")],
+                   [sg.Push(), sg.Text('Contrast (Default = 1.25)'), sg.Input(key="contrast")],
+                   [sg.Push(), sg.Text('Brightness (0 leaves the brightness unchanged. Default = .1)'), sg.Input(key="brightness")],
+                   [sg.Push(), sg.Text('Blur Intensity (Default = 10)'), sg.Input(key="blur")],
                    [sg.Button('Run'), sg.Button('Exit')]]
 
         # Video Player Layout
@@ -125,9 +125,6 @@ class App:
         self.edited_canvas = self.window.Element("edited_video").TKCanvas
         self.first_frame_orig = self.window.Element("original_first_frame").TKCanvas
         self.first_frame_edited = self.window.Element("edited_first_frame").TKCanvas
-
-        # Start video display thread
-        self.load_video()
 
         layout = 1
         running = True
@@ -206,7 +203,6 @@ class App:
 
                 # Check that all fields have been filled out with valid data then determine next action based on tracking type
                 if isValidParameters(file, width, height, mins, pixels_per_mm, min_size, max_size, contrast, brightness, blur):
-                    # TODO check all non essential parameters and display popup if they are invalid
 
                     # If individual tracking has been selected
                     if self.window.Element("individual_radio").get():
@@ -239,17 +235,20 @@ class App:
                         # Display First Frame of Edited and UnEdited Video on Cell Selection View
                         self.display_first_frame()
 
+                        # Start video display thread
+                        self.load_video()
+
 
                     # Culture Tracking is selected
                     elif self.window.Element("culture_radio").get():
                         # Initialize Culture Tracker
                         # If valid pixels per mm were given then call the individual tracker with that parameter
                         # if isValidPixels(pixels_per_mm):
-                        #     self.video_player = TrackerClasses.IndividualTracker(file, int(mins),
+                        #     self.video_player = TrackerClasses.CultureTracker(file, int(mins),
                         #                                                          pixels_per_mm=float(pixels_per_mm))
                         # else:
                         #     # Otherwise call it with the video's height/width
-                        #     self.video_player = TrackerClasses.IndividualTracker(file, int(mins), width_mm=float(width),
+                        #     self.video_player = TrackerClasses.CultureTracker(file, int(mins), width_mm=float(width),
                         #                                                          height_mm=float(height))
                         #
                         # # Set all extra input arguments if they are valid
@@ -267,6 +266,9 @@ class App:
                         # Continue to video player page
                         self.window[f'-COL{MAIN_MENU}-'].update(visible=False)
                         self.window[f'-COL{VIDEO_PLAYER}-'].update(visible=True)
+
+                        # Start video display thread
+                        self.load_video()
 
                     # No Method is Selected do not run
                     else:
