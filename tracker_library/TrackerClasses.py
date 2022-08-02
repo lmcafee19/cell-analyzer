@@ -590,13 +590,13 @@ class CultureTracker:
           if set to 1 only the first point will be labeled
     '''
     def export_area_graph(self, num_labels=2, filename=None):
-        data = {"Time (mins)": list(), "Average Area (mm^2)": list()}
+        graph_data = {"Time (mins)": [], "Average Area (mm^2)": []}
         # Calculate the average area of each cell per frame
         # Loop through all frames and generate the needed data
-        for i in range(1, self.frame_num):
+        for i in range(0, self.frame_num - 1):
             areas = []
             # Record Time at this frame for X axis
-            data["Time (mins)"].append(i * self.time_between_frames)
+            graph_data["Time (mins)"].append(i * self.time_between_frames)
 
             # Loop through position dict and record the distance each cell traveled between last frame and this
             for key, data in self.cell_sizes_mm.items():
@@ -606,10 +606,12 @@ class CultureTracker:
                     areas.append(data[i])
 
             # Average out the recorded areas traveled this frame and append it to our list
-            data["Average Area (mm^2)"].append(sum(areas) / len(areas))
+            if areas:
+                avg = float(sum(areas)/len(areas))
+                graph_data["Average Area (mm^2)"].append(avg)
 
         # Call Generic Export graph method with created parameters
-        self.export_graph(data, "Time (mins)", "Average Area (mm^2)", f"Average Area of Each Cell",
+        self.export_graph(graph_data, "Time (mins)", "Average Area (mm^2)", f"Average Area of Each Cell",
                           filename=filename)
 
 
@@ -622,13 +624,13 @@ class CultureTracker:
         '''
     def export_average_speed_graph(self, num_labels=2, filename=None):
         # Create Dictionary containing an entry for Time and entry for the average displacement (distance traveled between last frame and current frame)
-        data = {"Time (mins)": list(), "Average Speed (mm/min)": list()}
+        graph_data = {"Time (mins)": [], "Average Speed (mm/min)": []}
 
         # Loop through all frames and generate the needed data
-        for i in range(1, self.frame_num):
+        for i in range(1, self.frame_num - 1):
             speeds = []
             # Record Time at this frame for X axis
-            data["Time (mins)"].append(i * self.time_between_frames)
+            graph_data["Time (mins)"].append(i * self.time_between_frames)
             # Loop through position dict and record the distance each cell traveled between last frame and this
             for key, data in self.cell_positions_mm.items():
                 # If value we are trying to grab is not None
@@ -646,10 +648,11 @@ class CultureTracker:
                         speeds.append(speed)
 
             # Average out the recorded distances traveled this frame and append it to our list
-            data["Average Speed (mm/min)"].append(sum(speeds) / len(speeds))
+            avg = float(sum(speeds)/len(speeds))
+            graph_data["Average Speed (mm/min)"].append(avg)
 
         # Call Generic Export graph method with created parameters
-        self.export_graph(data, "Time (mins)", "Average Speed (mm/min)", f"Average Speed",
+        self.export_graph(graph_data, "Time (mins)", "Average Speed (mm/min)", f"Average Speed",
                           filename=filename)
 
 
@@ -661,13 +664,13 @@ class CultureTracker:
     '''
     def export_average_displacement_graph(self, num_labels=2, filename=None):
         # Create Dictionary containing an entry for Time and entry for the average displacement (distance traveled between last frame and current frame)
-        data = {"Time (mins)": list(), "Average Displacement (mm)": list()}
+        graph_data = {"Time (mins)": [], "Average Displacement (mm)": []}
 
         # Loop through all frames and generate the needed data
-        for i in range(1, self.frame_num):
+        for i in range(1, self.frame_num - 1):
             distances = []
             # Record Time at this frame for X axis
-            data["Time (mins)"].append(i * self.time_between_frames)
+            graph_data["Time (mins)"].append(i * self.time_between_frames)
             # Loop through position dict and record the distance each cell traveled between last frame and this
             for key, data in self.cell_positions_mm.items():
                 # If value we are trying to grab is not None
@@ -684,10 +687,11 @@ class CultureTracker:
                         distances.append(distance)
 
             # Average out the recorded distances traveled this frame and append it to our list
-            data["Average Displacement (mm)"].append(sum(distances)/len(distances))
+            avg = sum(distances)/len(distances)
+            graph_data["Average Displacement (mm)"].append(avg)
 
         # Call Generic Export graph method with created parameters
-        self.export_graph(data, "Time (mins)", "Average Displacement (mm)", f"Average Displacement Between Time Intervals", filename=filename)
+        self.export_graph(graph_data, "Time (mins)", "Average Displacement (mm)", f"Average Displacement Between Time Intervals", filename=filename)
 
 
     # Release the video source when the object is destroyed
