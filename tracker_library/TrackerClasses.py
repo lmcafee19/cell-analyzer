@@ -496,6 +496,10 @@ class CultureTracker:
             # If no entry exist for that cell create it
             if not (cell_id in self.cell_positions_mm):
                 self.cell_positions_mm[cell_id] = list()
+                # Append zeroes as placeholder until we reach our current frame.
+                # So that recorded data is accurate for the frame it was found on
+                for i in range(1, self.frame_num):
+                    self.cell_positions_mm[cell_id].append((0, 0))
 
             # Convert coordinates to mm
             # Coordinates correspond to centroids distance from the left and top of the image
@@ -510,6 +514,10 @@ class CultureTracker:
             # If no entry exist for that cell create it
             if not (cell_id in self.cell_sizes_mm):
                 self.cell_sizes_mm[cell_id] = list()
+                # Append zeroes as placeholder until we reach our current frame.
+                # So that recorded data is accurate for the frame it was found on
+                for i in range(1, self.frame_num):
+                    self.cell_sizes_mm[cell_id].append(0)
 
             # Convert area to mm^2
             area_mm = area * (self.pixels_to_mm ** 2)
@@ -528,7 +536,7 @@ class CultureTracker:
             filename = f"{timestamp}_Culture_Data.xlsx"
 
         # Generate Headers
-        for i in range(2, self.frames):
+        for i in range(2, self.frame_num):
             self.size_headers.append(f"Frame {i} Size")
             self.positional_headers.append(f"Frame {i} X Position")
             self.positional_headers.append(f"Frame {i} Y Position")
@@ -556,9 +564,9 @@ class CultureTracker:
     @param Title Optional. Title of the chart
     @param color Name of the color to plot the points with
     '''
-    def export_graph(self, xaxis, yaxis, title=None, labels=None, num_labels=2, filename=None, color="blue"):
+    def export_graph(self, data, xaxis, yaxis, title=None, labels=None, num_labels=2, filename=None, color="blue"):
         # Use matplotlib to graph given data
-        matplotlib_graphing.export_individual_cell_data(self.tracked_cell_data, xaxis, yaxis, filename, labels, num_labels, title, color)
+        matplotlib_graphing.export_line_chart(data, xaxis, yaxis, filename, labels, num_labels, title, color)
 
 
     '''
@@ -599,6 +607,37 @@ class CultureTracker:
               if set to 1 only the first point will be labeled
     '''
     def export_average_displacement_graph(self, num_labels=2, filename=None):
+        # Create Dictionary containing an entry for Time and entry for the average displacement (distance traveled between last frame and current frame)
+        data = {"Time (mins)": list(), "Average Displacement (mm)": list()}
+
+        # Loop through all frames and generate the needed data
+        for i in range(1, self.frame_num):
+            data["Time (mins)"].append(i * self.time_between_frames)
+            # Loop through each valid or non zero
+
+        for key, data in self.cell_positions_mm.items():
+            if data is not None:
+                data = tuple(data)
+                # Grab origin point
+                origin_x = data[0][0]
+                origin_y = data[0][1]
+                x = 0
+                y = 0
+                distances = []
+
+                # Loop through all positions and calculate stats between points
+                for i in range(1, len(data)):
+                    # Grab x and y coordinates
+                    x = data[i][0]
+                    y = data[i][1]
+                    prevx = data[i - 1][0]
+                    prevy = data[i - 1][1]
+
+                    # Calc Distance traveled between frames
+                    distance = math.dist([prevx, prevy], [x, y])
+                    distances.append(distance)
+
+        # Call Generic Export graph method with created parameters
         self.export_graph("Time", "Area (mm^2)", f"Cell {self.tracked_cell_id}: Area over Time", filename=filename)
 
 

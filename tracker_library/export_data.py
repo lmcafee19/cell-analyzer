@@ -209,7 +209,8 @@ def area_to_excel_file(filename, data, headers=None, sheetname=None):
             current_col += 1
 
         # Insert Excel Formula to display Total Growth the cell Underwent
-        growth_formula = f'=INDIRECT(ADDRESS({current_row}, {current_col - 1})) - INDIRECT(ADDRESS({current_row}, 2))'
+        #=INDEX(B142:DR142,MATCH(TRUE,INDEX((B142:DR142<>0),0),0))
+        growth_formula = f'=INDIRECT(ADDRESS({current_row}, {current_col - 1})) - INDEX(INDIRECT(ADDRESS({current_row}, 2)):INDIRECT(ADDRESS({current_row}, {current_col})),MATCH(TRUE,INDEX((INDIRECT(ADDRESS({current_row}, 2)):INDIRECT(ADDRESS({current_row}, {current_col}))<>0),0),0))'
         sheet.cell(current_row, current_col, growth_formula)
         current_col += 1
         # Insert Excel Formula to display largest amount of change between two time intervals
@@ -403,39 +404,41 @@ def calc_culture_cell_statistics(positional_data, area_data, time_between_frames
 
             # Loop through all positions and calculate stats between points
             for i in range(1, len(data)):
-                # Grab x and y coordinates
-                x = data[i][0]
-                y = data[i][1]
-                prevx = data[i-1][0]
-                prevy = data[i-1][1]
+                # Only do stats on non zero values as zero is simply a placeholder specifying that the cell was not tracked that frame
+                if data[i][0] != 0 or data[i][1] != 0:
+                    # Grab x and y coordinates
+                    x = data[i][0]
+                    y = data[i][1]
+                    prevx = data[i-1][0]
+                    prevy = data[i-1][1]
 
 
-                # Calc Distance traveled between frames
-                distance = math.dist([prevx, prevy], [x, y])
-                distances.append(distance)
+                    # Calc Distance traveled between frames
+                    distance = math.dist([prevx, prevy], [x, y])
+                    distances.append(distance)
 
-                # calc current speed
-                speeds.append(distance/time_between_frames)
+                    # calc current speed
+                    speeds.append(distance/time_between_frames)
 
-                # If on final coordinate calculate total displacement, angle and distance between this and origin point
-                # Because of the way opencv stores coordinates
-                # ((0,0) would be the top left) we need to convert the angle by subtracting 360 degrees by it
-                if i == (len(data) - 1):
-                    final_angle = 360 - ((math.atan2(y - origin_y, x - origin_x) * (180 / math.pi)) % 360)
-                    angle_of_direction.append(final_angle)
+                    # If on final coordinate calculate total displacement, angle and distance between this and origin point
+                    # Because of the way opencv stores coordinates
+                    # ((0,0) would be the top left) we need to convert the angle by subtracting 360 degrees by it
+                    if i == (len(data) - 1):
+                        final_angle = 360 - ((math.atan2(y - origin_y, x - origin_x) * (180 / math.pi)) % 360)
+                        angle_of_direction.append(final_angle)
 
-                    # Calc final distance from origin
-                    final_distances.append(math.dist([origin_x, origin_y], [x, y]))
+                        # Calc final distance from origin
+                        final_distances.append(math.dist([origin_x, origin_y], [x, y]))
 
-                    # Record total displacement
-                    displacements.append(sum(distances))
+                        # Record total displacement
+                        displacements.append(sum(distances))
 
     # Generate Stats based on Cell Size
     for key, value in area_data.items():
         value = list(value)
 
         # Check if this cell is the new largest or smallest cell in the culture
-        if min_cell_size is None or min(value) < min_cell_size:
+        if min(value) != 0 and (min_cell_size is None or min(value) < min_cell_size):
             min_cell_size = min(value)
             min_cell_id = key
         if max_cell_size < max(value):
@@ -444,8 +447,10 @@ def calc_culture_cell_statistics(positional_data, area_data, time_between_frames
 
         # Record Final Size for the cell
         final_sizes.append(value[len(value)-1])
+        # Find first non zero value within its list of areas and record the index
+        start_index = value.index(next(filter(lambda x: x!=0, value)))
         # Record difference between the initial cell and its final size
-        growth.append(value[len(value) - 1] - value[0])
+        growth.append(value[len(value) - 1] - value[start_index])
 
 
     # Total Displacement (distance traveled throughout whole video)

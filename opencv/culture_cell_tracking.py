@@ -11,8 +11,8 @@ from tracker_library import export_data as export
 from collections import OrderedDict
 
 # Define Constants
-VIDEO = '../videos/Circular_high_contrast.avi'
-EXPORT_FILE = "../data/culture_data.xlsx"
+VIDEO = '../videos/Sample_cell_culture_4.mp4'
+EXPORT_FILE = "../data/aggregatefunc_data.xlsx"
 SCALE = 0.25
 CONTRAST = 1.25
 BRIGHTNESS = 0.1
@@ -62,7 +62,7 @@ def main():
         cell_sizes_mm = OrderedDict()
         positional_headers = ["Cell ID", "Initial X Position (mm)", "Initial Y Position (mm)"]
         size_headers = ["Cell ID", "Initial Size (mm^2)"]
-        frame_num = 0
+        frame_num = 1
 
         while True:
             valid, frame = capture.read()
@@ -105,6 +105,9 @@ def main():
                 # If no entry exist for that cell create it
                 if not (cell_id in cell_positions_mm):
                     cell_positions_mm[cell_id] = list()
+                    # Append zeroes as placeholder until we reach our current frame. So that recorded data is accurate for the frame it was found on
+                    for i in range(1, frame_num):
+                        cell_positions_mm[cell_id].append((0,0))
 
                 # Convert coordinates to mm
                 # Coordinates correspond to centroids distance from the left and top of the image
@@ -119,6 +122,10 @@ def main():
                 # If no entry exist for that cell create it
                 if not (cell_id in cell_sizes_mm):
                     cell_sizes_mm[cell_id] = list()
+                    # Append zeroes as placeholder until we reach our current frame.
+                    # So that recorded data is accurate for the frame it was found on
+                    for i in range(1, frame_num):
+                        cell_sizes_mm[cell_id].append(0)
 
                 # Convert area to mm^2
                 area_mm = area * (pixels_to_mm**2)
@@ -132,7 +139,7 @@ def main():
 
             # Adjust waitKey to change time each frame is displayed
             # Press q to exit out of opencv early
-            if cv.waitKey(150) & 0xFF == ord('q'):
+            if cv.waitKey(15) & 0xFF == ord('q'):
                 break
 
         # Close opencv
@@ -140,7 +147,7 @@ def main():
         cv.destroyAllWindows()
 
         # Generate Headers
-        for i in range(1, frame_num):
+        for i in range(2, frame_num):
             size_headers.append(f"Frame {i} Size")
             positional_headers.append(f"Frame {i} X Position")
             positional_headers.append(f"Frame {i} Y Position")
