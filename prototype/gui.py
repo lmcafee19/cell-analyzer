@@ -243,25 +243,25 @@ class App:
                     elif self.window.Element("culture_radio").get():
                         # Initialize Culture Tracker
                         # If valid pixels per mm were given then call the individual tracker with that parameter
-                        # if isValidPixels(pixels_per_mm):
-                        #     self.video_player = TrackerClasses.CultureTracker(file, int(mins),
-                        #                                                          pixels_per_mm=float(pixels_per_mm))
-                        # else:
-                        #     # Otherwise call it with the video's height/width
-                        #     self.video_player = TrackerClasses.CultureTracker(file, int(mins), width_mm=float(width),
-                        #                                                          height_mm=float(height))
-                        #
-                        # # Set all extra input arguments if they are valid
-                        # if isValidInt(min_size) and (min_size != "" and min_size is not None):
-                        #     self.video_player.set_min_size(int(min_size))
-                        # if isValidInt(max_size) and (max_size != "" and max_size is not None):
-                        #     self.video_player.set_max_size(int(max_size))
-                        # if isValidFloat(contrast) and (contrast != "" and contrast is not None):
-                        #     self.video_player.set_contrast(float(contrast))
-                        # if isValidFloat(brightness) and (brightness != "" and brightness is not None):
-                        #     self.video_player.set_brightness(float(brightness))
-                        # if isValidInt(blur) and blur != "" and blur is not None:
-                        #     self.video_player.set_blur_intensity(int(blur))
+                        if isValidPixels(pixels_per_mm):
+                            self.video_player = TrackerClasses.CultureTracker(file, int(mins),
+                                                                                 pixels_per_mm=float(pixels_per_mm))
+                        else:
+                            # Otherwise call it with the video's height/width
+                            self.video_player = TrackerClasses.CultureTracker(file, int(mins), width_mm=float(width),
+                                                                                 height_mm=float(height))
+
+                        # Set all extra input arguments if they are valid
+                        if isValidInt(min_size) and (min_size != "" and min_size is not None):
+                            self.video_player.set_min_size(int(min_size))
+                        if isValidInt(max_size) and (max_size != "" and max_size is not None):
+                            self.video_player.set_max_size(int(max_size))
+                        if isValidFloat(contrast) and (contrast != "" and contrast is not None):
+                            self.video_player.set_contrast(float(contrast))
+                        if isValidFloat(brightness) and (brightness != "" and brightness is not None):
+                            self.video_player.set_brightness(float(brightness))
+                        if isValidInt(blur) and blur != "" and blur is not None:
+                            self.video_player.set_blur_intensity(int(blur))
 
                         # Continue to video player page
                         self.window[f'-COL{MAIN_MENU}-'].update(visible=False)

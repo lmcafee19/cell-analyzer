@@ -103,37 +103,6 @@ class IndividualTracker:
         self.blur_intensity = blur_intensity
 
 
-    def get_frame(self):
-        """
-        Return the next frame
-        """
-        if self.vid.isOpened():
-            ret, frame = self.vid.read()
-            if ret:
-                # Return a boolean success flag and the current frame converted to BGR
-                return ret, frame
-            else:
-                return ret, None
-        else:
-            return 0, None
-
-
-    def goto_frame(self, frame_no):
-        """
-        Go to specific frame
-        """
-        if self.vid.isOpened():
-            self.vid.set(cv.CAP_PROP_POS_FRAMES, frame_no)  # Set current frame
-            ret, frame = self.vid.read()  # Retrieve frame
-            if ret:
-                # Return a boolean success flag and the current frame converted to BGR
-                return ret, cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-            else:
-                return ret, None
-        else:
-            return 0, None
-
-
     '''
     Retrieves the next frame of the current video and records data about the tracked cell. If no frame is found returns None instead
     @:returns unedited frame, edited frame
@@ -469,37 +438,6 @@ class CultureTracker:
         self.blur_intensity = blur_intensity
 
 
-    def get_frame(self):
-        """
-        Return the next frame
-        """
-        if self.vid.isOpened():
-            ret, frame = self.vid.read()
-            if ret:
-                # Return a boolean success flag and the current frame converted to BGR
-                return ret, frame
-            else:
-                return ret, None
-        else:
-            return 0, None
-
-
-    def goto_frame(self, frame_no):
-        """
-        Go to specific frame
-        """
-        if self.vid.isOpened():
-            self.vid.set(cv.CAP_PROP_POS_FRAMES, frame_no)  # Set current frame
-            ret, frame = self.vid.read()  # Retrieve frame
-            if ret:
-                # Return a boolean success flag and the current frame converted to BGR
-                return ret, cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-            else:
-                return ret, None
-        else:
-            return 0, None
-
-
     '''
     Retrieves the next frame of the current video and records data about the tracked cell. If no frame is found returns None instead
     @:returns unedited frame, edited frame
@@ -587,10 +525,10 @@ class CultureTracker:
         # Create default filename using the timestamp
         if filename is None:
             timestamp = datetime.now().strftime("%b%d_%Y_%H-%M-%S")
-            filename = f"{timestamp}_Cell{self.tracked_cell_id}_Data.xlsx"
+            filename = f"{timestamp}_Culture_Data.xlsx"
 
         # Generate Headers
-        for i in range(1, self.frame_num):
+        for i in range(2, self.frames):
             self.size_headers.append(f"Frame {i} Size")
             self.positional_headers.append(f"Frame {i} X Position")
             self.positional_headers.append(f"Frame {i} Y Position")
@@ -641,6 +579,26 @@ class CultureTracker:
           if set to 1 only the first point will be labeled
     '''
     def export_area_graph(self, num_labels=2, filename=None):
+        self.export_graph("Time", "Area (mm^2)", f"Cell {self.tracked_cell_id}: Area over Time", filename=filename)
+
+
+    '''
+        Creates a line chart with the tracked cell's area on the x axis and time on the y axis
+        @param filename Optional. Name of PDF file to save chart to. If not specified user will be prompted to edit and save graph
+        @param num_labels Optional. Number of points on the graph to label. By default only the first and last point will be labeled. 
+              if set to 1 only the first point will be labeled
+        '''
+    def export_average_speed_graph(self, num_labels=2, filename=None):
+        self.export_graph("Time", "Area (mm^2)", f"Cell {self.tracked_cell_id}: Area over Time", filename=filename)
+
+
+    '''
+        Creates a line chart with the tracked cell's area on the x axis and time on the y axis
+        @param filename Optional. Name of PDF file to save chart to. If not specified user will be prompted to edit and save graph
+        @param num_labels Optional. Number of points on the graph to label. By default only the first and last point will be labeled. 
+              if set to 1 only the first point will be labeled
+    '''
+    def export_average_displacement_graph(self, num_labels=2, filename=None):
         self.export_graph("Time", "Area (mm^2)", f"Cell {self.tracked_cell_id}: Area over Time", filename=filename)
 
 
