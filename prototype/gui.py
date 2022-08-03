@@ -212,7 +212,6 @@ class App:
 
                     # Reset frame count
                     self.frame = 1
-                    #self.delay = 1 / self.vid.fps
 
                     # Update the video path text field
                     self.window.Element("_FILEPATH_").Update(video_path)
@@ -678,7 +677,6 @@ class App:
 
         # Reset frame count
         self.frame = 0
-        #self.delay = 1 / self.vid.fps
 
         # Display Original photo in left frame of selected view
         # scale image to fit inside the frame
