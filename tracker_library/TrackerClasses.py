@@ -176,7 +176,7 @@ class IndividualTracker:
         self.tracked_cell_data['Y Position (mm)'].append(coordinates_mm[1])
 
         # Record Time from start
-        self.tracked_cell_data['Time'].append((self.frame_num - 1) * self.time_between_frames)
+        self.tracked_cell_data['Time'].append((self.frame_num - 2) * self.time_between_frames)
 
 
     '''
@@ -242,7 +242,7 @@ class IndividualTracker:
         self.tracked_cell_data['Y Position (mm)'].append(coordinates_mm[1])
 
         # Record Time from start
-        self.tracked_cell_data['Time'].append((self.frame_num - 1) * self.time_between_frames)
+        self.tracked_cell_data['Time'].append((self.frame_num - 2) * self.time_between_frames)
 
 
     '''
@@ -613,7 +613,6 @@ class CultureTracker:
         # Call Generic Export graph method with created parameters
         self.export_graph(graph_data, "Time (mins)", "Average Area (mm^2)", f"Average Area of Each Cell",
                           filename=filename)
-
 
 
     '''
