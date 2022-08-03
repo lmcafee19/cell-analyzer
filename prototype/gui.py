@@ -29,7 +29,7 @@ class App:
 
         # ------ App states ------ #
         self.play = True  # Is the video currently playing?
-        self.delay = 0.0003  # Delay between frames - not sure what it should be, not accurate playback
+        self.delay = 1000  # Delay between frames in ms
         self.frame = 1  # Current frame
         self.frames = None  # Number of frames
         # ------ Other vars ------ #
@@ -57,7 +57,7 @@ class App:
         layout1 = [[sg.Menu(menu_def)],
                    [sg.Text('Select Video:', text_color=TITLE_COLOR)], [sg.Input(key="_FILEPATH_"), sg.Button("Browse")],  # File Selector
                    [sg.Text('Select Playback Speed:', text_color=TITLE_COLOR), sg.Push(), sg.Text('Tracker Settings. *Required', text_color=TITLE_COLOR)],
-                   [sg.R('1x', 2, key="playback_radio_1x", background_color=BACKGROUND_COLOR), sg.R('2x', 2, key="playback_radio_2x", background_color=BACKGROUND_COLOR), sg.R('3x', 2, key="playback_radio_3x", background_color=BACKGROUND_COLOR), sg.Push(),
+                   [sg.R('1x', 2, key="playback_radio_1x", default=True, background_color=BACKGROUND_COLOR), sg.R('2x', 2, key="playback_radio_2x", background_color=BACKGROUND_COLOR), sg.R('5x', 2, key="playback_radio_5x", background_color=BACKGROUND_COLOR), sg.R('10x', 2, key="playback_radio_10x", background_color=BACKGROUND_COLOR), sg.Push(),
                     sg.Text('Real World Width of the Video (mm)*'), sg.Input(key="video_width_mm")],
                    [sg.Text('Select Type of Cell Tracking:', text_color=TITLE_COLOR), sg.Push(),
                     sg.Text('Real World Height of the Video (mm)*'), sg.Input(key="video_height_mm")],
@@ -212,7 +212,7 @@ class App:
 
                     # Reset frame count
                     self.frame = 1
-                    self.delay = 1 / self.vid.fps
+                    #self.delay = 1 / self.vid.fps
 
                     # Update the video path text field
                     self.window.Element("_FILEPATH_").Update(video_path)
@@ -233,6 +233,18 @@ class App:
 
                 # Check that all fields have been filled out with valid data then determine next action based on tracking type
                 if isValidParameters(file, width, height, mins, pixels_per_mm, min_size, max_size, contrast, brightness, blur):
+
+                    # Set Playback Speed
+                    # If 1x or no option is selected keep delay as is
+                    # If 2x is selected cut delay in half
+                    if self.window.Element("playback_radio_2x").get():
+                        self.delay = self.delay / 2
+                    # if 5x is selected / 5
+                    elif self.window.Element("playback_radio_5x").get():
+                        self.delay = self.delay / 5
+                    # If 10x is selected, / delay by 10
+                    elif self.window.Element("playback_radio_10x").get():
+                        self.delay = self.delay / 10
 
                     # If individual tracking has been selected
                     if self.window.Element("individual_radio").get():
@@ -628,7 +640,7 @@ class App:
         # The tkinter .after method lets us recurse after a delay without reaching recursion limit. We need to wait
         # between each frame to achieve proper fps, but also count the time it took to generate the previous frame.
         #self.canvas.after(abs(int((self.delay - (time.time() - start_time)) * 1000)), self.update)
-        self.canvas.after(abs(int(self.delay * 1000)), self.update)
+        self.canvas.after(abs(int(self.delay)), self.update)
 
     def set_frame(self, frame_no):
         """Jump to a specific frame"""
@@ -666,7 +678,7 @@ class App:
 
         # Reset frame count
         self.frame = 0
-        self.delay = 1 / self.vid.fps
+        #self.delay = 1 / self.vid.fps
 
         # Display Original photo in left frame of selected view
         # scale image to fit inside the frame
