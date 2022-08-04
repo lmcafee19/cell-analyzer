@@ -41,7 +41,7 @@ class App:
         self.video_player = None
         # ------ Theme Settings ------ #
         TITLE_COLOR = "#023e8a"
-        BACKGROUND_COLOR = "#EDE7E3"
+        BACKGROUND_COLOR = "#f2e5dc"
         sg.theme_background_color(BACKGROUND_COLOR)
         sg.theme_text_element_background_color(BACKGROUND_COLOR)
         sg.theme_text_color("#0096c7")
@@ -249,7 +249,7 @@ class App:
                     # If 10x is selected, / delay by 10
                     elif self.window.Element("playback_radio_10x").get():
                         self.delay = self.delay / 10
-                    # If 100x is selected / delay by 100, this option does not run well if cpu is not powerful enough
+                    # If 100x is selected / delay by 100, this option may not run well if cpu is not powerful enough
                     elif self.window.Element("playback_radio_100x").get():
                         self.delay = self.delay / 100
 
