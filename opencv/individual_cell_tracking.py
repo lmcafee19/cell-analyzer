@@ -225,7 +225,24 @@ def main():
                         PATH_COLOR, 2)
 
             # Draw dot at final centroid
-            cv.circle(final_photo, tracked_cell_coords[tracked_cell_id][len(tracked_cell_coords[tracked_cell_id]) - 1], 4, END_COLOR, cv.FILLED)
+            cv.circle(final_frame, tracked_cell_coords[tracked_cell_id][len(tracked_cell_coords[tracked_cell_id]) - 1], 4, END_COLOR, cv.FILLED)
+
+            # Drawing path without scaling image
+            # Draw Boundary for Cell's starting position
+            # final_frame = analysis.draw_initial_cell_boundary(first_frame, tracked_cell_coords[tracked_cell_id][0],
+            #                                                   final_photo, START_COLOR)
+            #
+            # # Draw a line for every frame of movement going from its last position to its next position
+            # for i in range(1, len(tracked_cell_coords[tracked_cell_id])):
+            #     cv.line(final_frame, tracked_cell_coords[tracked_cell_id][i - 1],
+            #             tracked_cell_coords[tracked_cell_id][i],
+            #             PATH_COLOR, 2)
+            #
+            # # Draw dot at final centroid
+            # cv.circle(final_frame, tracked_cell_coords[tracked_cell_id][len(tracked_cell_coords[tracked_cell_id]) - 1],
+            #           4, END_COLOR, cv.FILLED)
+            #
+            # cv.imshow("Original Scale Image", final_frame)
 
 
             # Draw an arrow for every frame of movement going from its last position to its next position
@@ -280,10 +297,10 @@ def main():
             cv.waitKey(0)
 
             # Save Image
-            #cv.imwrite(f"{IMAGE_FILE}Cell{tracked_cell_id}_Path.png", final_photo)
+            cv.imwrite(f"{IMAGE_FILE}Cell{tracked_cell_id}_Path.png", final_photo)
 
             # Export data to excel
-            export.individual_to_excel_file(EXCEL_FILE, tracked_cell_data, TIME_BETWEEN_FRAMES, f"Cell {tracked_cell_id}")
+            #export.individual_to_excel_file(EXCEL_FILE, tracked_cell_data, TIME_BETWEEN_FRAMES, f"Cell {tracked_cell_id}")
             # Draw Graph charting cell's size
             # matplotlib_graphing.export_individual_cell_data(
             #                                                 tracked_cell_data, "Time", "Area (mm^2)",

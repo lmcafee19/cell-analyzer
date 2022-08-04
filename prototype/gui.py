@@ -8,12 +8,8 @@ import cv2
 import os
 import re
 import PySimpleGUI as sg
-from collections import OrderedDict
 from tracker_library import TrackerClasses
-from tracker_library import centroid_tracker as ct
-from tracker_library import cell_analysis_functions as analysis
-from tracker_library import export_data as export
-from tracker_library import matplotlib_graphing
+
 
 # State Constants
 MAIN_MENU = 1
@@ -147,11 +143,16 @@ class App:
                   [sg.Button('Cycle Layout'), sg.Button('1'), sg.Button('2'), sg.Button('3'), sg.Button('4'),
                    sg.Button('Exit')]]
 
-        self.window = sg.Window('Cell Analyzer', layout, resizable=True, size=(800, 600)).Finalize()
-        # set return_keyboard_events=True to make hotkeys for video playback
-        # Get the tkinter canvas for displaying the video
-        canvas = self.window.Element("canvas")
-        self.canvas = canvas.TKCanvas
+        # Get User's screen size and set window size and scale accordingly
+        screen_width, screen_height = sg.Window.get_screen_size()
+        print(screen_width, screen_height)
+        screen_scaling = get_scaling()
+
+        sg.set_options(scaling=screen_scaling)
+        self.window = sg.Window('Cell Analyzer', layout, resizable=True, size=(screen_width, screen_height)).Finalize()
+
+        # Get the tkinter canvases  for displaying the video
+        self.canvas = self.window.Element("canvas").TKCanvas
         self.edited_canvas = self.window.Element("edited_video").TKCanvas
         self.first_frame_orig = self.window.Element("original_first_frame").TKCanvas
         self.first_frame_edited = self.window.Element("edited_first_frame").TKCanvas
@@ -583,7 +584,6 @@ class App:
         self.window.Close()
         sys.exit()
 
-
     #################
     # Video methods #
     #################
@@ -603,6 +603,24 @@ class App:
                 if self.play:
                     # Retrieve the next frame from the video
                     original, edited = self.video_player.next_frame()
+
+                    # Update the size of the video player as needed to fit the window size
+
+                    # Take original video's height to width ratio
+                    (h, w) = original.shape[:2]
+                    ratio = h / w
+                    # use formula: (1-%padding)/2 to figure out the max percentage of the width that can be alloted to each video without overlapping or cropping
+                    video_width_percent = (1 - .03) / 2
+
+                    # Calculate new video dimensions
+                    # Set width to % of current window's width found using formula: (1-%used by padding)/2
+                    self.vid_width = int(self.window.size[0] * video_width_percent)
+                    # Calculate height using dimensions of the video to ensure nothing gets cropped
+                    self.vid_height = int(self.vid_width * ratio)
+
+                    # change canvas size approx to video size
+                    self.canvas.config(width=self.vid_width, height=self.vid_height)
+                    self.edited_canvas.config(width=self.vid_width, height=self.vid_height)
 
                     # next_frame() will return values of None if all frames have already been read
                     # If there are valid frames returned
@@ -665,15 +683,25 @@ class App:
         # Use Individual Tracker to grab and display the edited first frame
         unedited, processed = self.video_player.get_first_frame()
 
+        # Take original video's height to width ratio
+        (h, w) = unedited.shape[:2]
+        ratio = h/w
+        # use formula: (1-%padding)/2 to figure out the max percentage of the width that can be alloted to each video without overlapping or cropping
+        video_width_percent = (1 - .03)/2
+
         # Calculate new video dimensions
-        self.vid_width = 400
-        self.vid_height = 300
-        self.frames = int(self.vid.frames)
+        # Set width to % of current window's width found using formula: (1-%used by padding)/2
+        self.vid_width = int(self.window.size[0] * video_width_percent)
+        # Calculate height using dimensions of the video to ensure nothing gets cropped
+        self.vid_height = int(self.vid_width * ratio)
+
+        # change canvas size approx to video size
+        self.first_frame_orig.config(width=self.vid_width, height=self.vid_height)
+        self.first_frame_edited.config(width=self.vid_width, height=self.vid_height)
 
         # Update right side of counter
+        self.frames = int(self.video_player.frames)
         self.window.Element("counter").Update("0/%i" % self.video_player.frames)
-        # change canvas size approx to video size
-        #self.canvas.config(width=self.vid_width, height=self.vid_height)
 
         # Reset frame count
         self.frame = 0
@@ -853,7 +881,6 @@ def isValidParameters(videofile, width, height, time_between_frames, pixels, min
 
     return valid
 
-
 '''
     Checks if the given video file is of correct file type and can be opened by opencv
     @param videofile The path to the video file to check
@@ -865,7 +892,6 @@ def isValidVideo(videofile):
         if videofile.endswith(".avi") or videofile.endswith(".mp4"):
             valid = True
     return valid
-
 
 '''
     Checks if the given dimensions are positive integers
@@ -883,7 +909,6 @@ def isValidDimensions(width, height):
         valid = False
 
     return valid
-
 
 '''
     Checks if the given number of minutes in a positive integer
@@ -928,7 +953,6 @@ def isValidFloat(var):
         valid = False
 
     return valid
-
 
 '''
 Checks if given value is a positive int
@@ -978,7 +1002,6 @@ def isValidExcelFilename(excelfile):
 
     return valid_filename
 
-
 '''
 Checks if given filename is correctly formatted
 A graph file must end with .pdf, not be blank, and be unique as matplotlib is not authorized to save over files/delete files
@@ -994,7 +1017,6 @@ def isValidGraphFilename(filename):
 
     return valid_filename
 
-
 '''
 Checks if given filename is correctly formatted
 An Image file must end with .png, not be blank, and be unique 
@@ -1009,6 +1031,17 @@ def isValidImageFilename(filename):
             valid_filename = True
 
     return valid_filename
+
+'''
+Determines scale needed to adjust window to a certain screen size
+@return scale - floating point
+'''
+def get_scaling():
+    # called before window created
+    root = sg.tk.Tk()
+    scaling = root.winfo_fpixels('1i')/72
+    root.destroy()
+    return scaling
 
 
 if __name__ == '__main__':
