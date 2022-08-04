@@ -34,6 +34,9 @@ class App:
         self.photo = None
         self.edited = None
         self.next = "1"
+        self.vid_width = None
+        self.vid_height = None
+        self.recorded_window_size = None
         # ------ Tracker Instances ------- #
         self.video_player = None
         # ------ Theme Settings ------ #
@@ -53,8 +56,9 @@ class App:
         layout1 = [[sg.Menu(menu_def)],
                    [sg.Text('Select Video:', text_color=TITLE_COLOR)], [sg.Input(key="_FILEPATH_"), sg.Button("Browse")],  # File Selector
                    [sg.Text('Select Playback Speed:', text_color=TITLE_COLOR), sg.Push(), sg.Text('Tracker Settings. *Required', text_color=TITLE_COLOR)],
-                   [sg.R('1x', 2, key="playback_radio_1x", default=True, background_color=BACKGROUND_COLOR), sg.R('2x', 2, key="playback_radio_2x", background_color=BACKGROUND_COLOR), sg.R('5x', 2, key="playback_radio_5x", background_color=BACKGROUND_COLOR), sg.R('10x', 2, key="playback_radio_10x", background_color=BACKGROUND_COLOR), sg.Push(),
-                    sg.Text('Real World Width of the Video (mm)*'), sg.Input(key="video_width_mm")],
+                   [sg.R('1x', 2, key="playback_radio_1x", default=True, background_color=BACKGROUND_COLOR), sg.R('2x', 2, key="playback_radio_2x", background_color=BACKGROUND_COLOR),
+                    sg.R('5x', 2, key="playback_radio_5x", background_color=BACKGROUND_COLOR), sg.R('10x', 2, key="playback_radio_10x", background_color=BACKGROUND_COLOR), sg.R('100x', 2, key="playback_radio_100x", background_color=BACKGROUND_COLOR),
+                    sg.Push(), sg.Text('Real World Width of the Video (mm)*'), sg.Input(key="video_width_mm")],
                    [sg.Text('Select Type of Cell Tracking:', text_color=TITLE_COLOR), sg.Push(),
                     sg.Text('Real World Height of the Video (mm)*'), sg.Input(key="video_height_mm")],
                    # Section to select type of analysis with radio buttons
@@ -245,6 +249,9 @@ class App:
                     # If 10x is selected, / delay by 10
                     elif self.window.Element("playback_radio_10x").get():
                         self.delay = self.delay / 10
+                    # If 100x is selected / delay by 100, this option does not run well if cpu is not powerful enough
+                    elif self.window.Element("playback_radio_100x").get():
+                        self.delay = self.delay / 100
 
                     # If individual tracking has been selected
                     if self.window.Element("individual_radio").get():
@@ -604,27 +611,28 @@ class App:
                     # Retrieve the next frame from the video
                     original, edited = self.video_player.next_frame()
 
-                    # Update the size of the video player as needed to fit the window size
-
-                    # Take original video's height to width ratio
-                    (h, w) = original.shape[:2]
-                    ratio = h / w
-                    # use formula: (1-%padding)/2 to figure out the max percentage of the width that can be alloted to each video without overlapping or cropping
-                    video_width_percent = (1 - .03) / 2
-
-                    # Calculate new video dimensions
-                    # Set width to % of current window's width found using formula: (1-%used by padding)/2
-                    self.vid_width = int(self.window.size[0] * video_width_percent)
-                    # Calculate height using dimensions of the video to ensure nothing gets cropped
-                    self.vid_height = int(self.vid_width * ratio)
-
-                    # change canvas size approx to video size
-                    self.canvas.config(width=self.vid_width, height=self.vid_height)
-                    self.edited_canvas.config(width=self.vid_width, height=self.vid_height)
-
                     # next_frame() will return values of None if all frames have already been read
                     # If there are valid frames returned
                     if original is not None and edited is not None:
+                        # If the window size has changed or this is the first frame to be displayed
+                        if self.recorded_window_size is None or self.recorded_window_size != self.window.size:
+                            # Update the size of the video player as needed to fit the window size
+                            # Take original video's height to width ratio
+                            (h, w) = original.shape[:2]
+                            ratio = h / w
+                            # use formula: (1-%padding)/2 to figure out the max percentage of the width that can be alloted to each video without overlapping or cropping
+                            video_width_percent = (1 - .03) / 2
+
+                            # Calculate new video dimensions
+                            # Set width to % of current window's width found using formula: (1-%used by padding)/2
+                            self.vid_width = int(self.window.size[0] * video_width_percent)
+                            # Calculate height using dimensions of the video to ensure nothing gets cropped
+                            self.vid_height = int(self.vid_width * ratio)
+
+                            # change canvas size approx to video size
+                            self.canvas.config(width=self.vid_width, height=self.vid_height)
+                            self.edited_canvas.config(width=self.vid_width, height=self.vid_height)
+
                         # Display next frame for unedited video
                         # convert image from BGR to RGB so that it is read correctly by PIL
                         original = cv2.cvtColor(original, cv2.COLOR_BGR2RGB)
