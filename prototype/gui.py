@@ -148,7 +148,7 @@ class App:
 
         # Get User's screen size and set window size and scale accordingly
         screen_width, screen_height = sg.Window.get_screen_size()
-        print(screen_width, screen_height)
+        #print(screen_width, screen_height)
         screen_scaling = get_scaling()
 
         sg.set_options(scaling=screen_scaling)
@@ -165,7 +165,7 @@ class App:
         # Main event Loop
         while running:
             event, values = self.window.Read()
-            print(event, values)
+            #print(event, values)
 
             # ---- Global Events ---- #
             # Event to change layout, at the moment just jumps to the next layout
@@ -197,7 +197,7 @@ class App:
                     print("no video selected, doing nothing")
 
                 if video_path:
-                    print(video_path)
+                    #print(video_path)
                     # Initialize video
                     self.vid = MyVideoCapture(video_path)
                     # Calculate new video dimensions
@@ -659,7 +659,7 @@ class App:
                         # Make Export Button Clickable
                         self.window["Export Data"].update(disabled=False)
 
-                        print("OUT OF FRAMES")
+                        #print("OUT OF FRAMES")
 
         # The tkinter .after method lets us recurse after a delay without reaching recursion limit. We need to wait
         # between each frame to achieve proper fps, but also count the time it took to generate the previous frame.
