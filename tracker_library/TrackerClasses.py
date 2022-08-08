@@ -579,18 +579,6 @@ class CultureTracker:
 
 
     '''
-    Creates a line chart with the tracked cell's x position on the x axis and its y position on the y axis, points are
-    labeled with their respective timestamps 
-    @param filename Optional. Name of PDF file to save chart to. If not specified user will be prompted to edit and save graph
-    @param num_labels Optional. Number of points on the graph to label. By default only the first and last point will be labeled. 
-          if set to 1 only the first point will be labeled
-    '''
-    def export_movement_graph(self, num_labels=2, filename=None):
-        return 0
-        #self.export_graph("X Position (mm)", "Y Position (mm)", f"Cell {self.tracked_cell_id}: Movement", self.tracked_cell_data["Time"], num_labels, filename)
-
-
-    '''
     Creates a line chart with the tracked cell's area on the x axis and time on the y axis
     @param filename Optional. Name of PDF file to save chart to. If not specified user will be prompted to edit and save graph
     @param num_labels Optional. Number of points on the graph to label. By default only the first and last point will be labeled. 
