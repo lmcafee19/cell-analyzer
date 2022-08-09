@@ -489,39 +489,112 @@ def calc_culture_cell_statistics(positional_data, area_data, time_between_frames
 
 
 '''
-    Exports given cell data to a comma separated value file
+    Exports given cell data to a comma separated value file. Does not calculate statistics
     @param filename: Name of File to append to or save data to. Should end with extension .csv and contain full path as necessary
-    @param data: 2d iterable object containing data about each cell
-    @param headers: iterable object containing headers for each column
+           If csv file already exists data will be appended to the end without new headers
+    @param data: Dictionary containing mapping to iterable objects each containing data about one aspect of the cell. ie data["X Position"] = []
 '''
-def to_csv_file(filename, data, headers=None):
-    if headers is None:
-        headers = []
+def individual_to_csv_file(filename, data:dict):
     # If filename does not end in .xls extension exit
     if not filename.endswith(".csv"):
         raise Exception("File must be of type .csv")
 
-    # If file already exists, append data to the end
+    # Grab all keys to the data dictionary given
+    headers = list(data.keys())
+    # record the number of data points in each entry in the dict(aka the number of frames)
+    num_data_points = len(data[headers[0]])
+
+    # If file already exists, append data to the end without adding new headers
     if os.path.exists(f"{filename}"):
         # Open csv file in append mode
-        with open(filename, "a") as file:
+        with open(filename, "a", newline='') as file:
             csvwriter = csv.writer(file)
 
-            # Loop through data and write each row
-            for row in data:
+            # Write Data file one row at a time
+            # Loop through each frame of data. For every frame assemble a row of data to append to the file
+            for i in range(0, num_data_points):
+                row = list()
+                # Loop through each list in data and append the item at the current data point/frame to our row list
+                for key in headers:
+                    row.append(data[key][i])
+
+                # Append data to new row in csv file
                 csvwriter.writerow(row)
 
-    # Otherwise create a new csv file to write to
     else:
-        with open(filename, "w") as file:
+        # Otherwise create a new csv file to write to
+        with open(filename, "w", newline='') as file:
             csvwriter = csv.writer(file)
 
-            # Write headers
+            # Write headers (keys to dict)
             csvwriter.writerow(headers)
 
-            # Loop through data and write each row
-            for row in data:
+            # Write Data file one row at a time
+            # Loop through each frame of data. For every frame assemble a row of data to append to the file
+            for i in range(0, num_data_points):
+                row = list()
+                # Loop through each list in data and append the item at the current data point/frame to our row list
+                for key in headers:
+                    row.append(data[key][i])
+
+                # Append data to new row in csv file
                 csvwriter.writerow(row)
+
+
+'''
+    Exports given raw cell data to a comma separated value file. Does not calculate statistics
+    @param filename: Name of File to append to or save data to. Should end with extension .csv and contain full path as necessary
+           If csv file already exists data will be appended to the end without new headers
+    @param positional data: Dictionary containing mapping between a cell id and an iterable object of tuples (x,y coordinates)
+    @param area data: Dictionary containing mapping between a cell id and an iterable object of areas(floating point numbers)
+    @param positional_headers: Iterable object of headers for each column of the csv file
+    @param positional_headers: Iterable object of headers for each column of the csv file
+'''
+def culture_to_csv_file(filename, positional_data:dict, area_data:dict, positional_headers=None, area_headers=None):
+    if area_headers is None:
+        area_headers = []
+    if positional_headers is None:
+        positional_headers = []
+
+    # If filename does not end in .xls extension exit
+    if not filename.endswith(".csv"):
+        raise Exception("File must be of type .csv")
+    elif os.path.exists(filename):
+        raise Exception("File already exists")
+
+    # Grab all cell ids / keys to the two dictionaries
+    ids = list(positional_data.keys())
+    # record the number of data points in each entry in the dict(aka the number of frames)
+    num_data_points = len(positional_data[ids[0]])
+
+
+    # Otherwise create a new csv file to write to
+    with open(filename, "w", newline='') as file:
+        csvwriter = csv.writer(file)
+
+        # Write headers (keys to dict)
+        csvwriter.writerow(positional_headers + area_headers)
+
+        # Write Data file one row at a time
+        # Loop through each cell's data and create one unified list and append it to the next available row
+        for i in range(0, len(ids)):
+            # Add cell id to list to start
+            row = list()
+            row.append(ids[i])
+
+            # Loop through all positional data for this cell and append it to the list
+            for coordinate in positional_data[ids[i]]:
+                x = coordinate[0]
+                y = coordinate[1]
+                row.append(x)
+                row.append(y)
+
+            # Loop through all size data for this cell and append it to the list
+            for size in area_data[ids[i]]:
+                row.append(size)
+
+            # Append data to new row in csv file
+            csvwriter.writerow(row)
 
 
 '''

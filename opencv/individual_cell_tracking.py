@@ -297,10 +297,13 @@ def main():
             cv.waitKey(0)
 
             # Save Image
-            cv.imwrite(f"{IMAGE_FILE}Cell{tracked_cell_id}_Path.png", final_photo)
+            #cv.imwrite(f"{IMAGE_FILE}Cell{tracked_cell_id}_Path.png", final_photo)
+
+            # Export data to csv
+            #export.individual_to_csv_file("../data/csvtest.csv", tracked_cell_data)
 
             # Export data to excel
-            #export.individual_to_excel_file(EXCEL_FILE, tracked_cell_data, TIME_BETWEEN_FRAMES, f"Cell {tracked_cell_id}")
+            #export.individual_to_excel_file("../data/excelcompare.xlsx", tracked_cell_data, TIME_BETWEEN_FRAMES, f"Cell {tracked_cell_id}")
             # Draw Graph charting cell's size
             # matplotlib_graphing.export_individual_cell_data(
             #                                                 tracked_cell_data, "Time", "Area (mm^2)",

@@ -12,7 +12,7 @@ from collections import OrderedDict
 
 # Define Constants
 VIDEO = '../videos/Sample_cell_culture_4.mp4'
-EXPORT_FILE = "../data/aggregatefunc_data.xlsx"
+EXPORT_FILE = "../data/csvcompare_data.xlsx"
 SCALE = 0.25
 CONTRAST = 1.25
 BRIGHTNESS = 0.1
@@ -158,8 +158,17 @@ def main():
         size_headers.append("Largest Growth in one interval")
 
         # Export Data to excel sheet
-        export.culture_to_excel_file(EXPORT_FILE, cell_positions_mm, cell_sizes_mm, TIME_BETWEEN_FRAMES,
-                                    (VIDEO_HEIGHT_MM * VIDEO_WIDTH_MM), positional_headers, size_headers)
+        # export.culture_to_excel_file(EXPORT_FILE, cell_positions_mm, cell_sizes_mm, TIME_BETWEEN_FRAMES,
+        #                             (VIDEO_HEIGHT_MM * VIDEO_WIDTH_MM), positional_headers, size_headers)
+
+        # Reformat headers for csv export
+        csv_size_headers = size_headers
+        csv_size_headers.remove("Cell ID")
+        csv_size_headers.remove("Final Growth")
+        csv_size_headers.remove("Largest Growth in one interval")
+
+        # Export Data to csv
+        export.culture_to_csv_file("../data/culture.csv", cell_positions_mm, cell_sizes_mm, positional_headers, size_headers)
 
         # Export Graphs using Average Area and
 
