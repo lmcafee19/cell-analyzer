@@ -41,6 +41,7 @@ class App:
         self.video_player = None
         # ------ Theme Settings ------ #
         TITLE_COLOR = "#e6c40e"
+        TITLE_FONT = "default 10 bold"
         BACKGROUND_COLOR = "#3d618a"
         sg.theme_background_color(BACKGROUND_COLOR)
         sg.theme_text_element_background_color(BACKGROUND_COLOR)
@@ -54,12 +55,12 @@ class App:
 
         # Main Menu Layout
         layout1 = [[sg.Menu(menu_def)],
-                   [sg.Text('Select Video:', text_color=TITLE_COLOR)], [sg.Input(key="_FILEPATH_"), sg.Button("Browse")],  # File Selector
-                   [sg.Text('Select Playback Speed:', text_color=TITLE_COLOR), sg.Push(), sg.Text('Tracker Settings. *Required', text_color=TITLE_COLOR)],
+                   [sg.Text('Select Video:', font=TITLE_FONT, text_color=TITLE_COLOR)], [sg.Input(key="_FILEPATH_"), sg.Button("Browse")],  # File Selector
+                   [sg.Text('Select Playback Speed:', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(), sg.Text('Tracker Settings. *Required', font=TITLE_FONT, text_color=TITLE_COLOR)],
                    [sg.R('1x', 2, key="playback_radio_1x", default=True, background_color=BACKGROUND_COLOR), sg.R('2x', 2, key="playback_radio_2x", background_color=BACKGROUND_COLOR),
                     sg.R('5x', 2, key="playback_radio_5x", background_color=BACKGROUND_COLOR), sg.R('10x', 2, key="playback_radio_10x", background_color=BACKGROUND_COLOR), sg.R('100x', 2, key="playback_radio_100x", background_color=BACKGROUND_COLOR),
                     sg.Push(), sg.Text('Real World Width of the Video (mm)*'), sg.Input(key="video_width_mm")],
-                   [sg.Text('Select Type of Cell Tracking:', text_color=TITLE_COLOR), sg.Push(),
+                   [sg.Text('Select Type of Cell Tracking:', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(),
                     sg.Text('Real World Height of the Video (mm)*'), sg.Input(key="video_height_mm")],
                    # Section to select type of analysis with radio buttons
                    [sg.R('Individual Cell Tracking', 1, key="individual_radio", background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Number of pixels per mm* (If height/width are unknown)'), sg.Input(key='pixels_per_mm')],
@@ -67,7 +68,7 @@ class App:
                    [sg.R('Full Culture Tracking', 1, key="culture_radio", background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Time Between Images (mins)*'), sg.Input(key="time_between_frames")],
                    [sg.Push(), sg.Text('Min Cell Size (Default = 10)'), sg.Input(key="min_size")],
                    [sg.Push(), sg.Text('Max Cell Size (Default = 500)'), sg.Input(key="max_size")],
-                   [sg.Push(), sg.Text('Video Editor Settings', text_color=TITLE_COLOR)],
+                   [sg.Push(), sg.Text('Video Editor Settings', font=TITLE_FONT, text_color=TITLE_COLOR)],
                    [sg.Push(), sg.Text('Contrast (Default = 1.25)'), sg.Input(key="contrast")],
                    [sg.Push(), sg.Text('Brightness (0 leaves the brightness unchanged. Default = .1)'), sg.Input(key="brightness")],
                    [sg.Push(), sg.Text('Blur Intensity (Default = 10)'), sg.Input(key="blur")],
@@ -75,7 +76,7 @@ class App:
 
         # Video Player Layout
         layout2 = [[sg.Menu(menu_def)],
-                   [sg.Text('Original Video', text_color=TITLE_COLOR), sg.Push(), sg.Text('Tracker Video', text_color=TITLE_COLOR, justification='r')],
+                   [sg.Text('Original Video', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(), sg.Text('Tracker Video', font=TITLE_FONT, text_color=TITLE_COLOR, justification='r')],
                    # Titles for each video window
                    [sg.Canvas(size=(400, 300), key="canvas", background_color="blue"),
                     sg.Canvas(size=(400, 300), key="edited_video", background_color="blue")],
@@ -89,7 +90,7 @@ class App:
 
         # Cell Selection (For Individual Tracking)
         layout3 = [[sg.Menu(menu_def)],
-                   [sg.Text('Original Video', text_color=TITLE_COLOR), sg.Push(), sg.Text('Tracker Video', text_color=TITLE_COLOR, justification='r')],
+                   [sg.Text('Original Video', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(), sg.Text('Tracker Video', font=TITLE_FONT, text_color=TITLE_COLOR, justification='r')],
                    # Titles for each video window
                    [sg.Canvas(size=(400, 300), key="original_first_frame", background_color="blue"),
                     sg.Canvas(size=(400, 300), key="edited_first_frame", background_color="blue")],
@@ -100,10 +101,10 @@ class App:
 
         # Export Data Menu
         layout4 = [[sg.Menu(menu_def)],
-                   [sg.Text("Select Export Settings", text_color=TITLE_COLOR)],
+                   [sg.Text("Select Export Settings", font=TITLE_FONT, text_color=TITLE_COLOR)],
                    [sg.Check('Export Data to Excel Sheet', key='excel_export', enable_events=True, background_color=BACKGROUND_COLOR)],
                    [sg.Text('Excel File to Export to (.xlsx):\n  Leave blank for auto generated export to Downloads folder', key='excel_file_label', visible=False), sg.Input(key="excel_filename", visible=False)],
-                   [sg.Text('Select Graphs to Export:', text_color=TITLE_COLOR)],
+                   [sg.Text('Select Graphs to Export:', font=TITLE_FONT, text_color=TITLE_COLOR)],
 
                    [sg.Check('Area over Time', key="Area over Time", enable_events=True, background_color=BACKGROUND_COLOR)],
                    [sg.Text('Filename to save graph to (.pdf):\n  Leave blank for customizable settings and manual save after graph creation',
@@ -116,7 +117,7 @@ class App:
                        'Filename to save graph to (.pdf):\n  Leave blank for customizable settings and manual save after graph creation',
                        key='individual_movement_graph_label', visible=False), sg.Input(key="individual_movement_graph_filename", visible=False)],
 
-                   [sg.Text('Select Images to Export', key="images_label", visible=False, text_color=TITLE_COLOR)],
+                   [sg.Text('Select Images to Export', key="images_label", visible=False, font=TITLE_FONT, text_color=TITLE_COLOR)],
                    [sg.Check('Export Final Path of Tracked Cell', key="path_image", visible=False, enable_events=True, background_color=BACKGROUND_COLOR)],
                    [sg.Text(
                        'Filename to save image to (.png):\n  Leave blank for autogenerated export to Downloads folder',
@@ -142,13 +143,14 @@ class App:
         num_layouts = 4
 
         # ----------- Create actual layout using Columns and a row of Buttons ------------- #
-        layout = [[sg.Column(layout1, key='-COL1-'), sg.Column(layout2, visible=False, key='-COL2-'),
+        layout = [[sg.Image(source="bruin.png", size=(85, 55), subsample=29, background_color=BACKGROUND_COLOR),
+                   sg.Text("Cell Analyzer", key="title", font="Times 18 bold italic", text_color=TITLE_COLOR, justification='c')], # program title and logo image
+                  [sg.Column(layout1, key='-COL1-'), sg.Column(layout2, visible=False, key='-COL2-'),
                    sg.Column(layout3, visible=False, key='-COL3-'), sg.Column(layout4, visible=False, key='-COL4-')]]
                   # Uncomment for quick layout changing [sg.Button('Cycle Layout'), sg.Button('1'), sg.Button('2'), sg.Button('3'), sg.Button('4'),sg.Button('Exit')]]
 
         # Get User's screen size and set window size and scale accordingly
         screen_width, screen_height = sg.Window.get_screen_size()
-        #print(screen_width, screen_height)
         screen_scaling = get_scaling()
 
         sg.set_options(scaling=screen_scaling)
