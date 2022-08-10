@@ -6,7 +6,6 @@ import PIL
 from PIL import Image, ImageTk
 import cv2
 import os
-import re
 import PySimpleGUI as sg
 from tracker_library import TrackerClasses
 
@@ -16,6 +15,8 @@ MAIN_MENU = 1
 VIDEO_PLAYER = 2
 CELL_SELECTION = 3
 EXPORT = 4
+SUCCESS_SCREEN = 5
+
 
 class App:
     """
@@ -39,6 +40,8 @@ class App:
         self.recorded_window_size = None
         # ------ Tracker Instances ------- #
         self.video_player = None
+        self.video_thread = None
+        self.run_thread = None
         # ------ Theme Settings ------ #
         TITLE_COLOR = "#e6c40e"
         TITLE_FONT = "default 10 bold"
@@ -58,7 +61,7 @@ class App:
                    [sg.Text('Select Video:', font=TITLE_FONT, text_color=TITLE_COLOR)], [sg.Input(key="_FILEPATH_"), sg.Button("Browse")],  # File Selector
                    [sg.Text('Select Playback Speed:', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(), sg.Text('Tracker Settings. Required*', font=TITLE_FONT, text_color=TITLE_COLOR)],
                    [sg.R('1x', 2, key="playback_radio_1x", default=True, background_color=BACKGROUND_COLOR), sg.R('2x', 2, key="playback_radio_2x", background_color=BACKGROUND_COLOR),
-                    sg.R('5x', 2, key="playback_radio_5x", background_color=BACKGROUND_COLOR), sg.R('10x', 2, key="playback_radio_10x", background_color=BACKGROUND_COLOR), sg.R('100x', 2, key="playback_radio_100x", background_color=BACKGROUND_COLOR),
+                    sg.R('5x', 2, key="playback_radio_5x", background_color=BACKGROUND_COLOR), sg.R('10x', 2, key="playback_radio_10x", background_color=BACKGROUND_COLOR), sg.R('50x', 2, key="playback_radio_50x", background_color=BACKGROUND_COLOR),
                     sg.Push(), sg.Text('Real World Width of the Video (mm)*'), sg.Input(key="video_width_mm")],
                    [sg.Text('Select Type of Cell Tracking:', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(),
                     sg.Text('Real World Height of the Video (mm)*'), sg.Input(key="video_height_mm")],
@@ -70,7 +73,7 @@ class App:
                    [sg.Push(), sg.Text('Max Cell Size (Default = 500)'), sg.Input(key="max_size")],
                    [sg.Push(), sg.Text('Video Editor Settings', font=TITLE_FONT, text_color=TITLE_COLOR)],
                    [sg.Push(), sg.Text('Contrast (Default = 1.25)'), sg.Input(key="contrast")],
-                   [sg.Push(), sg.Text('Brightness (0 leaves the brightness unchanged. Default = .1)'), sg.Input(key="brightness")],
+                   [sg.Push(), sg.Text('Brightness (0 leaves the brightness unchanged. Default = 0.1)'), sg.Input(key="brightness")],
                    [sg.Push(), sg.Text('Blur Intensity (Default = 10)'), sg.Input(key="blur")],
                    [sg.Button('Run'), sg.Button('Exit')]]
 
@@ -146,16 +149,22 @@ class App:
                    [sg.Text("Data Currently Exporting. Application will close once process is finished",
                             key="export_message", text_color="red", visible=False)]]
 
+        # Final Page. Played after successful export and prompts the user to exit or restart the process
+        layout5 = [[sg.Menu(menu_def)],
+                   [sg.Text("Export Successful", key="title", font="Times 16", text_color=TITLE_COLOR, justification='c')],
+                   [sg.Button("Track Another Video"), sg.Button("Exit")]]
 
-        num_layouts = 4
+
+        num_layouts = 6
 
         # ----------- Create actual layout using Columns and a row of Buttons ------------- #
         layout = [[sg.Image(source="bruin.png", size=(85, 55), subsample=29, background_color=BACKGROUND_COLOR),
                    sg.Text("Cell Analyzer", key="title", font="Times 18 bold italic", text_color=TITLE_COLOR, justification='c')], # program title and logo image
                   [sg.Column(layout1, key='-COL1-'), sg.Column(layout2, visible=False, key='-COL2-'),
-                   sg.Column(layout3, visible=False, key='-COL3-'), sg.Column(layout4, visible=False, key='-COL4-')],
+                   sg.Column(layout3, visible=False, key='-COL3-'), sg.Column(layout4, visible=False, key='-COL4-'),
+                   sg.Column(layout5, visible=False, key='-COL5-')],
                   # Uncomment for quick layout changing
-                [sg.Button('Cycle Layout'), sg.Button('1'), sg.Button('2'), sg.Button('3'), sg.Button('4'),sg.Button('Exit')]]
+                [sg.Button('Cycle Layout'), sg.Button('1'), sg.Button('2'), sg.Button('3'), sg.Button('4'), sg.Button('5'), sg.Button('Exit')]]
 
         # Get User's screen size and set window size and scale accordingly
         screen_width, screen_height = sg.Window.get_screen_size()
@@ -185,7 +194,7 @@ class App:
                 if layout == 0:
                     layout += 1
                 self.window[f'-COL{layout}-'].update(visible=True)
-            elif event in '1234':
+            elif event in '12345':
                 self.window[f'-COL{layout}-'].update(visible=False)
                 layout = int(event)
                 self.window[f'-COL{layout}-'].update(visible=True)
@@ -258,9 +267,9 @@ class App:
                     # If 10x is selected, / delay by 10
                     elif self.window.Element("playback_radio_10x").get():
                         self.delay = self.delay / 10
-                    # If 100x is selected / delay by 100, this option may not run well if cpu is not powerful enough
-                    elif self.window.Element("playback_radio_100x").get():
-                        self.delay = self.delay / 100
+                    # If 50x is selected / delay by 50, this option may not run well if cpu is not powerful enough
+                    elif self.window.Element("playback_radio_50x").get():
+                        self.delay = self.delay / 50
 
                     # If individual tracking has been selected
                     if self.window.Element("individual_radio").get():
@@ -373,7 +382,6 @@ class App:
                 elif self.window.Element("culture_radio").get():
                     self.window['average_displacement'].update(visible=True)
                     self.window['average_speed'].update(visible=True)
-
 
             # ---- Export Events ---- #
             if event == "Export":
@@ -541,8 +549,11 @@ class App:
                             else:
                                 self.video_player.export_average_speed_graph()
 
-                    # Close app once Export is finished
-                    running = False
+                    # Procceed to Final Page
+                    self.window[f'-COL{EXPORT}-'].update(visible=False)
+                    self.window[f'-COL{SUCCESS_SCREEN}-'].update(visible=True)
+
+
                 elif not isValidExportParameters(num_labels):
                     # Invalid Parameters were given
                     sg.popup_error("Invalid Export Parameters")
@@ -652,6 +663,44 @@ class App:
                 self.window[f'-COL{EXPORT}-'].update(visible=False)
                 self.window[f'-COL{VIDEO_PLAYER}-'].update(visible=True)
 
+            #----Success Screen Events----#
+            # Restart entire process
+            if event == "Track Another Video":
+                #  Reset all input fields
+                fields_to_clear = ["_FILEPATH_", "video_width_mm", "video_height_mm", "pixels_per_mm", "time_between_frames",
+                                   "min_size", "max_size", "contrast", "brightness", "blur", "cell_id", "excel_filename", "csv_filename",
+                                   "area_graph_filename", "individual_movement_graph_filename", "final_path_image_filename",
+                                   "culture_displacement_graph_filename", "culture_speed_graph_filename"]
+                for key in fields_to_clear:
+                    self.window[key]('')
+
+                # Set vars to defaults
+                self.frame = 1  # Current frame
+                self.delay = 1000
+                self.frames = None  # Number of frames
+                self.vid = None
+                self.next = "1"
+                self.vid_width = None
+                self.vid_height = None
+                self.video_player = None
+                self.play = True
+
+                # Kill video process
+                self.run_thread = False
+                self.video_thread.join()
+                self.video_thread = None
+
+                # Disable export button
+                self.window["Export Data"].update(disabled=True)
+                # Start Video playback (Set to Pause)
+                self.window.Element("Play").Update("Pause")
+                # Hide Export Message
+                self.window['export_message'].update(visible=False)
+
+                # Go to main menu
+                self.window[f'-COL{SUCCESS_SCREEN}-'].update(visible=False)
+                self.window[f'-COL{MAIN_MENU}-'].update(visible=True)
+
         # Exiting
         print("bye :)")
         self.window.Close()
@@ -662,14 +711,18 @@ class App:
     #################
     def load_video(self):
         """Start video display in a new thread"""
-        thread = threading.Thread(target=self.update, args=())
-        thread.daemon = 1
-        thread.start()
+        self.video_thread = threading.Thread(target=self.update, args=())
+        self.video_thread.daemon = 1
+        self.video_thread.start()
+        # Create event that will tell the thread to keep running or not
+        self.run_thread = True
+
 
     def update(self):
         """Update the canvas elements within the video player interface with the next video frame recursively"""
         """Ran by Thread started by load_video"""
         start_time = time.time()
+
         if self.vid:
             # Only Update video while it is visible on video player interface and is supposed to play
             if self.window[f'-COL{VIDEO_PLAYER}-'].visible:
@@ -710,28 +763,31 @@ class App:
                         # Display next frame for edited video
                         self.edited = PIL.ImageTk.PhotoImage(
                             image=PIL.Image.fromarray(edited).resize((self.vid_width, self.vid_height),
-                                                                        Image.NEAREST)
+                                                                            Image.NEAREST)
                         )
                         self.edited_canvas.create_image(0, 0, image=self.edited, anchor=tk.NW)
 
                         # Update video frame counter
                         self.frame += 1
                         self.update_counter(self.frame)
+
                     else:
                         # Video is finished playing
                         # Stop Video playback (Set to Pause)
                         self.play = False
                         self.window.Element("Play").Update("Play")
 
+                        # Set event
+                        self.run_thread = False
+
                         # Make Export Button Clickable
                         self.window["Export Data"].update(disabled=False)
 
-                        #print("OUT OF FRAMES")
-
-        # The tkinter .after method lets us recurse after a delay without reaching recursion limit. We need to wait
-        # between each frame to achieve proper fps, but also count the time it took to generate the previous frame.
-        #self.canvas.after(abs(int((self.delay - (time.time() - start_time)) * 1000)), self.update)
-        self.canvas.after(abs(int(self.delay)), self.update)
+        # Event flag to determine if this needs to run again or not
+        if self.run_thread:
+            # The tkinter .after method lets us recurse after a delay without reaching recursion limit.
+            # Wait specified delay for the correct playback speed
+            self.canvas.after(abs(int(self.delay)), self.update)
 
     def set_frame(self, frame_no):
         """Jump to a specific frame"""

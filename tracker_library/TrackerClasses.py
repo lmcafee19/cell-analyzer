@@ -421,10 +421,6 @@ class CultureTracker:
         self.cell_positions_mm = OrderedDict()
         self.cell_sizes_mm = OrderedDict()
 
-        # Keep Excel Column Headers for exports
-        self.positional_headers = ["Cell ID", "Initial X Position (mm)", "Initial Y Position (mm)"]
-        self.size_headers = ["Cell ID", "Initial Size (mm^2)"]
-
     '''
     Updates the min_cell_size field
     @param min_size Positive integer pertaining to smallest size cell to track
@@ -561,21 +557,24 @@ class CultureTracker:
             timestamp = datetime.now().strftime("%b%d_%Y_%H-%M-%S")
             filename = f"{home_dir}{timestamp}_Culture_Data.xlsx"
 
+        positional_headers = ["Cell ID", "Initial X Position (mm)", "Initial Y Position (mm)"]
+        size_headers = ["Cell ID", "Initial Size (mm^2)"]
+
         # Generate Headers
         for i in range(2, self.frame_num):
-            self.size_headers.append(f"Frame {i} Size")
-            self.positional_headers.append(f"Frame {i} X Position")
-            self.positional_headers.append(f"Frame {i} Y Position")
+            size_headers.append(f"Frame {i} Size")
+            positional_headers.append(f"Frame {i} X Position")
+            positional_headers.append(f"Frame {i} Y Position")
 
         # Add Final Columns for calculations
         # positional_headers.append("Distance between Initial Position and Final Position")
-        self.size_headers.append("Final Growth")
-        self.size_headers.append("Largest Growth in one interval")
+        size_headers.append("Final Growth")
+        size_headers.append("Largest Growth in one interval")
 
 
         # Export Data to excel sheet
         export.culture_to_excel_file(filename, self.cell_positions_mm, self.cell_sizes_mm, self.time_between_frames,
-                                    (self.area_mm), self.positional_headers, self.size_headers)
+                                    (self.area_mm), positional_headers, size_headers)
 
 
     '''
@@ -591,18 +590,18 @@ class CultureTracker:
             timestamp = datetime.now().strftime("%b%d_%Y_%H-%M-%S")
             filename = f"{home_dir}{timestamp}_Culture_Data.csv"
 
+        positional_headers = ["Cell ID", "Initial X Position (mm)", "Initial Y Position (mm)"]
+        size_headers = ["Initial Size (mm^2)"]
+
         # Generate Headers
         for i in range(2, self.frame_num):
-            self.size_headers.append(f"Frame {i} Size")
-            self.positional_headers.append(f"Frame {i} X Position")
-            self.positional_headers.append(f"Frame {i} Y Position")
+            size_headers.append(f"Frame {i} Size")
+            positional_headers.append(f"Frame {i} X Position")
+            positional_headers.append(f"Frame {i} Y Position")
 
-        # Remove cell id column from size_headers to format it correctly for csv file
-        csv_size_headers = self.size_headers
-        csv_size_headers.remove("Cell ID")
 
         # Export data to a csv file
-        export.culture_to_csv_file(filename, self.cell_positions_mm, self.cell_sizes_mm, self.positional_headers, csv_size_headers)
+        export.culture_to_csv_file(filename, self.cell_positions_mm, self.cell_sizes_mm, positional_headers, size_headers)
 
 
     '''
