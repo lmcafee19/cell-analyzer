@@ -162,9 +162,9 @@ class App:
                    sg.Text("Cell Analyzer", key="title", font="Times 18 bold italic", text_color=TITLE_COLOR, justification='c')], # program title and logo image
                   [sg.Column(layout1, key='-COL1-'), sg.Column(layout2, visible=False, key='-COL2-'),
                    sg.Column(layout3, visible=False, key='-COL3-'), sg.Column(layout4, visible=False, key='-COL4-'),
-                   sg.Column(layout5, visible=False, key='-COL5-')],
+                   sg.Column(layout5, visible=False, key='-COL5-')]]
                   # Uncomment for quick layout changing
-                [sg.Button('Cycle Layout'), sg.Button('1'), sg.Button('2'), sg.Button('3'), sg.Button('4'), sg.Button('5'), sg.Button('Exit')]]
+                #[sg.Button('Cycle Layout'), sg.Button('1'), sg.Button('2'), sg.Button('3'), sg.Button('4'), sg.Button('5'), sg.Button('Exit')]]
 
         # Get User's screen size and set window size and scale accordingly
         screen_width, screen_height = sg.Window.get_screen_size()
