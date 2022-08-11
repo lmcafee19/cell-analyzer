@@ -187,7 +187,7 @@ class App:
         # Main event Loop
         while running:
             event, values = self.window.Read()
-            print(event, values)
+            #print(event, values)
 
             # ---- Global Events ---- #
             # Event to change layout, at the moment just jumps to the next layout
@@ -743,7 +743,7 @@ class App:
         """Ran by Thread started by load_video"""
         #start_time = time.time()
         # TODO This method legitimately will not work without this print statement here IDK
-        print("update")
+        print("")
         if self.vid:
             # Only Update video while it is visible on video player interface and is supposed to play
             if self.window[f'-COL{VIDEO_PLAYER}-'].visible:
@@ -1168,8 +1168,9 @@ def isValidExportParameters(num_labels, directory):
             valid = False
 
     # If directory is specified ensure that it relates to a real directory on this pc
-    if not (directory != '' and directory is not None) or not os.path.exists(directory):
-        valid = False
+    if directory != '' and directory is not None:
+        if not os.path.exists(directory):
+            valid = False
 
     return valid
 
