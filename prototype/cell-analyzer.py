@@ -8,6 +8,7 @@ import cv2
 import os
 import PySimpleGUI as sg
 from tracker_library import TrackerClasses
+from datetime import datetime
 
 
 # State Constants
@@ -70,7 +71,7 @@ class App:
                    # Take Input for Constants
                    [sg.R('Full Culture Tracking', 1, key="culture_radio", background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Time Between Images (mins)*'), sg.Input(key="time_between_frames")],
                    [sg.Push(), sg.Text('Min Cell Size (Default = 10)'), sg.Input(key="min_size")],
-                   [sg.Push(), sg.Text('Max Cell Size (Default = 500)'), sg.Input(key="max_size")],
+                   [sg.Push(), sg.Text('Max Cell Size (Default = 600)'), sg.Input(key="max_size")],
                    [sg.Push(), sg.Text('Video Editor Settings', font=TITLE_FONT, text_color=TITLE_COLOR)],
                    [sg.Push(), sg.Text('Contrast (Default = 1.25)'), sg.Input(key="contrast")],
                    [sg.Push(), sg.Text('Brightness (0 leaves the brightness unchanged. Default = 0.1)'), sg.Input(key="brightness")],
@@ -477,7 +478,7 @@ class App:
 
 
                 # Validate Inputs as needed
-                if isValidExportParameters(num_labels) and valid_filenames:
+                if isValidExportParameters(num_labels, export_directory) and valid_filenames:
                     # Display Export Message
                     self.window['export_message'].update(visible=True)
 
@@ -487,7 +488,13 @@ class App:
                         # If a filename was supplied pass it as a parameter and add appropriate extensions
                         if excelfile != '' and excelfile is not None:
                             self.video_player.export_to_excel(f"{export_directory}/{excelfile}.xlsx")
+                        elif export_directory != '':
+                            # If a directory was given, but no filename was passed generate a filename for it
+                            timestamp = datetime.now().strftime("%b%d_%Y_%H-%M-%S")
+                            filename = f"{export_directory}/{timestamp}_Data.xlsx"
+                            self.video_player.export_to_excel(filename)
                         else:
+                            # If nothing is supplied allow file to be auto generated into the downloads folder
                             self.video_player.export_to_excel()
 
                     # If export raw csv data was selected call csv export data
@@ -495,6 +502,11 @@ class App:
                         # If a filename was supplied pass it as a parameter
                         if csvfile != '' and csvfile is not None:
                             self.video_player.export_to_csv(f"{export_directory}/{csvfile}.csv")
+                        elif export_directory != '':
+                            # If a directory was given, but no filename was passed generate a filename for it
+                            timestamp = datetime.now().strftime("%b%d_%Y_%H-%M-%S")
+                            filename = f"{export_directory}/{timestamp}_Data.csv"
+                            self.video_player.export_to_csv(filename)
                         else:
                             self.video_player.export_to_csv()
 
@@ -554,7 +566,7 @@ class App:
                     self.window[f'-COL{SUCCESS_SCREEN}-'].update(visible=True)
 
 
-                elif not isValidExportParameters(num_labels):
+                elif not isValidExportParameters(num_labels, export_directory):
                     # Invalid Parameters were given
                     sg.popup_error("Invalid Export Parameters")
 
@@ -972,7 +984,11 @@ def isValidParameters(videofile, width, height, time_between_frames, pixels, min
                             if (isValidFloat(brightness) and (brightness != "" and brightness is not None)) or brightness =="":
                                 # Validate Blur
                                 if (isValidInt(blur) and blur != "" and blur is not None) or blur =="":
-                                    valid = True
+                                    # min must be smaller than max
+                                    if isValidCellSizes(min_size, max_size):
+                                        valid = True
+                                    else:
+                                        sg.popup_error("Minimum Cell Size must be smaller than Maximum Cell Size")
                                 # Display Blur Error Messsage
                                 else:
                                     sg.popup_error("Entered: Blur intensity is invalid. Blur intensity must be a positive integer or left empty for the default value")
@@ -1099,9 +1115,36 @@ def isValidInt(var):
     return valid
 
 '''
-Checks if given export parameters are valid
+Checks if given minimum is smaller than given maximum
+If one of the values is not entered the defaults of min = 10 and max = 600 will be used
 '''
-def isValidExportParameters(num_labels):
+def isValidCellSizes(min, max):
+    valid = True
+    # Check if min entered is an int
+    try:
+        minimum = int(min)
+    except ValueError or TypeError:
+        minimum = 10
+
+    # Check if max entered is an int
+    try:
+        maximum = int(max)
+    except ValueError or TypeError:
+        maximum = 600
+
+    # If max is smaller than min, inputs are invalid
+    if maximum <= minimum:
+        valid = False
+
+    return valid
+
+'''
+Checks if given export parameters are valid
+@param num_labels
+@param directory Must be a valid directory for this machine
+@return True if all are valid, false if not
+'''
+def isValidExportParameters(num_labels, directory):
     valid = True
 
     # If num_labels was entered, ensure that it is a positive integer
@@ -1114,6 +1157,10 @@ def isValidExportParameters(num_labels):
                 valid = False
         except ValueError or TypeError:
             valid = False
+
+    # If directory is specified ensure that it relates to a real directory on this pc
+    if not (directory != '' and directory is not None) or not os.path.exists(directory):
+        valid = False
 
     return valid
 
