@@ -13,7 +13,7 @@ Defines class that manages the tracking of a specified individual cell within a 
 """
 class IndividualTracker:
     def __init__(self, video_source, time_between_frames, width_mm=0, height_mm=0, pixels_per_mm=None, min_cell_size=10, max_cell_size=600, scale=.25, contrast=1.25, brightness=0.1,
-                 blur_intensity=10):
+                 blur_intensity=10, units="mm"):
         # Open the video source
         self.vid = cv.VideoCapture(video_source)
         if not self.vid.isOpened():
@@ -23,6 +23,9 @@ class IndividualTracker:
         self.width = self.vid.get(cv.CAP_PROP_FRAME_WIDTH)
         self.height = self.vid.get(cv.CAP_PROP_FRAME_HEIGHT)
         self.pixels_to_mm = pixels_per_mm
+        # Units can either be millimeter(mm) or micrometer(μm)
+        # This will change the pixels_to_mm conversion and the titles of columns and exported data
+        self.units = units
         self.frame_num = 1
         self.frames = self.vid.get(cv.CAP_PROP_FRAME_COUNT)
 
@@ -44,7 +47,7 @@ class IndividualTracker:
         # Keep track of cell id
         self.tracker = ct.CentroidTracker()
         self.tracked_cell_id = -1
-        self.tracked_cell_data = {'Time': [], 'X Position (mm)': [], 'Y Position (mm)': [], 'Area (mm^2)': []}
+        self.tracked_cell_data = {'Time (mins)': [], f'X Position ({self.units})': [], f'Y Position ({self.units})': [], f'Area ({self.units}^2)': []}
         self.tracked_cell_coords = OrderedDict()
 
         # Keep track of last played frame's tracker data
@@ -165,17 +168,17 @@ class IndividualTracker:
 
         # Convert area to mm^2
         area_mm = self.cell_areas[self.tracked_cell_id] * (self.pixels_to_mm ** 2)
-        self.tracked_cell_data['Area (mm^2)'].append(area_mm)
+        self.tracked_cell_data[f'Area ({self.units}^2)'].append(area_mm)
 
         # Convert Coordinates to mm
         coordinates_mm = list(self.cell_locations[self.tracked_cell_id])
         coordinates_mm[0] = float(coordinates_mm[0] * self.pixels_to_mm)
         coordinates_mm[1] = float(coordinates_mm[1] * self.pixels_to_mm)
-        self.tracked_cell_data['X Position (mm)'].append(coordinates_mm[0])
-        self.tracked_cell_data['Y Position (mm)'].append(coordinates_mm[1])
+        self.tracked_cell_data[f'X Position ({self.units})'].append(coordinates_mm[0])
+        self.tracked_cell_data[f'Y Position ({self.units})'].append(coordinates_mm[1])
 
         # Record Time from start
-        self.tracked_cell_data['Time'].append((self.frame_num - 2) * self.time_between_frames)
+        self.tracked_cell_data['Time (mins)'].append((self.frame_num - 2) * self.time_between_frames)
 
 
     '''
@@ -207,10 +210,20 @@ class IndividualTracker:
             # Grab Frame's dimensions in order to convert pixels to mm
             (h, w) = labeled_img.shape[:2]
             # If instead the dimensions of the image were given then calculate the pixel conversion using those
-            self.pixels_to_mm = ((self.height_mm / h) + (self.width_mm / w)) / 2
+            # If selected units were micro meters (µm)
+            if self.units == "µm":
+                self.pixels_to_mm = (((self.height_mm / h) + (self.width_mm / w)) / 2) * 1000
+            else:
+                # Otherwise use millimeters as unit
+                self.pixels_to_mm = ((self.height_mm / h) + (self.width_mm / w)) / 2
         else:
             # If pixels to mm were already given, then convert it to our new scale for the image
-            self.pixels_to_mm = self.pixels_to_mm * self.scale
+            if self.units == "µm":
+                # If µm was selected as the units convert between mm and µm (mm * 1000)
+                self.pixels_to_mm = (self.pixels_to_mm * self.scale) * 1000
+            else:
+                # Otherwise use millimeters as unit
+                self.pixels_to_mm = self.pixels_to_mm * self.scale
 
 
         # Increment Frame Counter
@@ -231,17 +244,17 @@ class IndividualTracker:
 
         # Convert area to mm^2
         area_mm = self.cell_areas[self.tracked_cell_id] * (self.pixels_to_mm ** 2)
-        self.tracked_cell_data['Area (mm^2)'].append(area_mm)
+        self.tracked_cell_data[f'Area ({self.units}^2)'].append(area_mm)
 
         # Convert Coordinates to mm
         coordinates_mm = list(self.cell_locations[self.tracked_cell_id])
         coordinates_mm[0] = float(coordinates_mm[0] * self.pixels_to_mm)
         coordinates_mm[1] = float(coordinates_mm[1] * self.pixels_to_mm)
-        self.tracked_cell_data['X Position (mm)'].append(coordinates_mm[0])
-        self.tracked_cell_data['Y Position (mm)'].append(coordinates_mm[1])
+        self.tracked_cell_data[f'X Position ({self.units})'].append(coordinates_mm[0])
+        self.tracked_cell_data[f'Y Position ({self.units})'].append(coordinates_mm[1])
 
         # Record Time from start
-        self.tracked_cell_data['Time'].append((self.frame_num - 2) * self.time_between_frames)
+        self.tracked_cell_data['Time (mins)'].append((self.frame_num - 2) * self.time_between_frames)
 
 
     '''
@@ -311,7 +324,7 @@ class IndividualTracker:
             filename = f"{home_dir}{timestamp}_Cell{self.tracked_cell_id}_Data.xlsx"
 
         # Export data to excel
-        export.individual_to_excel_file(filename, self.tracked_cell_data, self.time_between_frames, f"Cell {self.tracked_cell_id}")
+        export.individual_to_excel_file(filename, self.tracked_cell_data, self.time_between_frames, units=self.units, sheetname=f"Cell {self.tracked_cell_id}")
 
 
     '''
@@ -356,7 +369,7 @@ class IndividualTracker:
           if set to 1 only the first point will be labeled
     '''
     def export_movement_graph(self, num_labels=2, filename=None):
-        self.export_graph("X Position (mm)", "Y Position (mm)", f"Cell {self.tracked_cell_id}: Movement", self.tracked_cell_data["Time"], num_labels, filename)
+        self.export_graph(f"X Position ({self.units})", f"Y Position ({self.units})", f"Cell {self.tracked_cell_id}: Movement", self.tracked_cell_data["Time (mins)"], num_labels, filename)
 
 
     '''
@@ -366,7 +379,7 @@ class IndividualTracker:
           if set to 1 only the first point will be labeled
     '''
     def export_area_graph(self, num_labels=2, filename=None):
-        self.export_graph("Time", "Area (mm^2)", f"Cell {self.tracked_cell_id}: Area over Time", filename=filename)
+        self.export_graph("Time (mins)", f"Area ({self.units}^2)", f"Cell {self.tracked_cell_id}: Area over Time", filename=filename)
 
 
     # Release the video source when the object is destroyed
@@ -380,7 +393,7 @@ Defines class that manages the tracking of raw data for an entire culture of cel
 """
 class CultureTracker:
     def __init__(self, video_source, time_between_frames, width_mm=0, height_mm=0, pixels_per_mm=None, min_cell_size=10, max_cell_size=600, scale=0.25, contrast=1.25, brightness=0.1,
-                 blur_intensity=10):
+                 blur_intensity=10, units="mm"):
         # Open the video source
         self.vid = cv.VideoCapture(video_source)
         if not self.vid.isOpened():
@@ -390,6 +403,9 @@ class CultureTracker:
         self.width = self.vid.get(cv.CAP_PROP_FRAME_WIDTH)
         self.height = self.vid.get(cv.CAP_PROP_FRAME_HEIGHT)
         self.pixels_to_mm = pixels_per_mm
+        # Units can either be millimeter(mm) or micrometer(μm)
+        # This will change the pixels_to_mm conversion and the titles of columns and exported data
+        self.units = units
         self.frame_num = 1
         self.frames = self.vid.get(cv.CAP_PROP_FRAME_COUNT)
 
@@ -481,16 +497,28 @@ class CultureTracker:
             (h, w) = processed.shape[:2]
             if self.pixels_to_mm is None or self.pixels_to_mm == 0:
                 # If instead the dimensions of the image were given then calculate the pixel conversion using those
-                self.pixels_to_mm = ((self.height_mm / h) + (self.width_mm / w)) / 2
-                # Calculate the area of the video by multiplying the dimensions
-                self.area_mm = self.height_mm * self.width_mm
-
+                # If selected units were micro meters (µm)
+                if self.units == "µm":
+                    self.pixels_to_mm = (((self.height_mm / h) + (self.width_mm / w)) / 2) * 1000
+                    # Calculate the area of the video by multiplying the dimensions
+                    self.area_mm = self.height_mm * self.width_mm * 1000
+                else:
+                    # Otherwise use millimeters as unit
+                    self.pixels_to_mm = ((self.height_mm / h) + (self.width_mm / w)) / 2
+                    # Calculate the area of the video by multiplying the dimensions
+                    self.area_mm = self.height_mm * self.width_mm
             else:
                 # If pixels to mm were already given, then convert it to our new scale for the image
-                self.pixels_to_mm = self.pixels_to_mm * self.scale
-                # Calculate the area by converting the area in pixels to the area in mm
-                self.area_mm = (h * w) * (self.pixels_to_mm ** 2)
-
+                # If selected units were micro meters (µm)
+                if self.units == "µm":
+                    self.pixels_to_mm = self.pixels_to_mm * self.scale * 1000
+                    # Calculate the area by converting the area in pixels to the area in micrometers
+                    self.area_mm = ((h * w) * (self.pixels_to_mm ** 2)) * 1000
+                else:
+                    # Otherwise use millimeters as unit
+                    self.pixels_to_mm = self.pixels_to_mm * self.scale
+                    # Calculate the area by converting the area in pixels to the area in mm
+                    self.area_mm = (h * w) * (self.pixels_to_mm ** 2)
 
         # Use Tracker to label and record coordinates of all cells
         self.cell_locations, self.cell_areas = self.tracker.update(shapes)
@@ -556,8 +584,8 @@ class CultureTracker:
             timestamp = datetime.now().strftime("%b%d_%Y_%H-%M-%S")
             filename = f"{home_dir}{timestamp}_Culture_Data.xlsx"
 
-        positional_headers = ["Cell ID", "Initial X Position (mm)", "Initial Y Position (mm)"]
-        size_headers = ["Cell ID", "Initial Size (mm^2)"]
+        positional_headers = ["Cell ID", f"Initial X Position ({self.units})", f"Initial Y Position ({self.units})"]
+        size_headers = ["Cell ID", f"Initial Size ({self.units}^2)"]
 
         # Generate Headers
         for i in range(2, self.frame_num):
@@ -589,8 +617,8 @@ class CultureTracker:
             timestamp = datetime.now().strftime("%b%d_%Y_%H-%M-%S")
             filename = f"{home_dir}{timestamp}_Culture_Data.csv"
 
-        positional_headers = ["Cell ID", "Initial X Position (mm)", "Initial Y Position (mm)"]
-        size_headers = ["Initial Size (mm^2)"]
+        positional_headers = ["Cell ID", f"Initial X Position ({self.units})", f"Initial Y Position ({self.units})"]
+        size_headers = [f"Initial Size ({self.units}^2)"]
 
         # Generate Headers
         for i in range(2, self.frame_num):
@@ -627,7 +655,7 @@ class CultureTracker:
           if set to 1 only the first point will be labeled
     '''
     def export_area_graph(self, num_labels=2, filename=None):
-        graph_data = {"Time (mins)": [], "Average Area (mm^2)": []}
+        graph_data = {"Time (mins)": [], f"Average Area ({self.units}^2)": []}
         # Calculate the average area of each cell per frame
         # Loop through all frames and generate the needed data
         for i in range(0, self.frame_num - 1):
@@ -645,10 +673,10 @@ class CultureTracker:
             # Average out the recorded areas traveled this frame and append it to our list
             if areas:
                 avg = float(sum(areas)/len(areas))
-                graph_data["Average Area (mm^2)"].append(avg)
+                graph_data[f"Average Area ({self.units}^2)"].append(avg)
 
         # Call Generic Export graph method with created parameters
-        self.export_graph(graph_data, "Time (mins)", "Average Area (mm^2)", f"Average Area of Each Cell",
+        self.export_graph(graph_data, "Time (mins)", f"Average Area ({self.units}^2)", f"Average Area of Each Cell",
                           filename=filename)
 
 
@@ -660,7 +688,7 @@ class CultureTracker:
         '''
     def export_average_speed_graph(self, num_labels=2, filename=None):
         # Create Dictionary containing an entry for Time and entry for the average displacement (distance traveled between last frame and current frame)
-        graph_data = {"Time (mins)": [], "Average Speed (mm/min)": []}
+        graph_data = {"Time (mins)": [], f"Average Speed ({self.units}/min)": []}
 
         # Loop through all frames and generate the needed data
         for i in range(1, self.frame_num - 1):
@@ -685,10 +713,10 @@ class CultureTracker:
 
             # Average out the recorded distances traveled this frame and append it to our list
             avg = float(sum(speeds)/len(speeds))
-            graph_data["Average Speed (mm/min)"].append(avg)
+            graph_data[f"Average Speed ({self.units}/min)"].append(avg)
 
         # Call Generic Export graph method with created parameters
-        self.export_graph(graph_data, "Time (mins)", "Average Speed (mm/min)", f"Average Speed",
+        self.export_graph(graph_data, "Time (mins)", f"Average Speed ({self.units}/min)", f"Average Speed",
                           filename=filename)
 
 
@@ -700,7 +728,7 @@ class CultureTracker:
     '''
     def export_average_displacement_graph(self, num_labels=2, filename=None):
         # Create Dictionary containing an entry for Time and entry for the average displacement (distance traveled between last frame and current frame)
-        graph_data = {"Time (mins)": [], "Average Displacement (mm)": []}
+        graph_data = {"Time (mins)": [], f"Average Displacement ({self.units})": []}
 
         # Loop through all frames and generate the needed data
         for i in range(1, self.frame_num - 1):
@@ -724,10 +752,10 @@ class CultureTracker:
 
             # Average out the recorded distances traveled this frame and append it to our list
             avg = sum(distances)/len(distances)
-            graph_data["Average Displacement (mm)"].append(avg)
+            graph_data[f"Average Displacement ({self.units})"].append(avg)
 
         # Call Generic Export graph method with created parameters
-        self.export_graph(graph_data, "Time (mins)", "Average Displacement (mm)", f"Average Displacement Between Time Intervals", filename=filename)
+        self.export_graph(graph_data, "Time (mins)", f"Average Displacement ({self.units})", f"Average Displacement Between Time Intervals", filename=filename)
 
 
     # Release the video source when the object is destroyed

@@ -72,9 +72,9 @@ class App:
                    [sg.R('Individual Cell Tracking', 1, key="individual_radio", background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Number of pixels per mm* (If height/width are unknown)'), sg.Input(key='pixels_per_mm')],
                    # Take Input for Constants
                    [sg.R('Full Culture Tracking', 1, key="culture_radio", background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Time Between Images (mins)*'), sg.Input(key="time_between_frames")],
-                   [sg.Push(), sg.Text('Min Cell Size (Default = 10)'), sg.Input(key="min_size")],
-                   [sg.Push(), sg.Text('Max Cell Size (Default = 600)'), sg.Input(key="max_size")],
-                   [sg.Push(), sg.Text('Video Editor Settings', font=TITLE_FONT, text_color=TITLE_COLOR)],
+                   [sg.Text('Select Units for Exported Data:', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(), sg.Text('Min Cell Size (Default = 10)'), sg.Input(key="min_size")],
+                   [sg.R('µm', 3, key="units_µm", default=True, background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Max Cell Size (Default = 600)'), sg.Input(key="max_size")],
+                   [sg.R('mm', 3, key="units_mm", background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Video Editor Settings', font=TITLE_FONT, text_color=TITLE_COLOR)],
                    [sg.Push(), sg.Text('Contrast (Default = 1.25)'), sg.Input(key="contrast")],
                    [sg.Push(), sg.Text('Brightness (0 leaves the brightness unchanged. Default = 0.1)'), sg.Input(key="brightness")],
                    [sg.Push(), sg.Text('Blur Intensity (Default = 10)'), sg.Input(key="blur")],
@@ -256,6 +256,12 @@ class App:
                 brightness = self.window["brightness"].get()
                 blur = self.window["blur"].get()
 
+                # Get selected units
+                if self.window.Element("units_µm").get():
+                    units = "µm"
+                else:
+                    units = "mm"
+
                 # Check that all fields have been filled out with valid data then determine next action based on tracking type
                 if isValidParameters(file, width, height, mins, pixels_per_mm, min_size, max_size, contrast, brightness, blur):
 
@@ -280,10 +286,10 @@ class App:
                         # If valid pixels per mm were given then call the individual tracker with that parameter
                         if isValidPixels(pixels_per_mm):
                             self.video_player = TrackerClasses.IndividualTracker(file, int(mins),
-                                                                                 pixels_per_mm=float(pixels_per_mm))
+                                                                                 pixels_per_mm=float(pixels_per_mm), units=units)
                         else:
                             # Otherwise call it with the video's height/width
-                            self.video_player = TrackerClasses.IndividualTracker(file, int(mins), width_mm=float(width), height_mm=float(height))
+                            self.video_player = TrackerClasses.IndividualTracker(file, int(mins), width_mm=float(width), height_mm=float(height), units=units)
 
                         # Set all extra input arguments if they are valid
                         if isValidInt(min_size) and (min_size != "" and min_size is not None):
@@ -315,11 +321,11 @@ class App:
                         # If valid pixels per mm were given then call the individual tracker with that parameter
                         if isValidPixels(pixels_per_mm):
                             self.video_player = TrackerClasses.CultureTracker(file, int(mins),
-                                                                                 pixels_per_mm=float(pixels_per_mm))
+                                                                                 pixels_per_mm=float(pixels_per_mm), units=units)
                         else:
                             # Otherwise call it with the video's height/width
                             self.video_player = TrackerClasses.CultureTracker(file, int(mins), width_mm=float(width),
-                                                                                 height_mm=float(height))
+                                                                                 height_mm=float(height), units=units)
 
                         # Set all extra input arguments if they are valid
                         if isValidInt(min_size) and (min_size != "" and min_size is not None):
@@ -735,8 +741,9 @@ class App:
     def update(self):
         """Update the canvas elements within the video player interface with the next video frame recursively"""
         """Ran by Thread started by load_video"""
-        start_time = time.time()
-
+        #start_time = time.time()
+        # TODO This method legitimately will not work without this print statement here IDK
+        print("update")
         if self.vid:
             # Only Update video while it is visible on video player interface and is supposed to play
             if self.window[f'-COL{VIDEO_PLAYER}-'].visible:

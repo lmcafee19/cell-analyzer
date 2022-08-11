@@ -12,10 +12,10 @@ import math
     @param areas: dictionary indexed by cell id containing areas
     @param headers: iterable object containing headers for each column
 '''
-def culture_to_excel_file(filename, coordinates, areas, time_between_frames, area_of_frame, coordinate_headers=None, area_headers=None):
+def culture_to_excel_file(filename, coordinates, areas, time_between_frames, area_of_frame, coordinate_headers=None, area_headers=None, units="mm"):
     coordinates_to_excel_file(filename, coordinates, coordinate_headers, "Positions")
     area_to_excel_file(filename, areas, area_headers, "Areas")
-    stats = calc_culture_cell_statistics(coordinates, areas, time_between_frames, area_of_frame)
+    stats = calc_culture_cell_statistics(coordinates, areas, time_between_frames, area_of_frame, units=units)
     culture_stats_to_excel_file(filename, stats, "Culture Stats")
 
 
@@ -25,7 +25,7 @@ def culture_to_excel_file(filename, coordinates, areas, time_between_frames, are
     @param data: Dictionary containing data about the cell
     @param headers: iterable object containing headers for each column
 '''
-def individual_to_excel_file(filename, data:dict, time_between_frames, sheetname=None):
+def individual_to_excel_file(filename, data:dict, time_between_frames, units="mm", sheetname=None):
     current_row = 1
     current_col = 1
 
@@ -64,8 +64,8 @@ def individual_to_excel_file(filename, data:dict, time_between_frames, sheetname
         current_col += 1
 
     # Generate Statistics using positional and area data about cells and export that to same excel sheet
-    coordinates = merge(data["X Position (mm)"], data["Y Position (mm)"])
-    stats = calc_individual_cell_statistics(coordinates, data['Area (mm^2)'], time_between_frames)
+    coordinates = merge(data[f"X Position ({units})"], data[f"Y Position ({units})"])
+    stats = calc_individual_cell_statistics(coordinates, data[f'Area ({units}^2)'], time_between_frames, units=units)
 
     # Keep Track of the column stats start on
     stats_col = current_col
@@ -232,7 +232,7 @@ def area_to_excel_file(filename, data, headers=None, sheetname=None):
     @param time_between_frames Time in minutes between each frame of cell growth video
     @return Dictionary containing statistics generated 
 '''
-def calc_individual_cell_statistics(data, areas, time_between_frames):
+def calc_individual_cell_statistics(data, areas, time_between_frames, units="mm"):
     # Create dictionary to hold all calculated statistics
     stats = {}
     distances = []
@@ -276,21 +276,21 @@ def calc_individual_cell_statistics(data, areas, time_between_frames):
 
         # Positional Stats
         # Total Displacement (Total Distance Traveled)
-        stats["Total Displacement (mm)"] = sum(distances)
+        stats[f"Total Displacement ({units})"] = sum(distances)
         # Final Distace from Origin
-        stats["Final Distance from Origin (mm)"] = math.dist([origin_x, origin_y], [x, y])
+        stats[f"Final Distance from Origin ({units})"] = math.dist([origin_x, origin_y], [x, y])
         # Maximum Distance from origin
-        stats["Maximum Distance from Origin (mm)"] = max(origin_distances)
+        stats[f"Maximum Distance from Origin ({units})"] = max(origin_distances)
         # Average Distance from origin
-        stats["Average Distance from Origin (mm)"] = sum(origin_distances)/len(origin_distances)
+        stats[f"Average Distance from Origin ({units})"] = sum(origin_distances)/len(origin_distances)
         # Maximum Distance Traveled in one Interval
-        stats["Maximum Distance Traveled in one Interval (mm)"] = max(distances)
+        stats[f"Maximum Distance Traveled in one Interval ({units})"] = max(distances)
         # Max Speed (distance/time)
-        stats["Maximum Speed (mm/min)"] = max(speeds)
+        stats[f"Maximum Speed ({units}/min)"] = max(speeds)
         # Average Speed
-        stats["Average Speed (mm/min)"] = sum(speeds)/len(speeds)
+        stats[f"Average Speed ({units}/min)"] = sum(speeds)/len(speeds)
         # Average Angle of direction from origin in degrees
-        stats["Average Angle of Direction from Origin (degrees)"] = sum(angle_of_direction)/len(angle_of_direction)
+        stats[f"Average Angle of Direction from Origin (degrees)"] = sum(angle_of_direction)/len(angle_of_direction)
         # Angle of direction from origin to final point
         stats["Angle of Direction between Origin and Final Point (degrees)"] = final_angle
         # Categorize Direction of Movement
@@ -300,19 +300,19 @@ def calc_individual_cell_statistics(data, areas, time_between_frames):
 
         # Area Stats
         # Max Size
-        stats["Maximum Size (mm^2)"] = max(areas)
+        stats[f"Maximum Size ({units}^2)"] = max(areas)
         # Min Size
-        stats["Minimum Size (mm^2)"] = min(areas)
+        stats[f"Minimum Size ({units}^2)"] = min(areas)
         # Average Size
-        stats["Average Size (mm^2)"] = sum(areas)/len(areas)
+        stats[f"Average Size ({units}^2)"] = sum(areas)/len(areas)
         # Calc change in size of the cell between first and last frame
-        stats["Change in Cell Size (mm^2)"] = areas[len(areas) - 1] - areas[0]
+        stats[f"Change in Cell Size ({units}^2)"] = areas[len(areas) - 1] - areas[0]
         # Calc Average Change in growth between each time interval
         change = 0
         for i in range(1, len(areas)):
             change += areas[i] - areas[i-1]
         avg_change = change/len(areas)
-        stats["Average Change in Cell Size Between one Interval (mm^2)"] = avg_change
+        stats[f"Average Change in Cell Size Between one Interval ({units}^2)"] = avg_change
     else:
         raise Exception("Empy Data Set Given")
 
@@ -375,7 +375,7 @@ def culture_stats_to_excel_file(filename, stats, sheetname=None):
     @param time_between_frames Time in minutes between each frame of cell growth video
     @return Dictionary containing statistics generated 
 '''
-def calc_culture_cell_statistics(positional_data, area_data, time_between_frames, area_of_frame):
+def calc_culture_cell_statistics(positional_data, area_data, time_between_frames, area_of_frame, units="mm"):
     # Create dictionary to hold all calculated statistics
     stats = {}
     displacements = []
@@ -454,19 +454,19 @@ def calc_culture_cell_statistics(positional_data, area_data, time_between_frames
 
 
     # Total Displacement (distance traveled throughout whole video)
-    stats["Average Total Displacement (mm)"] = sum(displacements)/len(displacements)
-    stats["Max Distance Traveled by one Cell (mm)"] = max(displacements)
-    stats["Min Distance Traveled by one Cell (mm)"] = min(displacements)
+    stats[f"Average Total Displacement ({units})"] = sum(displacements)/len(displacements)
+    stats[f"Max Distance Traveled by one Cell ({units})"] = max(displacements)
+    stats[f"Min Distance Traveled by one Cell ({units})"] = min(displacements)
     # Average Distance from origin
-    stats["Average Final Distance from Origin (mm)"] = sum(final_distances)/len(final_distances)
+    stats[f"Average Final Distance from Origin ({units})"] = sum(final_distances)/len(final_distances)
     # Average Speed
-    stats["Average Speed (mm/min)"] = sum(speeds)/len(speeds)
+    stats[f"Average Speed ({units}/min)"] = sum(speeds)/len(speeds)
     # Maximum Recorded Speed
-    stats["Maximum Recorded Speed (mm/min)"] = max(speeds)
+    stats[f"Maximum Recorded Speed ({units}/min)"] = max(speeds)
     # Minimum Recorded Speed
-    stats["Minimum Recorded Speed (mm/min)"] = min(speeds)
+    stats[f"Minimum Recorded Speed ({units}/min)"] = min(speeds)
     # Angle of direction from origin to final point
-    stats["Average Angle of Direction between Origin and Final Point (degrees)"] = sum(angle_of_direction)/len(angle_of_direction)
+    stats[f"Average Angle of Direction between Origin and Final Point (degrees)"] = sum(angle_of_direction)/len(angle_of_direction)
     # Categorize Direction of Movement
     compass_brackets = ["E", "NE", "N", "NW", "W", "SW", "S", "SE", "E"]
     compass_lookup = round(stats["Average Angle of Direction between Origin and Final Point (degrees)"] / 45)
@@ -475,15 +475,15 @@ def calc_culture_cell_statistics(positional_data, area_data, time_between_frames
     # Percentage of Frame the cells take up
     stats["Final Frame's Confluency (%)"] = sum(final_sizes) / area_of_frame
     # Largest Recorded Cell
-    stats["Largest Cell (mm^2)"] = max_cell_size
-    stats["Largest Cell's ID"] = max_cell_id
+    stats[f"Largest Cell ({units}^2)"] = max_cell_size
+    stats[f"Largest Cell's ID"] = max_cell_id
     # Smallest Recorded Cell
-    stats["Smallest Cell (mm^2)"] = min_cell_size
+    stats[f"Smallest Cell ({units}^2)"] = min_cell_size
     stats["Smallest Cell's ID"] = min_cell_id
     # Average Size of Cells
-    stats["Average Final Size of Cell (mm^2)"] = sum(final_sizes) / len(final_sizes)
+    stats[f"Average Final Size of Cell ({units}^2)"] = sum(final_sizes) / len(final_sizes)
     # Average cell growth/shrinkage
-    stats["Average Change in Cell Size (mm^2)"] = sum(growth) / len(growth)
+    stats[f"Average Change in Cell Size ({units}^2)"] = sum(growth) / len(growth)
 
     return stats
 
