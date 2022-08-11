@@ -1,5 +1,4 @@
 import math
-
 import cv2 as cv
 import os
 from tracker_library import centroid_tracker as ct
@@ -112,7 +111,7 @@ class IndividualTracker:
     def next_frame(self):
         valid, frame = self.vid.read()
 
-        # TODO If next frame is not found return None?
+        # If next frame is not found return None?
         if not valid:
             return None, None
 
@@ -465,7 +464,7 @@ class CultureTracker:
     def next_frame(self):
         valid, frame = self.vid.read()
 
-        # TODO If next frame is not found return None?
+        # If next frame is not found return None?
         if not valid:
             return None, None
 

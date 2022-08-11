@@ -1,3 +1,6 @@
+# Main Cell-Analyzer Script
+# This is a program which allows a user to track statistics about an individual cell, or an entire culture throughout video using a graphical interface
+#author: zheath19@georgefox.edu
 import sys
 import threading
 import time
@@ -21,7 +24,6 @@ SUCCESS_SCREEN = 5
 
 class App:
     """
-    TODO: change slider resolution based on vid length
     TODO: make top menu actually do something :P    """
     def __init__(self):
 
