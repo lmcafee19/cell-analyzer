@@ -29,8 +29,8 @@ class IndividualTracker:
         self.frame_num = 1
         self.frames = self.vid.get(cv.CAP_PROP_FRAME_COUNT)
 
-        self.height_mm = int(height_mm)
-        self.width_mm = int(width_mm)
+        self.height_mm = float(height_mm)
+        self.width_mm = float(width_mm)
         # Real world time in minutes that pass between each image being taken
         self.time_between_frames = time_between_frames
 
@@ -409,8 +409,8 @@ class CultureTracker:
         self.frame_num = 1
         self.frames = self.vid.get(cv.CAP_PROP_FRAME_COUNT)
 
-        self.height_mm = int(height_mm)
-        self.width_mm = int(width_mm)
+        self.height_mm = float(height_mm)
+        self.width_mm = float(width_mm)
         self.area_mm = None
         # Real world time in minutes that pass between each image being taken
         self.time_between_frames = time_between_frames
