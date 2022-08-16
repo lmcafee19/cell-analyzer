@@ -1056,8 +1056,8 @@ def isValidVideo(videofile):
 def isValidDimensions(width, height):
     valid = False
     try:
-        width = int(width)
-        height = int(height)
+        width = float(width)
+        height = float(height)
         if 0 < width and 0 < height:
             valid = True
     except ValueError or TypeError:
