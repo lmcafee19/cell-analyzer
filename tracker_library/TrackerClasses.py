@@ -178,7 +178,7 @@ class IndividualTracker:
         self.tracked_cell_data[f'Y Position ({self.units})'].append(coordinates_mm[1])
 
         # Record Time from start
-        self.tracked_cell_data['Time (mins)'].append((self.frame_num - 2) * self.time_between_frames)
+        self.tracked_cell_data['Time (mins)'].append((self.frame_num - 1) * self.time_between_frames)
 
 
     '''

@@ -78,7 +78,7 @@ class App:
                    [sg.Push(), sg.Text('Contrast (Default = 1.25)'), sg.Input(key="contrast")],
                    [sg.Push(), sg.Text('Brightness (0 leaves the brightness unchanged. Default = 0.1)'), sg.Input(key="brightness")],
                    [sg.Push(), sg.Text('Blur Intensity (Default = 10)'), sg.Input(key="blur")],
-                   [sg.Button('Run'), sg.Button('Exit')]]
+                   [sg.Button('Run'), sg.Button('Restart'), sg.Button('Exit')]]
 
         # Video Player Layout
         layout2 = [[sg.Menu(menu_def)],
@@ -91,7 +91,7 @@ class App:
                    [sg.Button("Pause", key="Play"), sg.Button('Next frame'),
                     sg.Push(),
                     sg.Button('Export Data', disabled=True),
-                    sg.Button('Exit')]]  # Play/Pause Buttons, Next Frame Button
+                    sg.Button('Restart'), sg.Button('Exit')]]  # Play/Pause Buttons, Next Frame Button
         # Export/Quit buttons. Disabled by default but comes online when video is done playing
 
         # Cell Selection (For Individual Tracking)
@@ -103,7 +103,7 @@ class App:
                    # Windows for edited/original video to play
                    [sg.Text('Enter Id number of cell you wish to track:'), sg.Input(key="cell_id")],
                    # Take input of Cell ID Number
-                   [sg.Button('Track', key="track_individual"), sg.Button("Exit")]]  # Run and Exit Buttons
+                   [sg.Button('Track', key="track_individual"), sg.Button('Restart'), sg.Button("Exit")]]  # Run and Exit Buttons
 
         # Export Data Menu
         layout4 = [[sg.Menu(menu_def)],
@@ -155,7 +155,7 @@ class App:
         # Final Page. Played after successful export and prompts the user to exit or restart the process
         layout5 = [[sg.Menu(menu_def)],
                    [sg.Text("Export Successful", key="title", font="Times 16", text_color=TITLE_COLOR, justification='c')],
-                   [sg.Button("Track Another Video"), sg.Button("Exit")]]
+                   [sg.Button("Restart"), sg.Button("Exit")]]
 
 
         num_layouts = 6
@@ -685,7 +685,7 @@ class App:
 
             #----Success Screen Events----#
             # Restart entire process
-            if event == "Track Another Video":
+            if event.startswith("Restart"):
                 #  Reset all input fields
                 fields_to_clear = ["_FILEPATH_", "video_width_mm", "video_height_mm", "pixels_per_mm", "time_between_frames",
                                    "min_size", "max_size", "contrast", "brightness", "blur", "cell_id", "excel_filename", "csv_filename",
@@ -707,7 +707,8 @@ class App:
 
                 # Kill video process
                 self.run_thread = False
-                self.video_thread.join()
+                if self.video_thread:
+                    self.video_thread.join()
                 self.video_thread = None
 
                 # Disable export button
@@ -717,8 +718,11 @@ class App:
                 # Hide Export Message
                 self.window['export_message'].update(visible=False)
 
-                # Go to main menu
+                # Go to main menu from any screen
                 self.window[f'-COL{SUCCESS_SCREEN}-'].update(visible=False)
+                self.window[f'-COL{EXPORT}-'].update(visible=False)
+                self.window[f'-COL{VIDEO_PLAYER}-'].update(visible=False)
+                self.window[f'-COL{CELL_SELECTION}-'].update(visible=False)
                 self.window[f'-COL{MAIN_MENU}-'].update(visible=True)
 
         # Exiting
