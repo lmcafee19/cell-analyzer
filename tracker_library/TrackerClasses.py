@@ -167,7 +167,8 @@ class IndividualTracker:
             self.Ymax = self.cell_locations[self.tracked_cell_id][1]
 
         # Convert area to mm^2
-        area_mm = self.cell_areas[self.tracked_cell_id] * (self.pixels_to_mm ** 2)
+        area_mm = self.cell_areas[self.tracked_cell_id]
+        area_mm = area_mm * (self.pixels_to_mm**2)
         self.tracked_cell_data[f'Area ({self.units}^2)'].append(area_mm)
 
         # Convert Coordinates to mm
@@ -243,7 +244,9 @@ class IndividualTracker:
         self.tracked_cell_coords[self.tracked_cell_id].append(list(self.cell_locations[self.tracked_cell_id]))
 
         # Convert area to mm^2
-        area_mm = self.cell_areas[self.tracked_cell_id] * (self.pixels_to_mm ** 2)
+        area_mm = self.cell_areas[self.tracked_cell_id]
+        area_mm = area_mm * (self.pixels_to_mm ** 2)
+
         self.tracked_cell_data[f'Area ({self.units}^2)'].append(area_mm)
 
         # Convert Coordinates to mm
@@ -567,7 +570,8 @@ class CultureTracker:
                     self.cell_sizes_mm[cell_id].append(0)
 
             # Convert area to mm^2
-            area_mm = area * (self.pixels_to_mm ** 2)
+            area_mm = area
+            area_mm = area_mm * (self.pixels_to_mm ** 2)
             self.cell_sizes_mm[cell_id].append(area_mm)
 
 

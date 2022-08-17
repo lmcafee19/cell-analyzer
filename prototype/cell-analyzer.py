@@ -285,11 +285,11 @@ class App:
                         # Initialize Individual Tracker with given arguments
                         # If valid pixels per mm were given then call the individual tracker with that parameter
                         if isValidPixels(pixels_per_mm):
-                            self.video_player = TrackerClasses.IndividualTracker(file, int(mins),
+                            self.video_player = TrackerClasses.IndividualTracker(file, float(mins),
                                                                                  pixels_per_mm=float(pixels_per_mm), units=units)
                         else:
                             # Otherwise call it with the video's height/width
-                            self.video_player = TrackerClasses.IndividualTracker(file, int(mins), width_mm=float(width), height_mm=float(height), units=units)
+                            self.video_player = TrackerClasses.IndividualTracker(file, float(mins), width_mm=float(width), height_mm=float(height), units=units)
 
                         # Set all extra input arguments if they are valid
                         if isValidInt(min_size) and (min_size != "" and min_size is not None):
@@ -320,11 +320,11 @@ class App:
                         # Initialize Culture Tracker
                         # If valid pixels per mm were given then call the individual tracker with that parameter
                         if isValidPixels(pixels_per_mm):
-                            self.video_player = TrackerClasses.CultureTracker(file, int(mins),
+                            self.video_player = TrackerClasses.CultureTracker(file, float(mins),
                                                                                  pixels_per_mm=float(pixels_per_mm), units=units)
                         else:
                             # Otherwise call it with the video's height/width
-                            self.video_player = TrackerClasses.CultureTracker(file, int(mins), width_mm=float(width),
+                            self.video_player = TrackerClasses.CultureTracker(file, float(mins), width_mm=float(width),
                                                                                  height_mm=float(height), units=units)
 
                         # Set all extra input arguments if they are valid
@@ -718,6 +718,13 @@ class App:
                 # Hide Export Message
                 self.window['export_message'].update(visible=False)
 
+                # Hide Unique Exports
+                self.window['Movement over Time'].update(visible=False)
+                self.window['images_label'].update(visible=False)
+                self.window['path_image'].update(visible=False)
+                self.window['average_displacement'].update(visible=False)
+                self.window['average_speed'].update(visible=False)
+
                 # Go to main menu from any screen
                 self.window[f'-COL{SUCCESS_SCREEN}-'].update(visible=False)
                 self.window[f'-COL{EXPORT}-'].update(visible=False)
@@ -859,7 +866,7 @@ class App:
         self.window.Element("counter").Update("0/%i" % self.video_player.frames)
 
         # Reset frame count
-        self.frame = 0
+        self.frame = 1
 
         # Display Original photo in left frame of selected view
         # scale image to fit inside the frame
@@ -1077,7 +1084,7 @@ def isValidDimensions(width, height):
 def isValidTime(mins):
     valid = False
     try:
-        val = int(mins)
+        val = float(mins)
         if 0 < val:
             valid = True
     except ValueError or TypeError:
