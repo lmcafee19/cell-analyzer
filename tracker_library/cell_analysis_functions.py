@@ -366,10 +366,20 @@ def detect_shape_v2(img, min_size, max_size):
                 centroid = (int(x), int(y))
                 radius = float(radius)
 
-                # Grab Area
-                area = calc_area_circle(radius)
-                # Grab Centroid
+                # Calc Area
+                # If this is not closed contour (closed shape detected) then record contour's area,
+                if not cv.isContourConvex(contour):
+                    area = cv.contourArea(contour)
+                else:
+                    # otherwise record our min created shape's area
+                    area = calc_area_circle(radius)
+
+                # Record centroid and area
                 centroids[centroid] = area
+                # print(f"Min Circle Area: {area}")
+                # print(f"THis is a closed contour: {cv.isContourConvex(contour)}")
+                # print(f"Contour Area: {cv.contourArea(contour)}")
+
 
                 # Draw circle and label
                 cv.circle(photo, centroid, int(radius), (255, 255, 255), 2)
@@ -384,9 +394,19 @@ def detect_shape_v2(img, min_size, max_size):
                 # Get Centroid from rectangle
                 centroid = (int(rect[0][0]), int(rect[0][1]))
 
-                # Grab Area and Centroid
-                area = calc_rect_area(rec_coordinates)
+                # Calc Area and Centroid
+                # If this is not closed contour (closed shape detected) then record contour's area,
+                if not cv.isContourConvex(contour):
+                    area = cv.contourArea(contour)
+                else:
+                    # otherwise record our min created shape's area
+                    area = calc_rect_area(rec_coordinates)
+
+                # Record Centroid and its area
                 centroids[centroid] = area
+                # print(f"Min Rect Area: {area}")
+                # print(f"THis is a closed contour: {cv.isContourConvex(contour)}")
+                # print(f"Contour Area: {cv.contourArea(contour)}")
 
                 # Draw rectangle and label found onto image in white
                 cv.drawContours(photo, [box], 0, (255, 255, 255), 2)
