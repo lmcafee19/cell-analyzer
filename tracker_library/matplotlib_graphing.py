@@ -20,8 +20,9 @@ from matplotlib.backends.backend_pdf import PdfPages
 '''
 def export_individual_cell_data(data: dict, xaxis, yaxis, filename=None, labels=None, num_labels=2, title=None, color='blue'):
     df = DataFrame(data, columns=[xaxis, yaxis])
-    # If filename is specified then make graph and directly save it to pdf
-    if filename:
+    # If filename is specified and does not already exist then make graph and directly save it to pdf
+    #TODO create number after filename if name is already in use
+    if filename and not os.path.exists(filename):
         # If filename does not end in .pdf extension or already exists, exit
         if not filename.endswith(".pdf"):
             raise Exception("File must be of type .xls or .xlsx")
@@ -112,7 +113,7 @@ def export_individual_cell_data(data: dict, xaxis, yaxis, filename=None, labels=
     @param data: Dictionary containing data about the cell
     @param xaxis Value to place on the xaxis, should also be key to data dictionary
     @param yaxis Value to place on the yaxis, should also be key to data dictionary
-    @param filename Optional. Name of PDF file to save chart to. If not specified user will be prompted to edit and save graph
+    @param filename Optional. Name of PDF file to save chart to. If not specified or already in use user will be prompted to edit and save graph
     @param labels Optional. Iterable container of labels for each point
     @param num_labels Optional. Number of points on the graph to label. By default only the first and last point will be labeled. 
            if set to 1 only the first point will be labeled
@@ -121,13 +122,11 @@ def export_individual_cell_data(data: dict, xaxis, yaxis, filename=None, labels=
 '''
 def export_line_chart(data: dict, xaxis, yaxis, filename=None, labels=None, num_labels=2, title=None, color='blue'):
     df = DataFrame(data, columns=[xaxis, yaxis])
-    # If filename is specified then make graph and directly save it to pdf
-    if filename:
+    # If filename is specified and not already in use then make graph and directly save it to pdf
+    if filename and not os.path.exists(filename):
         # If filename does not end in .pdf extension or already exists, exit
         if not filename.endswith(".pdf"):
             raise Exception("File must be of type .xls or .xlsx")
-        elif os.path.exists(filename):
-            raise Exception("Given File already exists")
 
         with PdfPages(filename) as export_pdf:
             # Create line chart and fill in information

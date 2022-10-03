@@ -484,7 +484,6 @@ class App:
                             "Given Average Speed Graph's File Name is in an incorrect format.\nEnsure the filename ends in "
                             ".pdf or leave the field blank for manual editing of settings and saving")
 
-
                 # Validate Inputs as needed
                 if isValidExportParameters(num_labels, export_directory) and valid_filenames:
                     # Display Export Message
