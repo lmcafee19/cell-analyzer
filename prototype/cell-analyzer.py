@@ -219,7 +219,7 @@ class App:
                     print("no video selected, doing nothing")
 
                 if video_path:
-                    #print(video_path)
+                    # TODO change behavior if entered file is an image
                     # Initialize video
                     self.vid = MyVideoCapture(video_path)
                     # Calculate new video dimensions
@@ -1037,7 +1037,7 @@ def isValidParameters(videofile, width, height, time_between_frames, pixels, min
     # Video Validation
     else:
         sg.popup_error(
-            "Entered: Video File is invalid. Supported File types: .mp4, .avi")
+            "Entered: Video/Image File is invalid. Supported File types: .mp4, .avi")
 
 
 
@@ -1052,6 +1052,7 @@ def isValidParameters(videofile, width, height, time_between_frames, pixels, min
     @return True if the tracker can analyze it, false if it cannot
 '''
 def isValidVideo(videofile):
+    # TODO Allow image file types
     valid = False
     if os.path.exists(videofile):
         if videofile.endswith(".avi") or videofile.endswith(".mp4"):

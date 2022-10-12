@@ -368,16 +368,16 @@ def detect_shape_v2(img, min_size, max_size):
 
                 # Calc Area
                 # If this is not closed contour (closed shape detected) then record contour's area,
-                if not cv.isContourConvex(contour):
-                    area = cv.contourArea(contour)
-                else:
-                    # otherwise record our min created shape's area
-                    area = calc_area_circle(radius)
+                # if not cv.isContourConvex(contour):
+                #     area = cv.contourArea(contour)
+                # else:
+                # otherwise record our min created shape's area
+                area = calc_area_circle(radius)
 
                 # Record centroid and area
                 centroids[centroid] = area
                 # print(f"Min Circle Area: {area}")
-                # print(f"THis is a closed contour: {cv.isContourConvex(contour)}")
+                # print(f"This is a closed contour: {cv.isContourConvex(contour)}")
                 # print(f"Contour Area: {cv.contourArea(contour)}")
 
 
@@ -396,11 +396,12 @@ def detect_shape_v2(img, min_size, max_size):
 
                 # Calc Area and Centroid
                 # If this is not closed contour (closed shape detected) then record contour's area,
-                if not cv.isContourConvex(contour):
-                    area = cv.contourArea(contour)
-                else:
-                    # otherwise record our min created shape's area
-                    area = calc_rect_area(rec_coordinates)
+                # if not cv.isContourConvex(contour):
+                #     area = cv.contourArea(contour)
+                # else:
+                # otherwise record our min created shape's area
+                #area = calc_area_rect(rec_coordinates)
+                area = calc_area_eliptical(rec_coordinates)
 
                 # Record Centroid and its area
                 centroids[centroid] = area
@@ -496,7 +497,7 @@ def label_cells(img, cell_coords):
     @param rectangle: List Containing starting x coordinate, starting y, ending x, and ending y in that order
     @return The area of the given rectangle
 '''
-def calc_rect_area(rectangle):
+def calc_area_rect(rectangle):
     # Grab length and Width
     length = rectangle[3] - rectangle[1]
     width = rectangle[2] - rectangle[0]
@@ -513,6 +514,21 @@ def calc_rect_area(rectangle):
 def calc_area_circle(radius):
     # A = 2 * pi * r^2
     area = 2 * math.pi * (radius ** 2)
+    return area
+
+
+'''
+    Calculates the area of the given Eliptical Using the formula: A = a * b * pi
+    @param box: List Containing starting x coordinate, starting y, ending x, and ending y in that order
+    @return The area of the given eliptical
+'''
+def calc_area_eliptical(box):
+    # Grab length and Width
+    length = box[3] - box[1]
+    width = box[2] - box[0]
+    # a = 1/2 of the total height
+    # b = 1/2 of the total width
+    area = (0.5 * length) * (0.5 * width) * math.pi
     return area
 
 
