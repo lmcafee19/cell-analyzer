@@ -15,7 +15,7 @@ import math
 def culture_to_excel_file(filename, coordinates, areas, time_between_frames, area_of_frame, coordinate_headers=None, area_headers=None, units="mm"):
     coordinates_to_excel_file(filename, coordinates, coordinate_headers, "Positions")
     area_to_excel_file(filename, areas, area_headers, "Areas")
-    # TODO Fix Stats for image files
+    # TODO Implement Separate stats function for image files
     stats = calc_culture_cell_statistics(coordinates, areas, time_between_frames, area_of_frame, units=units)
     culture_stats_to_excel_file(filename, stats, "Culture Stats")
 

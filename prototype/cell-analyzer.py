@@ -359,10 +359,15 @@ class App:
 
                 # If user has entered a valid cell id and the tracker has been updated Continue to video player page
                 if selected:
-                    # TODO If current video file is actually an Image proceed to Export
-                    self.window[f'-COL{CELL_SELECTION}-'].update(visible=False)
-                    self.window[f'-COL{VIDEO_PLAYER}-'].update(visible=True)
-                    # Video should start playing due to self.update method
+                    # If current data file is an Image proceed to Export
+                    if self.frames == 1:
+                        self.window[f'-COL{CELL_SELECTION}-'].update(visible=False)
+                        self.window[f'-COL{EXPORT}-'].update(visible=True)
+                    # If the current data file is a video proceed to video player
+                    else:
+                        self.window[f'-COL{CELL_SELECTION}-'].update(visible=False)
+                        # Video should start playing due to self.update method
+                        self.window[f'-COL{VIDEO_PLAYER}-'].update(visible=True)
 
 
             # ---- Video Player Events ---- #
