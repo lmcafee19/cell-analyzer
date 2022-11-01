@@ -1,9 +1,8 @@
 # Main Cell-Analyzer Script
 # This is a program which allows a user to track statistics about an individual cell, or an entire culture throughout video using a graphical interface
-#author: zheath19@georgefox.edu
+# author: zheath19@georgefox.edu
 import sys
 import threading
-import time
 import tkinter as tk
 import PIL
 from PIL import Image, ImageTk
@@ -261,6 +260,10 @@ class App:
                     units = "µm"
                 else:
                     units = "mm"
+
+                # If given File is an Image time_between_frames does not need to be filled in and will be set to a default val
+                if is_image(file):
+                    mins = 1
 
                 # Check that all fields have been filled out with valid data then determine next action based on tracking type
                 if isValidParameters(file, width, height, mins, pixels_per_mm, min_size, max_size, contrast, brightness, blur):
@@ -1044,7 +1047,7 @@ def isValidParameters(videofile, width, height, time_between_frames, pixels, min
         # Time Error Message
         else:
             sg.popup_error(
-                "Entered: time between frames is invalid. This Field must be filled with a positive integer.")
+                "Entered: time between frames is invalid. This field must be filled with a positive floating point number.")
     # Video Validation
     else:
         sg.popup_error(
