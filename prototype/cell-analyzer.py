@@ -117,9 +117,9 @@ class App:
                    [sg.Text(
                        'CSV File to Export to (.csv):\n  Leave blank for auto generated export to Downloads folder',
                        key='csv_file_label', visible=False), sg.Input(key="csv_filename", visible=False), sg.Text(".csv", key="csv_ext", visible=False)],
-                   [sg.Text('Select Graphs to Export:', font=TITLE_FONT, text_color=TITLE_COLOR)],
+                   [sg.Text('Select Graphs to Export:', key="Graph Title", visible=False, font=TITLE_FONT, text_color=TITLE_COLOR)],
 
-                   [sg.Check('Area over Time', key="Area over Time", enable_events=True, background_color=BACKGROUND_COLOR)],
+                   [sg.Check('Area over Time', key="Area over Time", enable_events=True, visible=False, background_color=BACKGROUND_COLOR)],
                    [sg.Text('Filename to save graph to (.pdf):\n  Leave blank for customizable settings and manual save after graph creation',
                             key='area_graph_label', visible=False), sg.Input(key="area_graph_filename", visible=False), sg.Text(".pdf", key="area_graph_ext", visible=False)],
 
@@ -387,16 +387,21 @@ class App:
                 # Continue to export interface
                 self.window[f'-COL{VIDEO_PLAYER}-'].update(visible=False)
                 self.window[f'-COL{EXPORT}-'].update(visible=True)
-                # Enable individual cell tracking specifics exports if it meets the reqs
-                if self.window.Element("individual_radio").get():
-                    self.window['Movement over Time'].update(visible=True)
-                    self.window['images_label'].update(visible=True)
-                    self.window['path_image'].update(visible=True)
+                # If data is a video enable all graph options
+                if self.frames > 1:
+                    self.window['Graph Title'].update(visible=True)
+                    self.window['Area over Time'].update(visible=True)
 
-                # Enable culture tracker specific exports
-                elif self.window.Element("culture_radio").get():
-                    self.window['average_displacement'].update(visible=True)
-                    self.window['average_speed'].update(visible=True)
+                    # Enable individual cell tracking specifics exports if it meets the reqs
+                    if self.window.Element("individual_radio").get():
+                        self.window['Movement over Time'].update(visible=True)
+                        self.window['images_label'].update(visible=True)
+                        self.window['path_image'].update(visible=True)
+
+                    # Enable culture tracker specific exports
+                    elif self.window.Element("culture_radio").get():
+                        self.window['average_displacement'].update(visible=True)
+                        self.window['average_speed'].update(visible=True)
 
             # ---- Export Events ---- #
             if event == "Export":
