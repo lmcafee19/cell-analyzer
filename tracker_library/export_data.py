@@ -15,6 +15,7 @@ import math
 def culture_to_excel_file(filename, coordinates, areas, time_between_frames, area_of_frame, coordinate_headers=None, area_headers=None, units="mm"):
     coordinates_to_excel_file(filename, coordinates, coordinate_headers, "Positions")
     area_to_excel_file(filename, areas, area_headers, "Areas")
+    # TODO Fix Stats for image files
     stats = calc_culture_cell_statistics(coordinates, areas, time_between_frames, area_of_frame, units=units)
     culture_stats_to_excel_file(filename, stats, "Culture Stats")
 
@@ -63,32 +64,35 @@ def individual_to_excel_file(filename, data:dict, time_between_frames, units="mm
 
         current_col += 1
 
-    # Generate Statistics using positional and area data about cells and export that to same excel sheet
-    coordinates = merge(data[f"X Position ({units})"], data[f"Y Position ({units})"])
-    stats = calc_individual_cell_statistics(coordinates, data[f'Area ({units}^2)'], time_between_frames, units=units)
+    # Generate Stats only if the given data was a video and therefore had multiple frames
+    keys = list(data.keys())
+    if len(data[keys[0]]) > 1:
+        # Generate Statistics using positional and area data about cells and export that to same excel sheet
+        coordinates = merge(data[f"X Position ({units})"], data[f"Y Position ({units})"])
+        stats = calc_individual_cell_statistics(coordinates, data[f'Area ({units}^2)'], time_between_frames, units=units)
 
-    # Keep Track of the column stats start on
-    stats_col = current_col
-    # Reset Row
-    current_row = 1
+        # Keep Track of the column stats start on
+        stats_col = current_col
+        # Reset Row
+        current_row = 1
 
-    # Add Stats Headers
-    sheet.cell(current_row, current_col, "Statistic")
-    current_col += 1
-    sheet.cell(current_row, current_col, "Value")
-    current_col += 1
-    current_row += 1
-
-    # Loop Through Stats and add them to excel sheet
-    for key, value in stats.items():
-        # Add Header
-        current_col = stats_col
-        sheet.cell(current_row, current_col, key)
+        # Add Stats Headers
+        sheet.cell(current_row, current_col, "Statistic")
         current_col += 1
-
-        # Add Data
-        sheet.cell(current_row, current_col, value)
+        sheet.cell(current_row, current_col, "Value")
+        current_col += 1
         current_row += 1
+
+        # Loop Through Stats and add them to excel sheet
+        for key, value in stats.items():
+            # Add Header
+            current_col = stats_col
+            sheet.cell(current_row, current_col, key)
+            current_col += 1
+
+            # Add Data
+            sheet.cell(current_row, current_col, value)
+            current_row += 1
 
     # Save File
     wb.save(f"{filename}")
@@ -453,24 +457,32 @@ def calc_culture_cell_statistics(positional_data, area_data, time_between_frames
         growth.append(value[len(value) - 1] - value[start_index])
 
 
-    # Total Displacement (distance traveled throughout whole video)
-    stats[f"Average Total Displacement ({units})"] = sum(displacements)/len(displacements)
-    stats[f"Max Distance Traveled by one Cell ({units})"] = max(displacements)
-    stats[f"Min Distance Traveled by one Cell ({units})"] = min(displacements)
-    # Average Distance from origin
-    stats[f"Average Final Distance from Origin ({units})"] = sum(final_distances)/len(final_distances)
-    # Average Speed
-    stats[f"Average Speed ({units}/min)"] = sum(speeds)/len(speeds)
-    # Maximum Recorded Speed
-    stats[f"Maximum Recorded Speed ({units}/min)"] = max(speeds)
-    # Minimum Recorded Speed
-    stats[f"Minimum Recorded Speed ({units}/min)"] = min(speeds)
-    # Angle of direction from origin to final point
-    stats[f"Average Angle of Direction between Origin and Final Point (degrees)"] = sum(angle_of_direction)/len(angle_of_direction)
-    # Categorize Direction of Movement
-    compass_brackets = ["E", "NE", "N", "NW", "W", "SW", "S", "SE", "E"]
-    compass_lookup = round(stats["Average Angle of Direction between Origin and Final Point (degrees)"] / 45)
-    stats["Average Compass Direction Moved"] = compass_brackets[compass_lookup]
+
+    # TODO FIX Division by zero
+    # If the data analyzed was a video and therefore there were multiple frames to compare against then calc stats based on movement/change
+    if len(displacements) != 0:
+        # Total Displacement (distance traveled throughout whole video)
+        stats[f"Average Total Displacement ({units})"] = sum(displacements)/len(displacements)
+        stats[f"Max Distance Traveled by one Cell ({units})"] = max(displacements)
+        stats[f"Min Distance Traveled by one Cell ({units})"] = min(displacements)
+        # Average Distance from origin
+        stats[f"Average Final Distance from Origin ({units})"] = sum(final_distances)/len(final_distances)
+        # Average Speed
+        stats[f"Average Speed ({units}/min)"] = sum(speeds)/len(speeds)
+        # Maximum Recorded Speed
+        stats[f"Maximum Recorded Speed ({units}/min)"] = max(speeds)
+        # Minimum Recorded Speed
+        stats[f"Minimum Recorded Speed ({units}/min)"] = min(speeds)
+        # Angle of direction from origin to final point
+        stats[f"Average Angle of Direction between Origin and Final Point (degrees)"] = sum(angle_of_direction)/len(angle_of_direction)
+        # Categorize Direction of Movement
+        compass_brackets = ["E", "NE", "N", "NW", "W", "SW", "S", "SE", "E"]
+        compass_lookup = round(stats["Average Angle of Direction between Origin and Final Point (degrees)"] / 45)
+        stats["Average Compass Direction Moved"] = compass_brackets[compass_lookup]
+        # Average cell growth/shrinkage
+        stats[f"Average Change in Cell Size ({units}^2)"] = sum(growth) / len(growth)
+
+    # Calculate All Stats that can be done on both images and video
     # Calculate Final Frame's Confluency
     # Percentage of Frame the cells take up
     stats["Final Frame's Confluency (%)"] = sum(final_sizes) / area_of_frame
@@ -482,8 +494,7 @@ def calc_culture_cell_statistics(positional_data, area_data, time_between_frames
     stats["Smallest Cell's ID"] = min_cell_id
     # Average Size of Cells
     stats[f"Average Final Size of Cell ({units}^2)"] = sum(final_sizes) / len(final_sizes)
-    # Average cell growth/shrinkage
-    stats[f"Average Change in Cell Size ({units}^2)"] = sum(growth) / len(growth)
+
 
     return stats
 

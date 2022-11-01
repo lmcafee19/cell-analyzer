@@ -207,7 +207,7 @@ class App:
                 """Handle exit"""
                 running = False
 
-            # ---- Main Menu Events ---- #
+            # ---- Main Menu/Settings Page Events ---- #
             # File Selection Browse Button
             if event == "Browse":
                 """Browse for files when the Browse button is pressed"""
@@ -359,6 +359,7 @@ class App:
 
                 # If user has entered a valid cell id and the tracker has been updated Continue to video player page
                 if selected:
+                    # TODO If current video file is actually an Image proceed to Export
                     self.window[f'-COL{CELL_SELECTION}-'].update(visible=False)
                     self.window[f'-COL{VIDEO_PLAYER}-'].update(visible=True)
                     # Video should start playing due to self.update method
@@ -917,7 +918,7 @@ class App:
 
         return success
 
-
+# Class is depricated
 class MyVideoCapture:
     """
     Defines a new video loader with openCV
@@ -1052,10 +1053,10 @@ def isValidParameters(videofile, width, height, time_between_frames, pixels, min
     @return True if the tracker can analyze it, false if it cannot
 '''
 def isValidVideo(videofile):
-    # TODO Allow image file types
+    VALID_FILE_TYPES = [".avi", ".mp4", ".png", ".jpeg", ".tif"]
     valid = False
     if os.path.exists(videofile):
-        if videofile.endswith(".avi") or videofile.endswith(".mp4"):
+        if os.path.splitext(videofile)[1] in VALID_FILE_TYPES:
             valid = True
     return valid
 
@@ -1270,6 +1271,18 @@ def get_scaling():
     scaling = root.winfo_fpixels('1i')/72
     root.destroy()
     return scaling
+
+'''
+Determines if given file relates to an image or not
+Supported file types: .jpeg, .png, .tif
+'''
+def is_image(filename:str):
+    VALID_FILE_TYPES = [".png", ".jpeg", ".tif"]
+    valid = False
+    if os.path.exists(filename):
+        if os.path.splitext(filename)[1] in VALID_FILE_TYPES:
+            valid = True
+    return valid
 
 
 if __name__ == '__main__':

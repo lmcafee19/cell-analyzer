@@ -11,7 +11,7 @@ from tracker_library import export_data as export
 from collections import OrderedDict
 
 # Define Constants
-VIDEO = '../videos/Sample_cell_culture_4.mp4'
+VIDEO = '../videos/img_4.png'
 EXPORT_FILE = "../data/csvcompare_data.xlsx"
 SCALE = 0.25
 CONTRAST = 1.25
@@ -44,6 +44,17 @@ def main():
     if not os.path.exists(videoFile):
         raise Exception("File cannot be found")
     else:
+        # If given file is an image try converting it into a one frame video
+        # if os.path.splitext(videoFile)[1] == ".png" or os.path.splitext(videoFile)[1] == ".jpeg" or os.path.splitext(videoFile)[1] == ".tif":
+        #     img = cv.imread(videoFile)
+        #     (height, width) = img.shape[:2]
+        #     print(height, width)
+        #     fourcc = cv.VideoWriter_fourcc(*'mp4v')
+        #     video = cv.VideoWriter('video.avi', fourcc, 1, (width, height))
+        #
+        #     video.write(img)
+        #     videoFile = 'video.avi'
+
         # Read in video frame by frame
         capture = cv.VideoCapture(videoFile)
         total_frames = int(capture.get(cv.CAP_PROP_FRAME_COUNT))
@@ -66,6 +77,9 @@ def main():
 
         while True:
             valid, frame = capture.read()
+
+            # If given file is an image use imread instead of a video capture
+            #frame = cv.imread(videoFile)
 
             # If next frame is not found exit program
             if not valid:
@@ -166,9 +180,13 @@ def main():
         csv_size_headers.remove("Cell ID")
         csv_size_headers.remove("Final Growth")
         csv_size_headers.remove("Largest Growth in one interval")
-
+        print(cell_positions_mm)
+        print(cell_sizes_mm)
+        print(positional_headers)
+        print(size_headers)
         # Export Data to csv
-        export.culture_to_csv_file("../data/culture.csv", cell_positions_mm, cell_sizes_mm, positional_headers, size_headers)
+        export.culture_to_csv_file("../data/imgtest.csv", cell_positions_mm, cell_sizes_mm, positional_headers, size_headers)
+
 
         # Export Graphs using Average Area and
 
