@@ -1,5 +1,6 @@
 # Main Cell-Analyzer Script
-# This is a program which allows a user to track statistics about an individual cell, or an entire culture throughout video using a graphical interface
+# This is a program which allows a user to track statistics about an individual cell, or an entire culture throughout
+# video or image using a graphical interface
 # author: zheath19@georgefox.edu
 import sys
 import threading
