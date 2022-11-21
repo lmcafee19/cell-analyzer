@@ -617,4 +617,3 @@ def culture_to_csv_file(filename, positional_data:dict, area_data:dict, position
 def merge(list1, list2):
     merged_list = [(list1[i], list2[i]) for i in range(0, len(list1))]
     return merged_list
-

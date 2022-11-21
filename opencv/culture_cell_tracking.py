@@ -12,7 +12,7 @@ from collections import OrderedDict
 
 # Define Constants
 VIDEO = '../videos/img_4.png'
-EXPORT_FILE = "../data/csvcompare_data.xlsx"
+EXPORT_FILE = "../data/culture_img.xlsx"
 SCALE = 0.25
 CONTRAST = 1.25
 BRIGHTNESS = 0.1
