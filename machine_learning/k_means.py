@@ -7,8 +7,9 @@ import pandas as pd
 import numpy as np
 import cv2 as cv
 import matplotlib.pyplot as plt
+import sklearn.preprocessing
 from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import normalize
 from tracker_library import cell_analysis_functions as analysis
 from tracker_library import centroid_tracker as ct
 
@@ -39,10 +40,6 @@ def main():
     # Take in Image and convert to numpy array
     img = cv.imread(IMAGE)
 
-    # Edit Image with the sobel edge processing
-    processed_sobel = analysis.process_image(img, analysis.Algorithm.SOBEL, SCALE, CONTRAST, BRIGHTNESS,
-                                             BLUR_INTENSITY)
-
     # Canny k_means
     # Edit Image the same way as in the tracker
     processed_canny = analysis.process_image(img, analysis.Algorithm.CANNY, SCALE, CONTRAST, BRIGHTNESS,
@@ -51,7 +48,8 @@ def main():
     shapes_img, shapes = analysis.detect_shape_v2(processed_canny, MIN_CELL_SIZE, MAX_CELL_SIZE)
     #cv.imshow("Canny", processed_canny)
     # Normalize the data to all be between 0-1
-    scaled_pixel_array = processed_canny / 255
+    scaled_pixel_array = sklearn.preprocessing.normalize(processed_canny, norm='max')
+
 
     # Use Tracker on image to estimate number of cells in photo
     cell_locations, cell_areas = tracker.update(shapes)
@@ -73,7 +71,7 @@ def main():
     shapes_img, sobel_shapes = analysis.detect_shape_v2(processed_sobel, MIN_CELL_SIZE, MAX_CELL_SIZE)
     #cv.imshow("Sobel", processed_sobel)
     # Normalize the data to all be between 0-1
-    sobel_scaled_pixel_array = processed_sobel / 255
+    sobel_scaled_pixel_array = sklearn.preprocessing.normalize(processed_sobel, norm='max')
 
     # Use Tracker on image to estimate number of cells in photo
     cell_locations, cell_areas = tracker.update(sobel_shapes)
