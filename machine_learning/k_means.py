@@ -2,7 +2,7 @@
    @brief Machine Learning Algorithm to detect all cells from a given edited image using
     the k-means algorithm from scikit learn
 '''
-
+import pandas
 import pandas as pd
 import numpy as np
 import cv2 as cv
@@ -48,8 +48,18 @@ def main():
     shapes_img, shapes = analysis.detect_shape_v2(processed_canny, MIN_CELL_SIZE, MAX_CELL_SIZE)
     #cv.imshow("Canny", processed_canny)
     # Normalize the data to all be between 0-1
-    scaled_pixel_array = sklearn.preprocessing.normalize(processed_canny, norm='max')
+    processed_canny = sklearn.preprocessing.normalize(processed_canny, norm='max')
 
+    canny_coords = {"x": [], "y": []}
+    # Loop through the normalized array and if the value is a 1(black/edge) then record its position
+    for i in range(0, len(processed_canny)):
+        for j in range(0, len(processed_canny)):
+            if int(processed_canny[i][j]) == 1:
+                canny_coords["x"].append(i)
+                canny_coords["y"].append(j)
+
+    # convert to a dataframe
+    canny_df = pandas.DataFrame(canny_coords)
 
     # Use Tracker on image to estimate number of cells in photo
     cell_locations, cell_areas = tracker.update(shapes)
@@ -60,7 +70,7 @@ def main():
     MIN = int(N_CLUSTERS * 0.75)
     MAX = int(N_CLUSTERS * 1.25)
 
-    sse = k_means(scaled_pixel_array, MIN, MAX)
+    sse = k_means(canny_df, MIN, MAX)
     visualize_results(MIN, MAX, sse, "Canny")
 
     # Sobel k_means
@@ -71,7 +81,21 @@ def main():
     shapes_img, sobel_shapes = analysis.detect_shape_v2(processed_sobel, MIN_CELL_SIZE, MAX_CELL_SIZE)
     #cv.imshow("Sobel", processed_sobel)
     # Normalize the data to all be between 0-1
-    sobel_scaled_pixel_array = sklearn.preprocessing.normalize(processed_sobel, norm='max')
+    processed_sobel = sklearn.preprocessing.normalize(processed_sobel, norm='max')
+
+    #print(processed_sobel)
+    sobel_coords = {"x": [], "y": []}
+    # Loop through the normalized array and if the value is a 1(black/edge) then record its position
+    for i in range(0, len(processed_sobel)):
+        for j in range(0, len(processed_sobel)):
+            if int(processed_sobel[i][j]) == 1:
+                sobel_coords["x"].append(i)
+                sobel_coords["y"].append(j)
+
+    #print(sobel_coords)
+    # convert to a dataframe
+    sobel_df = pandas.DataFrame(sobel_coords)
+
 
     # Use Tracker on image to estimate number of cells in photo
     cell_locations, cell_areas = tracker.update(sobel_shapes)
@@ -82,15 +106,26 @@ def main():
     MIN = int(N_CLUSTERS * 0.75)
     MAX = int(N_CLUSTERS * 1.25)
 
-    sobel_sse = k_means(sobel_scaled_pixel_array, MIN, MAX)
+    sobel_sse = k_means(sobel_df, MIN, MAX)
     visualize_results(MIN, MAX, sobel_sse, "Sobel")
 
     # Canny + Sobel k_means
     # Average Data from the canny and sobel edge detection
-    sob_can_pixels = (sobel_scaled_pixel_array + scaled_pixel_array) / 2
-    cv.imshow("Sobel+Canny", sob_can_pixels)
+    sob_can_pixels = (processed_sobel + processed_canny) / 2
+    #cv.imshow("Sobel+Canny", sob_can_pixels)
 
-    sob_can_sse = k_means(sobel_scaled_pixel_array, MIN, MAX)
+    sob_can_coords = {"x": [], "y": []}
+    # Loop through the normalized array and if the value is a 1(black/edge) then record its position
+    for i in range(0, len(sob_can_pixels)):
+        for j in range(0, len(sob_can_pixels)):
+            if int(sob_can_pixels[i][j]) == 1:
+                sob_can_coords["x"].append(i)
+                sob_can_coords["y"].append(j)
+
+    # convert to a dataframe
+    sob_can_df = pandas.DataFrame(sob_can_coords)
+
+    sob_can_sse = k_means(sob_can_df, MIN, MAX)
     visualize_results(MIN, MAX, sob_can_sse, "Sobel+Canny")
 
 '''
