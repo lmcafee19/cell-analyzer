@@ -49,7 +49,7 @@ class CentroidTracker():
                     self.deregister(objectID)
             # return early as there are no centroids or tracking info
             # to update
-            return self.objects
+            return self.objects, self.object_area
 
         # initialize an array of input centroids for the current frame
         # inputCentroids = np.zeros((len(shapes), 2), dtype="int")

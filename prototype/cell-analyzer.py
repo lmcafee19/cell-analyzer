@@ -90,7 +90,7 @@ class App:
                    [sg.T("0", key="counter", size=(10, 1))], # Frame Counter
                    [sg.Button("Pause", key="Play"), sg.Button('Next frame'),
                     sg.Push(),
-                    sg.Button('Export Data', disabled=True),
+                    sg.Button('Export Data', key='Export Data', disabled=True),
                     sg.Button('Restart'), sg.Button('Exit')]]  # Play/Pause Buttons, Next Frame Button
         # Export/Quit buttons. Disabled by default but comes online when video is done playing
 
@@ -174,7 +174,7 @@ class App:
         screen_scaling = get_scaling()
 
         sg.set_options(scaling=screen_scaling)
-        self.window = sg.Window('Cell Analyzer', layout, resizable=True, size=(screen_width, screen_height)).Finalize()
+        self.window = sg.Window('Cell Analyzer', layout, resizable=True, size=(screen_width, screen_height), return_keyboard_events=True).Finalize()
 
         # Get the tkinter canvases  for displaying the video
         self.canvas = self.window.Element("canvas").TKCanvas
@@ -387,7 +387,8 @@ class App:
                 # Jump forward a frame
                 self.set_frame(self.frame + 1)
 
-            if event == "Export Data":
+            # If Export Button is Pressed or the space bar is pressed continue to export screen
+            if (event == "Export Data" or event == " ") and not self.window["Export Data"].Disabled:
                 # Continue to export interface
                 self.window[f'-COL{VIDEO_PLAYER}-'].update(visible=False)
                 self.window[f'-COL{EXPORT}-'].update(visible=True)
