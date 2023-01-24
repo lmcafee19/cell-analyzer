@@ -31,7 +31,7 @@ class App:
         self.play = True  # Is the video currently playing?
         self.delay = 1000  # Delay between frames in ms
         self.frame = 1  # Current frame
-        self.frames = None  # Number of frames
+        self.frames = 1 # Number of frames
         # ------ Other vars ------ #
         self.edited_vid = None
         self.vid = None
@@ -191,16 +191,16 @@ class App:
 
             # ---- Global Events ---- #
             # Event to change layout, at the moment just jumps to the next layout
-            if event == 'Cycle Layout':
-                self.window[f'-COL{layout}-'].update(visible=False)
-                layout = ((layout + 1) % num_layouts)
-                if layout == 0:
-                    layout += 1
-                self.window[f'-COL{layout}-'].update(visible=True)
-            elif event in '12345':
-                self.window[f'-COL{layout}-'].update(visible=False)
-                layout = int(event)
-                self.window[f'-COL{layout}-'].update(visible=True)
+            # if event == 'Cycle Layout':
+            #     self.window[f'-COL{layout}-'].update(visible=False)
+            #     layout = ((layout + 1) % num_layouts)
+            #     if layout == 0:
+            #         layout += 1
+            #     self.window[f'-COL{layout}-'].update(visible=True)
+            # elif event in '12345':
+            #     self.window[f'-COL{layout}-'].update(visible=False)
+            #     layout = int(event)
+            #     self.window[f'-COL{layout}-'].update(visible=True)
 
             # Exit Event
             if event is None or event.startswith('Exit'):
@@ -220,19 +220,22 @@ class App:
 
                 if video_path:
                     # TODO change behavior if entered file is an image
-                    # Initialize video
-                    self.vid = MyVideoCapture(video_path)
-                    # Calculate new video dimensions
-                    self.vid_width = 500
-                    self.vid_height = int(self.vid_width * self.vid.height / self.vid.width)
-                    # print("old par: %f" % (self.vid.width / self.vid.height))
-                    # print("new par: %f" % (self.vid_width / self.vid_height))
-                    # print(self.vid.fps)
-                    # print(int(self.vid.frames))
-                    self.frames = int(self.vid.frames)
+                    try:
+                        # Initialize video
+                        self.vid = MyVideoCapture(video_path)
+                        # Calculate new video dimensions
+                        self.vid_width = 500
+                        self.vid_height = int(self.vid_width * self.vid.height / self.vid.width)
+                        # print("old par: %f" % (self.vid.width / self.vid.height))
+                        # print("new par: %f" % (self.vid_width / self.vid_height))
+                        # print(self.vid.fps)
+                        # print(int(self.vid.frames))
+                        self.frames = int(self.vid.frames)
 
-                    # Update right side of counter
-                    self.window.Element("counter").Update("0/%i" % self.frames)
+                        # Update right side of counter
+                        self.window.Element("counter").Update("0/%i" % self.frames)
+                    except ValueError:
+                        self.frames = 1
                     # change canvas size approx to video size
                     #self.canvas.config(width=self.vid_width, height=self.vid_height)
 
@@ -786,8 +789,12 @@ class App:
                             # Take original video's height to width ratio
                             (h, w) = original.shape[:2]
                             ratio = h / w
-                            # use formula: (1-%padding)/2 to figure out the max percentage of the width that can be alloted to each video without overlapping or cropping
-                            video_width_percent = (1 - .03) / 2
+                            # Scale to different aspect ratios
+                            if ratio < .80:
+                                # use formula: (1-%padding)/2 to figure out the max percentage of the width that can be alloted to each video without overlapping or cropping
+                                video_width_percent = (1 - .03) / 2
+                            else:
+                                video_width_percent = (1 - .20) / 2
 
                             # Calculate new video dimensions
                             # Set width to % of current window's width found using formula: (1-%used by padding)/2
@@ -863,8 +870,11 @@ class App:
         # Take original video's height to width ratio
         (h, w) = unedited.shape[:2]
         ratio = h/w
-        # use formula: (1-%padding)/2 to figure out the max percentage of the width that can be alloted to each video without overlapping or cropping
-        video_width_percent = (1 - .03)/2
+        if ratio < .80:
+            # use formula: (1-%padding)/2 to figure out the max percentage of the width that can be alloted to each video without overlapping or cropping
+            video_width_percent = (1 - .03) / 2
+        else:
+            video_width_percent = (1 - .20) / 2
 
         # Calculate new video dimensions
         # Set width to % of current window's width found using formula: (1-%used by padding)/2
