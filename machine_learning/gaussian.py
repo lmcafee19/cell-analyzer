@@ -1,7 +1,8 @@
 '''
    @brief Machine Learning Algorithm to detect all cells from a given edited image using
-    the gaussian mxiture algorithm from scikit learn
+    the gaussian mixture algorithm from scikit learn
 '''
+import os.path
 import random
 import pandas
 import numpy as np
@@ -14,17 +15,16 @@ from tracker_library import cell_analysis_functions as analysis
 from tracker_library import centroid_tracker as ct
 
 # Define Constants
-VIDEO = '../videos/img_4.png'
-IMAGE = '../videos/img_4.png'
-EXPORT_FILE = "../data/csvcompare_data.xlsx"
+IMAGE = '../videos/spheroid_img.png'
+
 SCALE = 0.75
 CONTRAST = 1.25
 BRIGHTNESS = 0.1
 BLUR_INTENSITY = 10
 
 # Define Constants for cell size. These indicate the size range in which we should detect and track cells
-MIN_CELL_SIZE = 35
-MAX_CELL_SIZE = 600
+MIN_CELL_SIZE = 25
+MAX_CELL_SIZE = 1500
 
 # Real World size of frame in mm
 VIDEO_HEIGHT_MM = 5
@@ -34,32 +34,32 @@ VIDEO_WIDTH_MM = 5.5
 TIME_BETWEEN_FRAMES = 10
 
 def main():
+    if not os.path.exists(IMAGE):
+        exit("Image does not exist")
+
     # Initialize Centroid tracker
     tracker = ct.CentroidTracker()
 
     # Take in Image and convert to numpy array
-    img = cv.imread(IMAGE)
+    img = np.asarray(cv.imread(IMAGE))
 
-    # Canny k_means
+    # Scale img
+    img = analysis.rescale_frame(img, SCALE)
+
     # Edit Image the same way as in the tracker
-    processed_canny = analysis.process_image(img, analysis.Algorithm.CANNY, SCALE, CONTRAST, BRIGHTNESS,
+    processed_canny = analysis.process_image(img, analysis.Algorithm.CANNY, 1, CONTRAST, BRIGHTNESS,
                                              BLUR_INTENSITY)
+
     # Detect if cell is a circle or square and grab each objects centroid and area
     shapes_img, shapes = analysis.detect_shape_v2(processed_canny, MIN_CELL_SIZE, MAX_CELL_SIZE)
     #cv.imshow("Canny", processed_canny)
+
     # Normalize the data to all be between 0-1
     processed_canny = sklearn.preprocessing.normalize(processed_canny, norm='max')
 
-    canny_coords = {"x": [], "y": []}
-    # Loop through the normalized array and if the value is a 1(black/edge) then record its position
-    for i in range(0, len(processed_canny)):
-        for j in range(0, len(processed_canny)):
-            if int(processed_canny[i][j]) == 1:
-                canny_coords["x"].append(i)
-                canny_coords["y"].append(j)
-
     # convert to a dataframe
-    canny_df = pandas.DataFrame(canny_coords)
+    #canny_df = x_y_dataframe(processed_canny)
+    canny_df = x_y_color_dataframe(processed_canny, img)
 
     # Use Tracker on image to estimate number of cells in photo
     cell_locations, cell_areas = tracker.update(shapes)
@@ -67,8 +67,8 @@ def main():
     # n_clusters: Number of clusters to place observations in
     # Set this = to my tracker's estimation of the cells within the frame
     N_CLUSTERS = len(cell_locations)
-    MIN = int(N_CLUSTERS * 0.75)
-    MAX = int(N_CLUSTERS * 1.25)
+    MIN = int(N_CLUSTERS * 0.70)
+    MAX = int(N_CLUSTERS * 1.6)
     NUM_PIXELS = len(canny_df["x"])
 
     # List of Confidences for each number of clusters tried
@@ -77,81 +77,10 @@ def main():
     # Plot Confidences against number of clusters ran
     visualize_confidence(MIN, MAX, confidences, "Canny Gaussian Confidence Levels")
 
+    #print(canny_df.keys())
+    # Plot clusters on graph to see how they line up
+    #visualize_clusters(N_CLUSTERS, canny_df)
 
-    # Run Gaussian Mixture with
-    # gm = GaussianMixture(n_components=N_CLUSTERS, covariance_type="full", random_state=0).fit(canny_df)
-    # # Means represents the center coordinates of each cluster found
-    # means = gm.means_
-    # # Add labels (which cluster each pixel belongs to) to our dataframe
-    # labels = gm.predict(canny_df)
-    # confidence = gm.predict_proba(canny_df)
-    # canny_df["predicted_clusters"] = labels
-    #
-    # # Average the confidence for each cluster
-    # conf_avg = 0
-    # # For each pixel, access its confidence for being placed into the cluster it was placed in
-    # for pixel in range(NUM_PIXELS):
-    #     assigned_cluster = canny_df["predicted_clusters"][pixel]
-    #     conf_avg += confidence[pixel][assigned_cluster]
-    #
-    # conf_avg = conf_avg/NUM_PIXELS
-    # print(conf_avg)
-    # for pixel in range(len(confidence)):
-    #     avg = 0
-    #     for cluster in range(N_CLUSTERS):
-    #         if confidence[pixel][cluster] != 0:
-    #             avg += confidence[pixel][cluster]
-    #     conf_avg.append(avg/N_CLUSTERS)
-
-
-    # Average Confidence for this number of clusters
-    #avg_confidence = np.mean(confidence)
-
-    #print(f"Average Confidence: {np.mean(canny_df['confidence'])}")
-
-    # TODO Find RMSE (Root Means Squared Error)
-    #sklearn.metrics.mean_squared_error()
-
-
-
-    #gm.predict([[0, 0], [12, 3]])
-    # sse = k_means(canny_df, MIN, MAX)
-    # visualize_results(MIN, MAX, sse, "Canny")
-    #
-    # # Sobel k_means
-    # # Edit Image the same way as in the tracker
-    # processed_sobel = analysis.process_image(img, analysis.Algorithm.SOBEL, SCALE, CONTRAST, BRIGHTNESS,
-    #                                          BLUR_INTENSITY)
-    # # Detect if cell is a circle or square and grab each objects centroid and area
-    # shapes_img, sobel_shapes = analysis.detect_shape_v2(processed_sobel, MIN_CELL_SIZE, MAX_CELL_SIZE)
-    # #cv.imshow("Sobel", processed_sobel)
-    # # Normalize the data to all be between 0-1
-    # processed_sobel = sklearn.preprocessing.normalize(processed_sobel, norm='max')
-    #
-    # #print(processed_sobel)
-    # sobel_coords = {"x": [], "y": []}
-    # # Loop through the normalized array and if the value is a 1(black/edge) then record its position
-    # for i in range(0, len(processed_sobel)):
-    #     for j in range(0, len(processed_sobel)):
-    #         if int(processed_sobel[i][j]) == 1:
-    #             sobel_coords["x"].append(i)
-    #             sobel_coords["y"].append(j)
-    #
-    # #print(sobel_coords)
-    # # convert to a dataframe
-    # sobel_df = pandas.DataFrame(sobel_coords)
-    #
-    # # Use Tracker on image to estimate number of cells in photo
-    # cell_locations, cell_areas = tracker.update(sobel_shapes)
-    #
-    # # n_clusters: Number of clusters to place observations in
-    # # Set this = to my tracker's estimation of the cells within the frame
-    # N_CLUSTERS = len(cell_locations)
-    # MIN = int(N_CLUSTERS * 0.75)
-    # MAX = int(N_CLUSTERS * 1.25)
-    #
-    # sobel_sse = k_means(sobel_df, MIN, MAX)
-    # visualize_results(MIN, MAX, sobel_sse, "Sobel")
 
 '''
     Runs gaussian mixture algo on the given image data (as a dataframe of white pixels) and then returns a list of confidences for each
@@ -161,9 +90,9 @@ def batch_gaussian_mixture(df:pandas.DataFrame, MIN, MAX):
     for n in range(MIN, MAX + 1):
         # Run Gaussian Mixture with
         gm = GaussianMixture(n_components=n, covariance_type="full", random_state=0).fit(df)
-        # Confidence represents the percent liklihood the pixel belongs to a detected cluster
+        # Confidence represents the percent likelihood the pixel belongs to a detected cluster
         confidence = gm.predict_proba(df)
-        # Add labels (which cluster each pixel belongs to) to our dataframe
+        # Find labels (which cluster each pixel belongs to) to our dataframe
         labels = gm.predict(df)
 
         # Average the confidence for each cluster
@@ -177,6 +106,45 @@ def batch_gaussian_mixture(df:pandas.DataFrame, MIN, MAX):
         confidence_list.append(conf_avg)
 
     return confidence_list
+
+'''
+    Creates Pandas Dataframe to be used as labels for gaussian mixture alg
+    Use the function for images where clustering is solely based on position
+    img: matrix representing image after canny edge detection and other processing 
+'''
+def x_y_dataframe(img):
+    canny_coords = {"x": [], "y": []}
+    # Loop through the normalized array and if the value is a 1(black/edge) then record its position
+    for i in range(0, img.shape[0]):
+        for j in range(0, img.shape[1]):
+            if int(img[i][j]) == 1:
+                canny_coords["x"].append(i)
+                canny_coords["y"].append(j)
+
+    # convert to a dataframe
+    return pandas.DataFrame(canny_coords)
+
+'''
+    Creates Pandas Dataframe to be used as labels for gaussian mixture alg
+    Use the function for spheroid images where different cell types are given a specific color
+    img: matrix representing image after canny edge detection and other processing 
+'''
+def x_y_color_dataframe(img, color_img):
+    # Generate Labels for each pixel based on the color version of the image
+    color_labels = generate_color_labels(color_img)
+
+    canny_coords = {"x": [], "y": [], "color": []}
+    # Loop through the normalized array and if the value is a 1(black/edge) then record its position and original color
+    for i in range(0, img.shape[0]):
+        for j in range(0, img.shape[1]):
+            if int(img[i][j]) == 1:
+                canny_coords["x"].append(i)
+                canny_coords["y"].append(j)
+                canny_coords["color"].append(color_labels[i][j])
+
+    # convert to a dataframe
+    return pandas.DataFrame(canny_coords)
+
 
 '''
     Plots the given confidence of each number of clusters for the gaussian mixture algo
@@ -215,6 +183,32 @@ def visualize_clusters(n_clusters, dataframe:pandas.DataFrame, filename=None):
 def generate_random_colors(no_of_colors:int):
     colors = ["#" + ''.join([random.choice('0123456789ABCDEF') for i in range(6)]) for j in range(no_of_colors)]
     return colors
+
+'''
+    Categorizes the primary color of each pixel within the given np ndarray
+    Img: np matrix containing BGR data on each pixel
+    @retun matrix the same shape as img. Labels are as follows: 0 = black, 1 = white, 2 = blue, 3 = green, 4 = red
+'''
+def generate_color_labels(img):
+    color_labels = []
+    i = 0
+    for row in img:
+        color_labels.append([])
+        for col in row:
+            if col[0] == 0 and col[0] == col[1] and col[0] == col[2]:
+                label = 0
+            elif col[0] == 255 and col[0] == col[1] and col[0] == col[2]:
+                label = 1
+            elif col[0] > col[1] and col[0] > col[2]:
+                label = 2
+            elif col[1] > col[0] and col[1] > col[2]:
+                label = 3
+            else:
+                label = 4
+            color_labels[i].append(label)
+        i += 1
+
+    return color_labels
 
 
 main()
