@@ -1,4 +1,6 @@
-# Library containing functions to visualize data collected by the cell tracker
+'''
+@brief Library of Functions to visualize data collected by the cell tracker
+'''
 
 import os
 from pandas import DataFrame

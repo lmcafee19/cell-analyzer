@@ -1,3 +1,8 @@
+'''
+@brief Contains Classes to provide functionality to the two options from the GUI
+    Individual Tracker: Contains functions to track a single cell within the image or video
+    Culture Tracker: Contains functions to track all cells within an image or video
+'''
 import math
 import cv2 as cv
 import os

@@ -11,9 +11,9 @@ from collections import OrderedDict
 
 # Define Constants
 VIDEO = '../videos/Sample_cell_culture_4.mp4'
-EXCEL_FILE = "../data/cell41_data.xlsx"
-PDF_FILE = "../data/"
-IMAGE_FILE = "../data/"
+EXCEL_FILE = "../../data/cell41_data.xlsx"
+PDF_FILE = "../../data/"
+IMAGE_FILE = "../../data/"
 SCALE = .25
 CONTRAST = 1.25
 BRIGHTNESS = 0.1

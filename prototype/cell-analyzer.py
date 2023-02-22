@@ -1,7 +1,9 @@
-# Main Cell-Analyzer Script
-# This is a program which allows a user to track statistics about an individual cell, or an entire culture throughout
-# video or image using a graphical interface
-# author: zheath19@georgefox.edu
+'''
+@brief Main Cell-Analyzer Script
+Main Entry point of the cell-analyzer software which allows a user to track and visualize statistics about an individual cell, or an entire culture throughout
+video or image using a graphical interface
+@author zheath19@georgefox.edu
+'''
 import sys
 import threading
 import tkinter as tk
@@ -14,7 +16,7 @@ from tracker_library import TrackerClasses
 from datetime import datetime
 
 
-# State Constants
+# State Constants for GUI
 MAIN_MENU = 1
 VIDEO_PLAYER = 2
 CELL_SELECTION = 3

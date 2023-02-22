@@ -1,4 +1,6 @@
-# Helper Python File containing functions to export recorded data about cells to either an excel spreadsheet or a csv file
+'''
+@brief Helper File containing functions to export recorded data about cells to either an excel spreadsheet or a csv file
+'''
 
 import os
 import csv

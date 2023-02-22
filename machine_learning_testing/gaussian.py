@@ -1,6 +1,17 @@
 '''
    @brief Machine Learning Algorithm to detect all cells from a given edited image using
     the gaussian mixture algorithm from scikit learn
+
+    Gaussian Mixture appears to be the most applicable (has highest confidence) for the tracking of cells as it can
+    cluster them together in a wider variety of shapes than K-means
+
+    TODO Utilize pytorch or https://github.com/ldeecke/gmm-torch to improve performance
+    TODO Downscale all images to 300x300 to speed up the alg
+    TODO Implement a version of Centroid Tracker using solely Gaussian Mixture to track the cells
+        TODO To make tracking more accurate, maybe add weights based on shape, momentum, or area. To better incentivize
+         the tracker to select the correct cell frame to frame.
+    TODO If the given image/video is from spheroid, run the algorithm separately on each color of pixels since there
+    cannot be a cell that is both colors
 '''
 import os.path
 import random

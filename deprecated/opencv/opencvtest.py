@@ -13,7 +13,7 @@ class Algorithm(Enum):
     SOBEL = "SOBEL"
 
 # Define Constants
-PATH = '../videos/'
+PATH = '../../videos/'
 VIDEO = 'sample_cell_culture_0.mp4'
 SCALE = 0.25
 CONTRAST = 3.0

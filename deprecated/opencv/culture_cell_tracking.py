@@ -185,7 +185,7 @@ def main():
         print(positional_headers)
         print(size_headers)
         # Export Data to csv
-        export.culture_to_csv_file("../data/imgtest.csv", cell_positions_mm, cell_sizes_mm, positional_headers, size_headers)
+        export.culture_to_csv_file("../../data/imgtest.csv", cell_positions_mm, cell_sizes_mm, positional_headers, size_headers)
 
 
         # Export Graphs using Average Area and
