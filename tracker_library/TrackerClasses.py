@@ -611,7 +611,7 @@ class CultureTracker:
 
         # Export Data to excel sheet
         export.culture_to_excel_file(filename, self.cell_positions_mm, self.cell_sizes_mm, self.time_between_frames,
-                                    (self.area_mm), positional_headers, size_headers)
+                                    (self.area_mm), positional_headers, size_headers, self.units)
 
 
     '''
