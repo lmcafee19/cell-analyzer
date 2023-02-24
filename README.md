@@ -1,6 +1,6 @@
 <p align="left">
 <a href="https://github.com/Zeathary/cell-analyzer">
-    <img src="https://readme-typing-svg.demolab.com?font=Georgia&size=24&duration=900&pause=50&multiline=true&repeat=false&width=650&height=175&lines=Cell+Analyzer;Zachary+Heath%2C+Young+Bok+(Abraham)+Kang+PHD;George+Fox+College+of+Engineering;System+to+record+and+predict+cell+motion+responding;to+biological+and+mechanical+stimulation." alt="Typing SVG" />
+    <img src="https://readme-typing-svg.demolab.com?font=Georgia&size=24&duration=900&pause=50&multiline=true&repeat=false&width=650&height=175&lines=Cell+Analyzer;Zachary+Heath%2C+Young+Bok+(Abraham)+Kang+PhD;George+Fox+College+of+Engineering;System+to+record+and+predict+cell+motion+responding;to+biological+and+mechanical+stimulation." alt="Typing SVG" />
 </a>
 </p>
 
