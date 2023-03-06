@@ -74,11 +74,16 @@ class App:
                    [sg.R('Individual Cell Tracking', 1, key="individual_radio", background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Number of pixels per mm* (If height/width are unknown)'), sg.Input(key='pixels_per_mm')],
                    # Take Input for Constants
                    [sg.R('Full Culture Tracking', 1, key="culture_radio", background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Time Between Images (mins)*'), sg.Input(key="time_between_frames")],
-                   [sg.Text('Select Units for Exported Data:', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(), sg.Text('Min Cell Size (Default = 10)'), sg.Input(key="min_size")],
-                   [sg.R('µm', 3, key="units_µm", default=True, background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Max Cell Size (Default = 600)'), sg.Input(key="max_size")],
-                   [sg.R('mm', 3, key="units_mm", background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Video Editor Settings', font=TITLE_FONT, text_color=TITLE_COLOR)],
-                   [sg.Push(), sg.Text('Contrast (Default = 1.25)'), sg.Input(key="contrast")],
-                   [sg.Push(), sg.Text('Brightness (0 leaves the brightness unchanged. Default = 0.1)'), sg.Input(key="brightness")],
+                   [sg.R('Spheroid Tracking', 1, key="spheroid_radio", background_color=BACKGROUND_COLOR), sg.Push(),
+                    sg.Text('Min Cell Size (Default = 10)'), sg.Input(key="min_size")],
+                   [sg.Text('Select Units for Exported Data:', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(),
+                    sg.Text('Max Cell Size (Default = 600)'), sg.Input(key="max_size")],
+                   [sg.R('µm', 3, key="units_µm", default=True, background_color=BACKGROUND_COLOR), sg.Push(),
+                    sg.Text('Video Editor Settings', font=TITLE_FONT, text_color=TITLE_COLOR)],
+                   [sg.R('mm', 3, key="units_mm", background_color=BACKGROUND_COLOR), sg.Push(),
+                    sg.Text('Contrast (Default = 1.25)'), sg.Input(key="contrast")],
+                   [sg.Push(), sg.Text('Brightness (0 leaves the brightness unchanged. Default = 0.1)'),
+                    sg.Input(key="brightness")],
                    [sg.Push(), sg.Text('Blur Intensity (Default = 10)'), sg.Input(key="blur")],
                    [sg.Button('Run'), sg.Button('Restart'), sg.Button('Exit')]]
 
