@@ -374,6 +374,43 @@ class App:
                         # Start video display thread
                         self.load_video()
 
+                    # If spheroid tracking has been selected
+                    if self.window.Element("spheroid_radio").get():
+                        # Initialize Spheroid Tracker with given arguments
+                        # If valid pixels per mm were given then call the individual tracker with that parameter
+                        if isValidPixels(pixels_per_mm):
+                            self.video_player = TrackerClasses.SpheroidTracker(file, float(mins),
+                                                                                 pixels_per_mm=float(pixels_per_mm),
+                                                                                 units=units)
+                        else:
+                            # Otherwise call it with the video's height/width
+                            self.video_player = TrackerClasses.SpheroidTracker(file, float(mins),
+                                                                                 width_mm=float(width),
+                                                                                 height_mm=float(height),
+                                                                                 units=units)
+
+                        # Set all extra input arguments if they are valid
+                        if isValidInt(min_size) and (min_size != "" and min_size is not None):
+                            self.video_player.set_min_size(int(min_size))
+                        if isValidInt(max_size) and (max_size != "" and max_size is not None):
+                            self.video_player.set_max_size(int(max_size))
+                        if isValidFloat(contrast) and (contrast != "" and contrast is not None):
+                            self.video_player.set_contrast(float(contrast))
+                        if isValidFloat(brightness) and (brightness != "" and brightness is not None):
+                            self.video_player.set_brightness(float(brightness))
+                        if isValidInt(blur) and blur != "" and blur is not None:
+                            self.video_player.set_blur_intensity(int(blur))
+
+                        # Continue to Spheroid Cell Selection Page
+                        self.window[f'-COL{MAIN_MENU}-'].update(visible=False)
+                        self.window[f'-COL{CELL_SELECTION}-'].update(visible=True)
+
+                        # Display First Frame of Edited and UnEdited Video on Cell Selection View
+                        self.display_first_frame()
+
+                        # Start video display thread
+                        self.load_video()
+
                     # No Method is Selected do not run
                     else:
                         sg.PopupError("Method of Tracking must be selected before running")
