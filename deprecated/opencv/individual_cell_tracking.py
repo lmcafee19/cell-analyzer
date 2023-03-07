@@ -225,7 +225,7 @@ def main():
                         PATH_COLOR, 2)
 
             # Draw dot at final centroid
-            cv.circle(final_frame, tracked_cell_coords[tracked_cell_id][len(tracked_cell_coords[tracked_cell_id]) - 1], 4, END_COLOR, cv.FILLED)
+            cv.circle(final_frame, tracked_cell_coords[tracked_cell_id][len(tracked_cell_coords[tracked_cell_id]) - 1], 5, END_COLOR, cv.FILLED)
 
             # Drawing path without scaling image
             # Draw Boundary for Cell's starting position

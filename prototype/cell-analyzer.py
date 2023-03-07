@@ -20,8 +20,9 @@ from datetime import datetime
 MAIN_MENU = 1
 VIDEO_PLAYER = 2
 CELL_SELECTION = 3
-EXPORT = 4
-SUCCESS_SCREEN = 5
+SPHEROID_SELECTION = 4
+EXPORT = 5
+SUCCESS_SCREEN = 6
 
 
 class App:
@@ -112,8 +113,21 @@ class App:
                    # Take input of Cell ID Number
                    [sg.Button('Track', key="track_individual"), sg.Button('Restart'), sg.Button("Exit")]]  # Run and Exit Buttons
 
-        # Export Data Menu
+        # Cell Selection (For Spheroid Tracking)
         layout4 = [[sg.Menu(menu_def)],
+                   [sg.Text('Original Video', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(),
+                    sg.Text('Tracker Video', font=TITLE_FONT, text_color=TITLE_COLOR, justification='r')],
+                   # Titles for each video window
+                   [sg.Canvas(size=(400, 300), key="original_first_frame", background_color="blue"),
+                    sg.Canvas(size=(400, 300), key="edited_first_frame", background_color="blue")],
+                   # Windows for edited/original video to play
+                   [sg.Text('Enter Id number of cell you wish to track:'), sg.Input(key="cell_id")],
+                   # Take input of Cell ID Number
+                   [sg.Button('Track', key="track_individual"), sg.Button('Restart'),
+                    sg.Button("Exit")]]  # Run and Exit Buttons
+
+        # Export Data Menu
+        layout5 = [[sg.Menu(menu_def)],
                    [sg.Text("Select Export Settings", font=TITLE_FONT, text_color=TITLE_COLOR)],
                    [sg.Text('Select Directory to Export to:'), sg.Input(key="export_directory"), sg.Button("Browse", key="export_browse")],  # Directory Selector
 
@@ -160,19 +174,19 @@ class App:
                             key="export_message", text_color="red", visible=False)]]
 
         # Final Page. Played after successful export and prompts the user to exit or restart the process
-        layout5 = [[sg.Menu(menu_def)],
+        layout6 = [[sg.Menu(menu_def)],
                    [sg.Text("Export Successful", key="title", font="Times 16", text_color=TITLE_COLOR, justification='c')],
                    [sg.Button("Restart"), sg.Button("Exit")]]
 
 
-        num_layouts = 6
+        num_layouts = 7
 
         # ----------- Create actual layout using Columns and a row of Buttons ------------- #
         layout = [[sg.Image(source="bruin.png", size=(85, 55), subsample=29, background_color=BACKGROUND_COLOR),
                    sg.Text("Cell Analyzer", key="title", font="Times 18 bold italic", text_color=TITLE_COLOR, justification='c')], # program title and logo image
                   [sg.Column(layout1, key='-COL1-'), sg.Column(layout2, visible=False, key='-COL2-'),
                    sg.Column(layout3, visible=False, key='-COL3-'), sg.Column(layout4, visible=False, key='-COL4-'),
-                   sg.Column(layout5, visible=False, key='-COL5-')]]
+                   sg.Column(layout5, visible=False, key='-COL5-'), sg.Column(layout6, visible=False, key='-COL6-')]]
                   # Uncomment for quick layout changing
                 #[sg.Button('Cycle Layout'), sg.Button('1'), sg.Button('2'), sg.Button('3'), sg.Button('4'), sg.Button('5'), sg.Button('Exit')]]
 
