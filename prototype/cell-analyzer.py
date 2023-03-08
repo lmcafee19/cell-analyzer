@@ -102,8 +102,9 @@ class App:
                    # Titles for each video window
                    [sg.Canvas(size=(400, 300), key="original_first_frame", background_color="blue"),
                     sg.Canvas(size=(400, 300), key="edited_first_frame", background_color="blue")],
+                   [sg.Text("Total Number of Cells Found: "), sg.Text("", key="cells_found")],
                    # Windows for edited/original video to play
-                   [sg.Text('Enter Id number of cell you wish to track:'), sg.Input(key="cell_id")],
+                   [sg.Text('Enter Id number of cell you wish to track:'), sg.Input(key="cell_id", enable_events=True)],
                    # Take input of Cell ID Number
                    [sg.Button('Track', key="track_individual"), sg.Button('Restart'), sg.Button("Exit")]]  # Run and Exit Buttons
 
@@ -162,21 +163,22 @@ class App:
 
         num_layouts = 6
 
-        # ----------- Create actual layout using Columns and a row of Buttons ------------- #
-        layout = [[sg.Image(source="bruin.png", size=(85, 55), subsample=29, background_color=BACKGROUND_COLOR),
-                   sg.Text("Cell Analyzer", key="title", font="Times 18 bold italic", text_color=TITLE_COLOR, justification='c')], # program title and logo image
-                  [sg.Column(layout1, key='-COL1-'), sg.Column(layout2, visible=False, key='-COL2-'),
-                   sg.Column(layout3, visible=False, key='-COL3-'), sg.Column(layout4, visible=False, key='-COL4-'),
-                   sg.Column(layout5, visible=False, key='-COL5-')]]
-                  # Uncomment for quick layout changing
-                #[sg.Button('Cycle Layout'), sg.Button('1'), sg.Button('2'), sg.Button('3'), sg.Button('4'), sg.Button('5'), sg.Button('Exit')]]
-
         # Get User's screen size and set window size and scale accordingly
         screen_width, screen_height = sg.Window.get_screen_size()
         screen_scaling = get_scaling()
-
         sg.set_options(scaling=screen_scaling)
-        self.window = sg.Window('Cell Analyzer', layout, resizable=True, size=(screen_width, screen_height), return_keyboard_events=True).Finalize()
+
+        # ----------- Create actual layout using Columns and a row of Buttons ------------- #
+        layout = [[sg.Image(source="bruin.png", size=(85, 55), subsample=29, background_color=BACKGROUND_COLOR),
+                   sg.Text("Cell Analyzer", key="title", font="Times 18 bold italic", text_color=TITLE_COLOR, justification='c')], # program title and logo image
+                  [sg.Column(layout1, key='-COL1-', scrollable=True, size=(screen_width, screen_height)), sg.Column(layout2, visible=False, key='-COL2-', scrollable=True, size=(screen_width, screen_height)),
+                   sg.Column(layout3, visible=False, key='-COL3-', scrollable=True, size=(screen_width, screen_height)), sg.Column(layout4, visible=False, key='-COL4-', scrollable=True, size=(screen_width, screen_height)),
+                   sg.Column(layout5, visible=False, key='-COL5-', scrollable=True, size=(screen_width, screen_height))]]
+                  # Uncomment for quick layout changing
+                #[sg.Button('Cycle Layout'), sg.Button('1'), sg.Button('2'), sg.Button('3'), sg.Button('4'), sg.Button('5'), sg.Button('Exit')]]
+
+        # Finalize GUI with settings and layout from above
+        self.window = sg.Window('Cell Analyzer', layout, resizable=True, size=(screen_width, screen_height), return_keyboard_events=False).Finalize()
 
         # Get the tkinter canvases  for displaying the video
         self.canvas = self.window.Element("canvas").TKCanvas
@@ -377,6 +379,31 @@ class App:
                         self.window[f'-COL{CELL_SELECTION}-'].update(visible=False)
                         # Video should start playing due to self.update method
                         self.window[f'-COL{VIDEO_PLAYER}-'].update(visible=True)
+
+            # When a cell id is input into the text box to select one, then hide all cells besides the selected one
+            if event == "cell_id":
+                selected_cell_id = self.window["cell_id"].get()
+
+                # If there is no cell selected remove any masks
+                if selected_cell_id == "":
+
+                    # Display unmasked photo in right frame of selected window
+                    self.first_frame_edited.create_image(0, 0, image=self.edited, anchor=tk.NW)
+
+                # If the entered value is a valid cell id
+                elif self.video_player.is_valid_id(selected_cell_id):
+                    # Outline and label cell
+                    selected_cell_img = self.video_player.outline_cell(selected_cell_id)
+
+                    outlined_cell_img = PIL.ImageTk.PhotoImage(
+                        image=PIL.Image.fromarray(selected_cell_img).resize((self.vid_width, self.vid_height), Image.NEAREST)
+                    )
+
+                    # Display new image in the right frame
+                    self.first_frame_edited.create_image(0, 0, image=outlined_cell_img, anchor=tk.NW)
+
+
+
 
 
             # ---- Video Player Events ---- #
@@ -894,6 +921,10 @@ class App:
 
         # Reset frame count
         self.frame = 1
+
+        # Display the total number of cells found in the frame (range of valid values)
+        self.window.Element("cells_found").Update(self.video_player.get_num_cells_found()-1)
+
 
         # Display Original photo in left frame of selected view
         # scale image to fit inside the frame

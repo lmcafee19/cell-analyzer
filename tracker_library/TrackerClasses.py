@@ -210,8 +210,11 @@ class IndividualTracker:
         # Use Tracker to label and record coordinates of all cells
         self.cell_locations, self.cell_areas = self.tracker.update(shapes)
 
-        # Label all cells with cell id
-        labeled_img = analysis.label_cells(processed, self.cell_locations)
+        # Label all cells with cell id only if there is a small amount of cells
+        if len(self.cell_locations) <= 25:
+            labeled_img = analysis.label_cells(processed, self.cell_locations)
+        else:
+            labeled_img = processed
 
         if self.pixels_to_mm is None or self.pixels_to_mm == 0:
             # Grab Frame's dimensions in order to convert pixels to mm
@@ -238,6 +241,21 @@ class IndividualTracker:
 
         # Return unedited first frame and the img with cell ids labeled
         return frame, labeled_img
+
+
+    '''
+    Returns the number of cells found within the first frame
+    '''
+    def get_num_cells_found(self):
+        return len(self.cell_locations)
+
+    '''
+    Masks the first frame of the image to only show the area around the selected cell
+    @param cell_id Which Cell to highlight
+    @return first_frame of the video with the cell outlined and labeled
+    '''
+    def outline_cell(self, cell_id:int):
+        return analysis.outline_cell(self.first_frame, cell_id, self.cell_locations[int(cell_id)], self.max_cell_size)
 
 
     '''

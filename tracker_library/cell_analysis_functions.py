@@ -328,7 +328,7 @@ def draw_initial_cell_boundary(first_frame, point:tuple, img, color=(255, 255, 2
 '''
 Uses coordinates found from the centroid tracker to label each cell with its unique id
 @param img Photo to add labels onto
-@param cell_coors Ordered dict containing a mapping between each cell id and its coordinates
+@param cell_coords Ordered dict containing a mapping between each cell id and its coordinates
 '''
 def label_cells(img, cell_coords):
     # Create copy of img as to not edit the original
@@ -342,6 +342,29 @@ def label_cells(img, cell_coords):
         cv.putText(photo, str(cell_id), (coord[0] + 10, coord[1] + 10), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
 
     return photo
+
+
+'''
+Uses coordinates to outline the cell and hide everything else
+@param img Photo to add labels onto
+@param cell_coord a tuple of X,Y coordinates which describes the centroid of the cell
+@param radius radius of the circle around which the cell resides
+'''
+def outline_cell(img, cell_id, cell_coord, radius):
+    # Create copy of img as to not edit the original
+    photo = img.copy()
+
+    # Label the cell with its id
+    cv.putText(photo, str(cell_id), (cell_coord[0] + 10, cell_coord[1] + 10), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
+
+    # draw filled circle in white on black background as mask
+    mask = np.zeros_like(photo)
+    mask = cv.circle(mask, (cell_coord[0], cell_coord[1]), radius, (255, 255, 255), -1)
+
+    # apply mask to image to hide everything outside the circle
+    result = cv.bitwise_and(photo, mask)
+
+    return result
 
 
 '''
