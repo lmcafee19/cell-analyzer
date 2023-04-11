@@ -86,10 +86,32 @@ def mask():
 	masked = cv2.bitwise_and(previous, previous, mask=mask)
 	cv2.imshow("Mask applied to Image", masked)
 	cv2.waitKey(0)
+	identify_cells(masked)
 
+
+def identify_cells(masked):
+	bw = cv2.cvtColor(masked, cv2.COLOR_BGR2GRAY)
+	ret, thresh = cv2.threshold(bw, 127, 255, 0)
+	contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+	cv2.drawContours(image, contours, -1, (0,255,0), 3) # place on original image
+	cv2.imshow(image)
 
 
 main()
+
+# TODO: Figure out new tracking method
+# open source video
+# objective 1: track the entire spheroid's position in each frame (highlight with a circle throughout to test) and return map of path tracked and stats about it (direction, velocity, etc.)
+# objective 2: record/calculate stats on number of cells, area of spheroid, pass to existing functions?
+# questions:
+# track individual cells within mask (pick out individual cells) or track as one object (mush cells into one blob)? Both?
+# what are the current methods for keeping track of an individual cell from one frame to next?
+# ideas:
+# identifying spheroid as one object: edge detection of masked image, dilation until cells all stick together as one object
+# for tracking: use circle from previous frame?
+# loop through each frame
+# 	for first frame, apply mask, then identify cells within to track
+#
 
 
 
@@ -102,7 +124,7 @@ main()
   # to exit from all the processes
 
 
-# TODO: Figure out new tracking method
+
 
 """Create new image with gaussian blur"""
 # def gauss():

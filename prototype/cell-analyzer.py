@@ -118,7 +118,7 @@ class App:
                    [sg.Text('Original Video', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(),
                     sg.Text('Tracker Video', font=TITLE_FONT, text_color=TITLE_COLOR, justification='r')],
                    # Titles for each video window
-                   [sg.Canvas(size=(400, 300), key="original_first_frame", background_color="blue"),
+                   [sg.Canvas(size=(400, 300), key="spheroid_first_frame", background_color="blue"), # must have different named keys
                     sg.Canvas(size=(400, 300), key="edited_first_frame", background_color="blue")],
                    # Windows for edited/original video to play
                    [sg.Text('Draw a circle around the spheroid you wish to track:'), sg.Input(key="cell_id")],
@@ -432,7 +432,7 @@ class App:
 
                         # Continue to Spheroid Cell Selection Page
                         self.window[f'-COL{MAIN_MENU}-'].update(visible=False)
-                        self.window[f'-COL{CELL_SELECTION}-'].update(visible=True)
+                        self.window[f'-COL{SPHEROID_SELECTION}-'].update(visible=True)
 
                         # Display First Frame of Edited and UnEdited Video on Cell Selection View
                         self.display_first_frame()
@@ -498,7 +498,7 @@ class App:
                         self.window['average_displacement'].update(visible=True)
                         self.window['average_speed'].update(visible=True)
 
-                        # Enable spheroid tracking specifics exports
+                    # Enable spheroid tracking specifics exports
                     elif self.window.Element("spheroid_radio").get():
                         self.window['Movement over Time'].update(visible=True)
                         self.window['images_label'].update(visible=True)
@@ -534,13 +534,13 @@ class App:
                 export_average_speed = self.window.Element("average_speed").get()
                 culture_speed_graph_filename = self.window.Element("culture_speed_graph_filename").get()
 
-                # Spheroid Tracker Specific Checkboxes
-                exportgraph_movement = self.window.Element("Movement over Time").get()
-                num_labels = self.window.Element("num_labels").get()
-                spheroid_movement_graph_filename = self.window.Element("spheroid_movement_graph_filename").get()
-
-                exportpath_image = self.window.Element("path_image").get()
-                path_image_filename = self.window.Element("final_path_image_filename").get()
+                # # Spheroid Tracker Specific Checkboxes
+                # exportgraph_movement = self.window.Element("Movement over Time").get()
+                # num_labels = self.window.Element("num_labels").get()
+                # spheroid_movement_graph_filename = self.window.Element("spheroid_movement_graph_filename").get()
+                #
+                # exportpath_image = self.window.Element("path_image").get()
+                # path_image_filename = self.window.Element("final_path_image_filename").get()
 
                 # Check if all entered filenames are formatted correctly
                 valid_filenames = True

@@ -16,7 +16,7 @@ from datetime import datetime
 """
 Defines class that manages the tracking of a specified individual cell within a video
 """
-class IndividualTracker:
+class IndividualTracker: # constructor, initializes video settings
     def __init__(self, video_source, time_between_frames, width_mm=0, height_mm=0, pixels_per_mm=None, min_cell_size=10, max_cell_size=600, scale=.25, contrast=1.25, brightness=0.1,
                  blur_intensity=10, units="mm"):
         # TODO If given file is an image, open it a different way

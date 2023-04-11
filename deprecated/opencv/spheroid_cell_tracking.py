@@ -108,7 +108,7 @@ def main():
             tracked_cell_id = -1
             while not (0 <= int(tracked_cell_id) < len(cell_locations)):
                 # Allow User to select which cell they want to track
-                tracked_cell_id = int(input("Select Cell to Track: "))
+                tracked_cell_id = int(input("Draw shape around spheroid to Track: "))
 
             # Close First Frame
             cv.destroyAllWindows()
