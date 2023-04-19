@@ -43,6 +43,7 @@ def main():
 			break
 
 	cv2.destroyAllWindows()
+	image_processing()
 	# identify_spheroid()
 
 # define mouse callback function to draw circle
@@ -71,7 +72,6 @@ def draw_circle(event, x, y, flags, param):
 		previous = img_copy  # sets global variable to image with circle so it can be referenced outside of this method
 		cv2.imshow('Drag Circle Window', img_copy)
 
-
 def image_processing():
 	"""Create a mask of spheroid (drawn circle) and blur out surroundings
 	to allow for better tracking of cells in spheroid.
@@ -92,20 +92,20 @@ def image_processing():
 	# create a black circle on the mask
 	cv2.circle(mask, centroid, radius, 0, -1) # (image, (center_x, center_y), radius, color, thickness)
 	# apply light gaussian blur to entire original image
-	light_blur = cv2.GaussianBlur(image, (5,5), 1)
+	light_blur = cv2.GaussianBlur(image, (7,7), 1)
 	# paste blurred image on white section of mask (background) and untouched image in black circle in mask (selected)
 	blur1 = np.where(mask > 0, light_blur, image)
-	cv2.imshow("first blur - background", blur1)
+	# cv2.imshow("first blur - background", blur1)
 	# Create stronger blur in a halo around non-blurred region
 	# make new mask with bigger circle
 	mask2 = (np.ones(image.shape, dtype="uint8"))*255
 	cv2.circle(mask2, centroid, int(radius * 1.25), 0, -1)
 	# apply stronger median blur to white regions of mask2 (hide background contours)
-	strong_blur = cv2.medianBlur(image, 21) # kernel size for medianBlur must be odd and >0
+	strong_blur = cv2.medianBlur(image, 13) # kernel size for medianBlur must be odd and >0
 	# paste strong blur onto white region of mask2, fill black circle of mask2 with the first blurred image
 	blur2 = np.where(mask2 > 0, strong_blur, blur1)
 	# cv2.imshow("halo", blur2)
-	identify_spheroid(blur2.copy())
+	identify_spheroid(blur2)
 	# cv2.waitKey(0)
 	# smooth = cv2.medianBlur(blur2, 11)
 	# cv2.imshow("lumped", smooth)
@@ -117,10 +117,24 @@ def identify_spheroid(processed):
 	# cv2.imread(processed)
 	# Merge cell shapes into one shape
 	# median blur over processed image to create "shadowed" region where spheroid is
-	smooth = cv2.medianBlur(processed, 11)
+	smooth = cv2.medianBlur(processed, 7)
+	# contrast = 127
+	# brightness = 5
+	# cv2.addWeighted(smooth, contrast, smooth, 0, brightness)
 	cv2.imshow("lumped", smooth)
+
+	# Setting parameter values
+	t_lower = 30  # Lower Threshold
+	t_upper = 60  # Upper threshold
+	# Applying the Canny Edge filter
+	edge = cv2.Canny(smooth, t_lower, t_upper)
+	#
+	# (thresh, bw) = cv2.threshold(cv2.cvtColor(smooth, cv2.COLOR_BGR2GRAY), 200, 0, cv2.THRESH_BINARY)
+	cv2.imshow("outline", edge)
 	cv2.waitKey(0)
 
+	# min enclosing circle, rectangle, eliptical opencv
+	# cv2 threshhold to find contour, do min enclosing around largest
 
 
 
