@@ -4,14 +4,14 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 import skimage
-from PIL import Image, ImageFilter
+from PIL import Image, ImageChops
 # import dlib
 
 """Open and display image in python using opencv
 code adapted from: https://www.tutorialkart.com/opencv/python/opencv-python-resize-image/"""
 img = cv2.imread("spheroidImg.png", cv2.IMREAD_ANYCOLOR)
 # resize image because it's too big
-scale_percent = 0.5
+scale_percent = 0.75
 scaled_dim = (int(img.shape[1] * scale_percent), int(img.shape[0] * scale_percent))
 
 # define global variables:
@@ -21,6 +21,7 @@ drawing = False  # true if mouse is pressed
 ix, iy = -1, -1
 centroid = 0, 0
 radius = 1
+color = (255, 100, 200)
 
 
 
@@ -54,7 +55,7 @@ def draw_circle(event, x, y, flags, param):
 	https://www.life2coding.com/paint-opencv-images-save-image/
 	https://www.tutorialspoint.com/opencv-python-how-to-draw-circles-using-mouse-events"""
 	img_copy = image.copy()  # sets fresh image as canvas to clear the slate
-	global ix, iy, drawing, previous, centroid, radius
+	global ix, iy, drawing, previous, centroid, radius, color
 	if event == cv2.EVENT_LBUTTONDOWN: # when left button on mouse is clicked...
 		drawing = True
 		# take note of where the mouse was located
@@ -66,8 +67,7 @@ def draw_circle(event, x, y, flags, param):
 		center_x = int((ix - x) / 2) + x
 		center_y = int((iy - y) / 2) + y
 		centroid = center_x, center_y # can possibly use this for machine learning later
-		color = (255, 100, 200)
-		cv2.circle(img_copy, centroid, radius, color, thickness=1)
+		cv2.circle(img_copy, centroid, radius, color, thickness=2)
 		drawing = False
 		previous = img_copy  # sets global variable to image with circle so it can be referenced outside of this method
 		cv2.imshow('Drag Circle Window', img_copy)
@@ -84,7 +84,7 @@ def image_processing():
 	https://theailearner.com/2019/05/06/gaussian-blurring/
 	https://theailearner.com/tag/cv2-medianblur/
 	"""
-	global image, previous, centroid, radius
+	global image, centroid, radius
 	# Make light blur around whole background, such that unselected cells are still identifiable:
 	# (this is to catch parts of spheroid that got cut off by the drawn circle, and those in next frame)
 	# create a white image that is the same size as the spheroid image
@@ -92,45 +92,87 @@ def image_processing():
 	# create a black circle on the mask
 	cv2.circle(mask, centroid, radius, 0, -1) # (image, (center_x, center_y), radius, color, thickness)
 	# apply light gaussian blur to entire original image
-	light_blur = cv2.GaussianBlur(image, (7,7), 1)
+	cv2.imshow("original", image)
+	light_blur = cv2.GaussianBlur(image, (11,11), 1)
 	# paste blurred image on white section of mask (background) and untouched image in black circle in mask (selected)
 	blur1 = np.where(mask > 0, light_blur, image)
-	# cv2.imshow("first blur - background", blur1)
+	cv2.imshow("first blur - background", blur1)
 	# Create stronger blur in a halo around non-blurred region
 	# make new mask with bigger circle
 	mask2 = (np.ones(image.shape, dtype="uint8"))*255
-	cv2.circle(mask2, centroid, int(radius * 1.25), 0, -1)
+	cv2.circle(mask2, centroid, int(radius * 1.5), 0, -1)
 	# apply stronger median blur to white regions of mask2 (hide background contours)
-	strong_blur = cv2.medianBlur(image, 13) # kernel size for medianBlur must be odd and >0
+	strong_blur = cv2.medianBlur(image, 21) # kernel size for medianBlur must be odd and >0
 	# paste strong blur onto white region of mask2, fill black circle of mask2 with the first blurred image
 	blur2 = np.where(mask2 > 0, strong_blur, blur1)
-	# cv2.imshow("halo", blur2)
-	identify_spheroid(blur2)
+	blur2 *= 2 # multiplied by 2 as effective means of increasing contrast
+	cv2.imshow("halo", blur2)
+	# Merge cell shapes into one shape
+	# median blur over processed image to create "shadowed" region where spheroid is
+	blob = cv2.medianBlur(blur2, 21)
+	cv2.imshow("lumped", blob)
+	identify_spheroid(blob)
 	# cv2.waitKey(0)
-	# smooth = cv2.medianBlur(blur2, 11)
-	# cv2.imshow("lumped", smooth)
-	cv2.waitKey(0)
 
 
 
 def identify_spheroid(processed):
-	# cv2.imread(processed)
-	# Merge cell shapes into one shape
-	# median blur over processed image to create "shadowed" region where spheroid is
-	smooth = cv2.medianBlur(processed, 7)
-	# contrast = 127
-	# brightness = 5
-	# cv2.addWeighted(smooth, contrast, smooth, 0, brightness)
-	cv2.imshow("lumped", smooth)
+	"""Detect outline of spheroid
+	Code adapted from:
+	https://opencv24-python-tutorials.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_morphological_ops/py_morphological_ops.html
+	https://stackoverflow.com/questions/56754451/how-to-connect-the-ends-of-edges-in-order-to-close-the-holes-between-them
+	https://towardsdatascience.com/edges-and-contours-basics-with-opencv-66d3263fd6d1"""
+	global image, color
+	# set canny edge detection parameter values
+	t_lower = 15  # Lower Threshold
+	t_upper = 30  # Upper threshold
+	# apply the Canny Edge filter, convert to black and white image
+	edges = cv2.Canny(processed, t_lower, t_upper)
+	cv2.imshow("canny", edges)
+	# connect lines from canny
+	kernel = np.ones((12, 12), np.uint8)
+	smooth = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
+	cv2.morphologyEx(smooth, cv2.MORPH_OPEN, kernel)
+	cv2.imshow("smoothed", smooth)
+	# find contours in the binary image
+	contours, hierarchy = cv2.findContours(smooth, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+	# select longest contour (spheroid outline)
+	contours = sorted(contours, key=cv2.contourArea, reverse=True)
+	# use to locate centroid
+	analysis(contours[0])
 
-	# Setting parameter values
-	t_lower = 30  # Lower Threshold
-	t_upper = 60  # Upper threshold
-	# Applying the Canny Edge filter
-	edge = cv2.Canny(smooth, t_lower, t_upper)
-	#
-	# (thresh, bw) = cv2.threshold(cv2.cvtColor(smooth, cv2.COLOR_BGR2GRAY), 200, 0, cv2.THRESH_BINARY)
-	cv2.imshow("outline", edge)
+
+
+def analysis(outline):
+	"""Run calculations and get data for each frame
+	find approximate center of mass, centroid, radius, and area
+	save/track center of mass and area
+	pass along centroid and radius for creation of new blur circles on next frame
+	Code adapted from:
+	https://learnopencv.com/find-center-of-blob-centroid-using-opencv-cpp-python/
+	https://www.tutorialspoint.com/how-to-find-the-minimum-enclosing-circle-of-an-object-in-opencv-python"""
+	global image, centroid, color, radius
+	# Find approximate center of mass (CoM)
+	M = cv2.moments(outline)
+	center_x = int(M["m10"] / M["m00"])
+	center_y = int(M["m01"] / M["m00"])
+	CoM = center_x, center_y
+	cv2.circle(image, CoM, 5, color, -1)
+	cv2.putText(image, "center of mass", (center_x - 50, center_y - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+	cv2.drawContours(image, outline, -1, color, 2)
+	# Find area
+	area = cv2.contourArea(outline)
+	cv2.putText(image, "Area: " + str(area), (center_x - 50, center_y + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+	cv2.imshow("result", image)
+	# TODO: Save/track location of CoM and area
+	# Update radius and centroid
+	# draw a bounding circle around the spheroid
+	(centroid_x, centroid_y), radius = cv2.minEnclosingCircle(outline)
+	centroid = int(centroid_x), int(centroid_y)
+	cv2.circle(image, centroid, int(radius), (0, 0, 0), thickness=2)
+	cv2.circle(image, centroid, 5, (0, 0, 0), -1)
+	cv2.putText(image, "centroid to pass to next frame", (center_x - 75, center_y - 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+	cv2.imshow("final", image)
 	cv2.waitKey(0)
 
 	# min enclosing circle, rectangle, eliptical opencv
