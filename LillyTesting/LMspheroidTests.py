@@ -22,15 +22,15 @@ PREVIOUS = FRAME1.copy()
 DRAWING = False  # true if mouse is pressed
 IX, IY = -1, -1
 START = (0, 0), 0 # centroid, radius
-CIRCLE_COLOR = (255, 100, 200)
+CIRCLE_COLOR = (200, 50, 100)
 PATH_COLOR = (255, 255, 255)
 START_COLOR = (255, 0, 0)
-END_COLOR = (0,0,255)
+END_COLOR = (100,50,255)
 SCALE = 0.2
 
 # Real World size of frame in mm
-VIDEO_HEIGHT_MM = 150
-VIDEO_WIDTH_MM = 195.9
+VIDEO_HEIGHT_MM = 0.9
+VIDEO_WIDTH_MM = 1.2
 
 # Minutes Passed between each frame in video
 TIME_BETWEEN_FRAMES = 10
@@ -111,18 +111,18 @@ def main():
 
 		# Draw marker at cell's initial position
 		cv2.circle(frame, START[0], 5, START_COLOR, -1) # circle: (image, (center_x, center_y), radius, color, thickness)
-		cv2.putText(frame, "start", (int(START[0][0]) - 75, int(START[0][1]) - 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, START_COLOR, 2)
-		print(tracked_spheroid_data['Centroid Coordinates (mm)'])  #, tracked_spheroid_data['Area (mm^2)'], tracked_spheroid_data['Time'])
+		cv2.putText(frame, "start", (int(START[0][0]) - 25, int(START[0][1]) - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, START_COLOR, 2)
+		# print(tracked_spheroid_data['Centroid Coordinates (mm)'])  #, tracked_spheroid_data['Area (mm^2)'], tracked_spheroid_data['Time'])
 
 		# Draw an arrow for every frame of movement going from its last position to its next position
 		if frame_num > 1:
 			for i in range(1, len(tracked_spheroid_data['Centroid Coordinates (mm)'])):
 				a = int(tracked_spheroid_data['Centroid Coordinates (mm)'][i - 1][0] / pixels_to_mm), int(tracked_spheroid_data['Centroid Coordinates (mm)'][i - 1][1] / pixels_to_mm)
 				b = int(tracked_spheroid_data['Centroid Coordinates (mm)'][i][0] / pixels_to_mm), int(tracked_spheroid_data['Centroid Coordinates (mm)'][i][1] / pixels_to_mm)
-				cv2.arrowedLine(frame, a, b, PATH_COLOR  , 2, cv2.LINE_AA, 0, 0.1)
+				cv2.arrowedLine(frame, a, b, PATH_COLOR, 2, cv2.LINE_AA, 0, 0.1)
 
 		# Display edited photo
-		cv2.imshow("Cell Tracking", frame)
+		# cv2.imshow("Cell Tracking", frame)
 
 		# update circle (centroid and radius of next circle to focus on spheroid)
 		centroid, radius = next_circle_position(frame, outline)
@@ -155,10 +155,13 @@ def main():
 
 	# Create Color Image containing the path the tracked cell took
 	# Scale image to match
-	final_photo = rescale_frame(final_frame)
+	final_photo = final_frame
 
-	# Draw Boundary for Cell's starting position
+	# Draw dot at Cell's starting position
 	cv2.circle(final_photo, START[0], 5, START_COLOR, -1)
+	first_area = tracked_spheroid_data['Area (mm^2)'][0]
+	cv2.putText(final_photo, f'initial area: {first_area:.3f} mm^2', (int(START[0][0]) - 25, int(START[0][1]) + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, START_COLOR, 2)
+
 	# Draw a line for every frame of movement going from its last position to its next position
 	for i in range(1, len(tracked_spheroid_data['Centroid Coordinates (mm)'])):
 		a = int(tracked_spheroid_data['Centroid Coordinates (mm)'][i - 1][0] / pixels_to_mm), int(tracked_spheroid_data['Centroid Coordinates (mm)'][i - 1][1] / pixels_to_mm)
@@ -166,11 +169,17 @@ def main():
 		cv2.arrowedLine(final_photo, a, b, PATH_COLOR, 2, cv2.LINE_AA, 0, 0.1)
 
 	# Draw dot at final centroid
-	cv2.circle(final_photo, tracked_spheroid_data['Centroid Coordinates (mm)'][len(tracked_spheroid_data['Centroid Coordinates (mm)']) - 1], 5, END_COLOR, cv2.FILLED)
+	last_position = (int(tracked_spheroid_data['Centroid Coordinates (mm)'][-1][0] / pixels_to_mm), int(tracked_spheroid_data['Centroid Coordinates (mm)'][-1][1] / pixels_to_mm))
+	last_area = tracked_spheroid_data['Area (mm^2)'][-1]
+	cv2.circle(final_photo, last_position, 5, END_COLOR, cv2.FILLED)
+	cv2.putText(final_photo, "end", (last_position[0] - 25, last_position[1] - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, END_COLOR, 2)
+	cv2.putText(final_photo, f'final area: {last_area:.3f} mm^2', (last_position[0] - 25, last_position[1] + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, END_COLOR, 2)
 
+	# Print out data
+	print(tracked_spheroid_data['Centroid Coordinates (mm)'], tracked_spheroid_data['Area (mm^2)'], tracked_spheroid_data['Time'])
 
-# cv2.imshow("final", frame)
-	# cv2.waitKey(0)
+	cv2.imshow("final", final_photo)
+	cv2.waitKey(0)
 
 
 # define mouse callback function to draw circle
@@ -233,8 +242,8 @@ def image_processing(image, centroid, radius):
 	https://theailearner.com/tag/cv2-medianblur/
 	"""
 	# declare local constants
-	gaus_kernel = (7,7) # must be odd and positive
-	med_kernel_size = 19 # must be odd and positive, always a square so only one value
+	gaus_kernel = (9,9) # must be odd and positive
+	med_kernel_size = 21 # must be odd and positive, always a square so only one value
 	intensity = 1
 	halo_multiplier = 1.5
 
@@ -287,7 +296,7 @@ def identify_spheroid(processed: np.ndarray) -> np.ndarray:
 	# connect lines from canny
 	smooth = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
 	s2 = cv2.morphologyEx(smooth, cv2.MORPH_OPEN, kernel)
-	cv2.imshow("smooth", s2)
+	# cv2.imshow("smooth", s2)
 
 	# find contours in the binary image
 	contours, hierarchy = cv2.findContours(smooth, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
@@ -317,16 +326,16 @@ def data(image, outline):
 	CoM = (CoM_x, CoM_y)
 
 	# display results for testing purposes:
-	cv2.circle(image, CoM, 5, CIRCLE_COLOR, -1)
-	cv2.putText(image, "center of mass", (CoM_x - 50, CoM_y - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, CIRCLE_COLOR, 2)
+	cv2.circle(image, CoM, 8, CIRCLE_COLOR, -1)
+	cv2.putText(image, "center of mass", (CoM_x - 50, CoM_y - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, CIRCLE_COLOR, 2)
 	cv2.drawContours(image, outline, -1, CIRCLE_COLOR, 2)
 
 	# Find area
 	area = cv2.contourArea(outline)
 
 	# display results for testing purposes:
-	cv2.putText(image, "Area: " + str(area), (CoM_x - 50, CoM_y + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, CIRCLE_COLOR, 2)
-	cv2.imshow("result", image)
+	# cv2.putText(image, "Area: " + str(area), (CoM_x - 50, CoM_y + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, CIRCLE_COLOR, 2)
+	# cv2.imshow("result", image)
 	return CoM, area
 
 def next_circle_position(image, outline):
@@ -339,7 +348,7 @@ def next_circle_position(image, outline):
 	# display results for testing purposes:
 	cv2.circle(image, centroid, radius, (0, 0, 0), thickness=2)
 	cv2.circle(image, centroid, 5, (0, 0, 0), -1)
-	cv2.putText(image, "centroid to pass to next frame", (int(centroid_x) - 75, int(centroid_y) - 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+	# cv2.putText(image, "centroid to pass to next frame", (int(centroid_x) - 75, int(centroid_y) - 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
 	cv2.imshow("final", image)
 	# cv2.waitKey(0)
 
