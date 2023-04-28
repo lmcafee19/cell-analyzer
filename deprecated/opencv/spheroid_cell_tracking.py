@@ -3,13 +3,15 @@
 
 import cv2 as cv
 import os
+import numpy as np
+import math
 from tracker_library import centroid_tracker as ct
 from tracker_library import cell_analysis_functions as analysis
 from tracker_library import export_data as export
 from tracker_library import matplotlib_graphing
 from collections import OrderedDict
 
-# Define Constants
+# Define global variables/constants
 VIDEO = '../videos/Sample_cell_culture_4.mp4'
 EXCEL_FILE = "../../data/cell41_data.xlsx"
 PDF_FILE = "../../data/"
@@ -22,9 +24,17 @@ PATH_COLOR = (255, 255, 255)
 START_COLOR = (255, 0, 0)
 END_COLOR = (0,0,255)
 
+IMAGE = np.zeros((1,1,1), np.uint8)
+PREVIOUS = IMAGE.copy()
+DRAWING = False  # true if mouse is pressed
+IX, IY = -1, -1
+CENTROID = 0, 0
+RADIUS = 1
+CIRCLE_COLOR = (255, 100, 200)
+
 # Define Constants for cell size. These indicate the size range in which we should detect and track cells
-MIN_CELL_SIZE = 10
-MAX_CELL_SIZE = 600
+# MIN_CELL_SIZE = 10
+# MAX_CELL_SIZE = 600
 
 # Real World size of frame in mm
 VIDEO_HEIGHT_MM = 150
@@ -45,15 +55,6 @@ def main():
         # Read in video
         capture = cv.VideoCapture(videoFile)
         total_frames = int(capture.get(cv.CAP_PROP_FRAME_COUNT))
-
-        # Grab last frame for processing later TOO SLOW!!
-        # Fast forward to last frame
-        # capture.set(cv.CAP_PROP_POS_FRAMES, total_frames - 1)
-        #
-        # valid, final_frame = capture.read()
-        #
-        # # Rewind Video to first frame
-        # capture.set(cv.CAP_PROP_POS_FRAMES, 0)
 
         # Initialize Centroid tracker
         tracker = ct.CentroidTracker()
@@ -108,7 +109,7 @@ def main():
             tracked_cell_id = -1
             while not (0 <= int(tracked_cell_id) < len(cell_locations)):
                 # Allow User to select which cell they want to track
-                tracked_cell_id = int(input("Draw shape around spheroid to Track: "))
+                tracked_cell_id = int(input("Select Cell to Track: "))
 
             # Close First Frame
             cv.destroyAllWindows()
