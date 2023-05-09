@@ -87,6 +87,7 @@ def main():
 
             processed_canny = analysis.process_image(frame, analysis.Algorithm.CANNY, SCALE, CONTRAST, BRIGHTNESS, BLUR_INTENSITY)
 
+
             # Display Proccessed Video
             #cv.imshow("Canny", processed_canny)
 

@@ -35,7 +35,12 @@ class CentroidTracker():
         del self.objects[objectID]
         del self.disappeared[objectID]
 
-    # Shapes should be a dictionary mapping centroids of detected objects to their area
+    '''
+        Associates all found objects with the newly found objects in the new frame based on their euclidean distance from one another
+        @param Shapes should be a dictionary mapping centroids of detected objects to their area
+        @returns Two dictionaries: the first being a mapping between a cell_id and their centroid locations for each frame
+                 and the second being a dictionary mapping the cell_id to its recorded area for each frame
+    '''
     def update(self, shapes):
         # check to see if the list of input bounding box rectangles
         # is empty

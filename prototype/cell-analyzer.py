@@ -86,8 +86,8 @@ class App:
         layout2 = [[sg.Menu(menu_def)],
                    [sg.Text('Original Video', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(), sg.Text('Tracker Video', font=TITLE_FONT, text_color=TITLE_COLOR, justification='r')],
                    # Titles for each video window
-                   [sg.Canvas(size=(400, 300), key="canvas", background_color="blue"),
-                    sg.Canvas(size=(400, 300), key="edited_video", background_color="blue")],
+                   [sg.Canvas(size=(400, 300), key="canvas", background_color="blue", visible=False),
+                    sg.Canvas(size=(400, 300), key="edited_video", background_color="blue", visible=False)],
                    # Windows for edited/original video to play
                    [sg.T("0", key="counter", size=(10, 1))], # Frame Counter
                    [sg.Button("Pause", key="Play"), sg.Button('Next frame'),
@@ -100,8 +100,8 @@ class App:
         layout3 = [[sg.Menu(menu_def)],
                    [sg.Text('Original Video', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(), sg.Text('Tracker Video', font=TITLE_FONT, text_color=TITLE_COLOR, justification='r')],
                    # Titles for each video window
-                   [sg.Canvas(size=(400, 300), key="original_first_frame", background_color="blue"),
-                    sg.Canvas(size=(400, 300), key="edited_first_frame", background_color="blue")],
+                   [sg.Canvas(size=(400, 300), key="original_first_frame", background_color="blue", visible=False),
+                    sg.Canvas(size=(400, 300), key="edited_first_frame", background_color="blue", visible=False)],
                    [sg.Text("Total Number of Cells Found: "), sg.Text("", key="cells_found")],
                    # Windows for edited/original video to play
                    [sg.Text('Enter Id number of cell you wish to track:'), sg.Input(key="cell_id", enable_events=True)],
@@ -179,6 +179,7 @@ class App:
 
         # Finalize GUI with settings and layout from above
         self.window = sg.Window('Cell Analyzer', layout, resizable=True, size=(screen_width, screen_height), return_keyboard_events=False).Finalize()
+        self.window.maximize()
 
         # Get the tkinter canvases  for displaying the video
         self.canvas = self.window.Element("canvas").TKCanvas
@@ -357,6 +358,7 @@ class App:
                         # Start video display thread
                         self.load_video()
 
+
                     # No Method is Selected do not run
                     else:
                         sg.PopupError("Method of Tracking must be selected before running")
@@ -401,9 +403,6 @@ class App:
 
                     # Display new image in the right frame
                     self.first_frame_edited.create_image(0, 0, image=outlined_cell_img, anchor=tk.NW)
-
-
-
 
 
             # ---- Video Player Events ---- #
@@ -835,6 +834,13 @@ class App:
                             self.canvas.config(width=self.vid_width, height=self.vid_height)
                             self.edited_canvas.config(width=self.vid_width, height=self.vid_height)
 
+                            # Make canvas elements visible
+                            self.window['canvas'].update(visible=True)
+                            self.window['edited_video'].update(visible=True)
+                            # Update Scroll Bar to fit contents
+                            self.window.refresh()
+                            self.window[f'-COL{VIDEO_PLAYER}-'].contents_changed()
+
                         # Display next frame for unedited video
                         # convert image from BGR to RGB so that it is read correctly by PIL
                         original = cv2.cvtColor(original, cv2.COLOR_BGR2RGB)
@@ -915,6 +921,7 @@ class App:
         self.first_frame_orig.config(width=self.vid_width, height=self.vid_height)
         self.first_frame_edited.config(width=self.vid_width, height=self.vid_height)
 
+
         # Update right side of counter
         self.frames = int(self.video_player.frames)
         self.window.Element("counter").Update("0/%i" % self.video_player.frames)
@@ -924,7 +931,6 @@ class App:
 
         # Display the total number of cells found in the frame (range of valid values)
         self.window.Element("cells_found").Update(self.video_player.get_num_cells_found()-1)
-
 
         # Display Original photo in left frame of selected view
         # scale image to fit inside the frame
@@ -942,8 +948,17 @@ class App:
         )
         self.first_frame_edited.create_image(0, 0, image=self.edited, anchor=tk.NW)
 
+        # Make canvas elements visible
+        self.window['original_first_frame'].update(visible=True)
+        self.window['edited_first_frame'].update(visible=True)
+        # Update Scroll Bar to fit contents
+        self.window.refresh()
+        self.window[f'-COL{CELL_SELECTION}-'].contents_changed()
+
         self.frame += 1
         self.update_counter(self.frame)
+
+
 
     '''
     Selects the cell to track 
