@@ -90,7 +90,7 @@ class App:
                     sg.Canvas(size=(400, 300), key="edited_video", background_color="blue", visible=False)],
                    # Windows for edited/original video to play
                    [sg.T("0", key="counter", size=(10, 1))], # Frame Counter
-                   [sg.Button("Pause", key="Play"), sg.Button('Next frame'),
+                   [sg.Button("Pause", key="Play"), # Add here if the next frame button is desired sg.Button('Next frame')
                     sg.Push(),
                     sg.Button('Export Data', key='Export Data', disabled=True),
                     sg.Button('Restart'), sg.Button('Exit')]]  # Play/Pause Buttons, Next Frame Button
@@ -150,7 +150,7 @@ class App:
                        'Filename to save graph to (.pdf):\n  Leave blank for customizable settings and manual save after graph creation',
                        key='culture_speed_graph_label', visible=False), sg.Input(key="culture_speed_graph_filename", visible=False), sg.Text(".pdf", key="culture_speed_graph_ext", visible=False)],
 
-                   [sg.Button('Export'), sg.Button("Cancel", key="Cancel")],
+                   [sg.Button('Export'), sg.Button('Restart'), sg.Button("Cancel", key="Cancel")],
                    # Export Button finishes script and program, Cancel returns to previous page
                    [sg.Text("Data Currently Exporting. Application will close once process is finished",
                             key="export_message", text_color="red", visible=False)]]
@@ -1000,16 +1000,25 @@ class MyVideoCapture:
     """
 
     def __init__(self, video_source):
-        # Open the video source
-        self.vid = cv2.VideoCapture(video_source)
-        if not self.vid.isOpened():
-            raise ValueError or TypeError("Unable to open video source", video_source)
+        # Open the source
+        if is_image(video_source):
+            # If given file is an image, use imread
+            self.vid = cv2.imread(video_source)
+            h, w, c = self.vid.shape
+            self.height = h
+            self.width = w
+            self.frames = 1
+        else:
+            # if video use VideoCapture
+            self.vid = cv2.VideoCapture(video_source)
+            if not self.vid.isOpened():
+                raise ValueError("Unable to open video source", video_source)
 
-        # Get video source width and height
-        self.width = self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
-        self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
-        self.frames = self.vid.get(cv2.CAP_PROP_FRAME_COUNT)
-        self.fps = self.vid.get(cv2.CAP_PROP_FPS)
+            # Get video source frames, width and height
+            self.width = self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
+            self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+            self.frames = self.vid.get(cv2.CAP_PROP_FRAME_COUNT)
+
 
     def get_frame(self):
         """
@@ -1126,10 +1135,10 @@ def isValidParameters(videofile, width, height, time_between_frames, pixels, min
     @return True if the tracker can analyze it, false if it cannot
 '''
 def isValidVideo(videofile):
-    VALID_FILE_TYPES = [".avi", ".mp4", ".png", ".jpeg", ".tif"]
+    VALID_FILE_TYPES = [".avi", ".mp4", ".png", ".jpeg", ".tif", ".tiff", ".jpg", ".jpe"]
     valid = False
     if os.path.exists(videofile):
-        if os.path.splitext(videofile)[1] in VALID_FILE_TYPES:
+        if os.path.splitext(videofile)[1].upper() in (ftype.upper() for ftype in VALID_FILE_TYPES):
             valid = True
     return valid
 
@@ -1350,10 +1359,10 @@ Determines if given file relates to an image or not
 Supported file types: .jpeg, .png, .tif
 '''
 def is_image(filename:str):
-    VALID_FILE_TYPES = [".png", ".jpeg", ".tif"]
+    VALID_FILE_TYPES = [".png", ".jpeg", ".tif", ".tiff", ".jpg", ".jpe"]
     valid = False
     if os.path.exists(filename):
-        if os.path.splitext(filename)[1] in VALID_FILE_TYPES:
+        if os.path.splitext(filename)[1].upper() in (ftype.upper() for ftype in VALID_FILE_TYPES):
             valid = True
     return valid
 

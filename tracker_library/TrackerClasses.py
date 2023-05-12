@@ -17,23 +17,30 @@ from datetime import datetime
 Defines class that manages the tracking of a specified individual cell within a video
 """
 class IndividualTracker:
-    def __init__(self, video_source, time_between_frames, width_mm=0, height_mm=0, pixels_per_mm=None, min_cell_size=10, max_cell_size=600, scale=.25, contrast=1.25, brightness=0.1,
+    def __init__(self, source, time_between_frames, width_mm=0, height_mm=0, pixels_per_mm=None, min_cell_size=10, max_cell_size=600, scale=.25, contrast=1.25, brightness=0.1,
                  blur_intensity=10, units="mm"):
-        # TODO If given file is an image, open it a different way
-        # Open the video source
-        self.vid = cv.VideoCapture(video_source)
-        if not self.vid.isOpened():
-            raise ValueError("Unable to open video source", video_source)
 
-        # Get video source width and height
-        self.width = self.vid.get(cv.CAP_PROP_FRAME_WIDTH)
-        self.height = self.vid.get(cv.CAP_PROP_FRAME_HEIGHT)
+        self.source = source
+        # Open the source
+        if is_image(source):
+            # If given file is an image, use imread
+            self.vid = cv.imread(source)
+            self.frames = 1
+        else:
+            # if video use VideoCapture
+            self.vid = cv.VideoCapture(source)
+            if not self.vid.isOpened():
+                raise ValueError("Unable to open video source", source)
+            # Get source frames, if source is an image default to 1
+            self.frames = self.vid.get(cv.CAP_PROP_FRAME_COUNT)
+
+
         self.pixels_to_mm = pixels_per_mm
         # Units can either be millimeter(mm) or micrometer(μm)
         # This will change the pixels_to_mm conversion and the titles of columns and exported data
         self.units = units
         self.frame_num = 1
-        self.frames = self.vid.get(cv.CAP_PROP_FRAME_COUNT)
+
 
         self.height_mm = float(height_mm)
         self.width_mm = float(width_mm)
@@ -193,10 +200,16 @@ class IndividualTracker:
     @returns Unedited first frame and Edited first frame of the video with each cell detected and given an ID for the user to choose
     '''
     def get_first_frame(self):
-        # Open First Frame of Video and Detect all cells within it, making sure to label them
-        valid, frame = self.vid.read()
+        # If source is an image return the already read image type, otherwise grab the first frame
+        if is_image(self.source):
+            valid = True
+            frame = self.vid
+        else:
+            # Open First Frame of Video and Detect all cells within it, making sure to label them
+            valid, frame = self.vid.read()
+
         if not valid:
-            raise Exception("Video cannot be read")
+            raise Exception("Source cannot be read")
 
         # Process Image to better detect cells
         processed = analysis.process_image(frame, analysis.Algorithm.CANNY, self.scale, self.contrast, self.brightness, self.blur_intensity)
@@ -411,7 +424,7 @@ class IndividualTracker:
 
     # Release the video source when the object is destroyed
     def __del__(self):
-        if self.vid.isOpened():
+        if not is_image(self.source) and self.vid.isOpened():
             self.vid.release()
 
 
@@ -419,22 +432,28 @@ class IndividualTracker:
 Defines class that manages the tracking of raw data for an entire culture of cells within a video
 """
 class CultureTracker:
-    def __init__(self, video_source, time_between_frames, width_mm=0, height_mm=0, pixels_per_mm=None, min_cell_size=10, max_cell_size=600, scale=0.25, contrast=1.25, brightness=0.1,
+    def __init__(self, source, time_between_frames, width_mm=0, height_mm=0, pixels_per_mm=None, min_cell_size=10, max_cell_size=600, scale=0.25, contrast=1.25, brightness=0.1,
                  blur_intensity=10, units="mm"):
-        # Open the video source
-        self.vid = cv.VideoCapture(video_source)
-        if not self.vid.isOpened():
-            raise ValueError("Unable to open video source", video_source)
+        self.source = source
+        # Open the source
+        if is_image(source):
+            # If given file is an image, use imread
+            self.vid = cv.imread(source)
+            self.frames = 1
+        else:
+            # if video use VideoCapture
+            self.vid = cv.VideoCapture(source)
+            if not self.vid.isOpened():
+                raise ValueError("Unable to open video source", source)
+            # Get source frames, if source is an image default to 1
+            self.frames = self.vid.get(cv.CAP_PROP_FRAME_COUNT)
 
-        # Get video source width and height
-        self.width = self.vid.get(cv.CAP_PROP_FRAME_WIDTH)
-        self.height = self.vid.get(cv.CAP_PROP_FRAME_HEIGHT)
         self.pixels_to_mm = pixels_per_mm
         # Units can either be millimeter(mm) or micrometer(μm)
         # This will change the pixels_to_mm conversion and the titles of columns and exported data
         self.units = units
         self.frame_num = 1
-        self.frames = self.vid.get(cv.CAP_PROP_FRAME_COUNT)
+
 
         self.height_mm = float(height_mm)
         self.width_mm = float(width_mm)
@@ -505,9 +524,16 @@ class CultureTracker:
     @:returns unedited frame, edited frame
     '''
     def next_frame(self):
-        valid, frame = self.vid.read()
-
-        # If next frame is not found return None?
+        if is_image(self.source):
+            # Only Display Images one time
+            if self.frame_num <= self.frames:
+                valid = True
+            else:
+                valid = False
+            frame = self.vid
+        else:
+            valid, frame = self.vid.read()
+        # If next frame is not found return None
         if not valid:
             return None, None
 
@@ -788,5 +814,17 @@ class CultureTracker:
 
     # Release the video source when the object is destroyed
     def __del__(self):
-        if self.vid.isOpened():
+        if not is_image(self.source) and self.vid.isOpened():
             self.vid.release()
+
+'''
+Determines if given file relates to an image or not
+Supported file types: .jpeg, .png, .tif
+'''
+def is_image(filename:str):
+    VALID_FILE_TYPES = [".png", ".jpeg", ".tif", ".tiff", ".jpg", ".jpe"]
+    valid = False
+    if os.path.exists(filename):
+        if os.path.splitext(filename)[1].upper() in (ftype.upper() for ftype in VALID_FILE_TYPES):
+            valid = True
+    return valid
