@@ -5,8 +5,6 @@ import cv2 as cv
 import os
 from tracker_library import centroid_tracker as ct
 from tracker_library import cell_analysis_functions as analysis
-from tracker_library import export_data as export
-from tracker_library import matplotlib_graphing
 from collections import OrderedDict
 
 # Define Constants

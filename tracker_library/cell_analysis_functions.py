@@ -16,18 +16,10 @@ class Algorithm(Enum):
     LAPLACIAN = "LAPLACIAN"
     SOBEL = "SOBEL"
 
-
-# Define Constants for cell size. These indicate the size range in which we should detect and track cells
-MIN_CELL_SIZE = 10
-MAX_CELL_SIZE = 600
-
 # Indicates how close circles must be to the perfect height/width ratio
 # Should be float between 0-1 with higher percentages meaning more leniency and therefore more shapes being declared circles
 CIRCLE_RATIO_RANGE = .30
 
-# Real World size of frame in mm
-VIDEO_HEIGHT_MM = 150
-VIDEO_WIDTH_MM = 195.9
 
 '''
     Seperates given video or multi frame file into array of frames
@@ -268,6 +260,22 @@ def detect_shape_v2(img, min_size, max_size):
     return photo, centroids
 
 
+# TODO Create Function which accepts a starting centroid, min, max size and finds the cluster most closely associated with it to track
+'''
+    Accepts a starting centroid, min, max size and finds the cluster most closely associated with it to track
+    Intended to be used in tandem with a user drawn circle on the photo, this should find the starting object that most closely resembles that circle
+    Replacement of detect_shape_v2 for the first frame of the video only
+    @param img
+    @param centroid Tuple of (x,y) coordinates that represents the center of the user drawn circle
+    @param radius Radius of user drawn circle in pixels
+    @return dictionary with the key being the detected centroid and the value being the area
+'''
+def detect_cluster_in_circle(img, centroid, radius):
+    # Create Dictionary Mapping between  detected centroid and the area of the cell
+    cell_info = {}
+    return cell_info
+
+
 '''
 Finds the initial boundary of a cell from the given coordinates(centroid) and then draws that shape onto the given image
 @param first_frame First frame of the video used to determine which cell to track, edited the same way as when it had the shapes intially detected
@@ -328,7 +336,7 @@ def draw_initial_cell_boundary(first_frame, point:tuple, img, color=(255, 255, 2
 '''
 Uses coordinates found from the centroid tracker to label each cell with its unique id
 @param img Photo to add labels onto
-@param cell_coors Ordered dict containing a mapping between each cell id and its coordinates
+@param cell_coords Ordered dict containing a mapping between each cell id and its coordinates
 '''
 def label_cells(img, cell_coords):
     # Create copy of img as to not edit the original
@@ -342,6 +350,32 @@ def label_cells(img, cell_coords):
         cv.putText(photo, str(cell_id), (coord[0] + 10, coord[1] + 10), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
 
     return photo
+
+
+'''
+Uses coordinates to outline the cell and hide everything else
+@param img Photo to add labels onto
+@param cell_coord a tuple of X,Y coordinates which describes the centroid of the cell
+@param radius radius of the circle around which the cell resides
+'''
+def outline_cell(img, cell_id, cell_coord, radius):
+    # Create copy of img as to not edit the original
+    photo = img.copy()
+
+    # Label the cell with its id
+    cv.putText(photo, str(cell_id), (cell_coord[0] + 10, cell_coord[1] + 10), cv.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255))
+
+    try:
+        # draw filled circle in white on black background as mask
+        mask = np.zeros_like(photo)
+        mask = cv.circle(mask, (cell_coord[0], cell_coord[1]), radius, (255, 255, 255), -1)
+
+        # apply mask to image to hide everything outside the circle
+        result = cv.bitwise_and(photo, mask)
+    except:
+        print("Radius too large")
+
+    return result
 
 
 '''
