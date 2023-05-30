@@ -64,21 +64,32 @@ class App:
 
 		# Main Menu Layout
 		layout1 = [[sg.Menu(menu_def)],
-				   [sg.Text('Select Video:', font=TITLE_FONT, text_color=TITLE_COLOR)], [sg.Input(key="_FILEPATH_"), sg.Button("Browse")],  # File Selector
-				   [sg.Text('Select Playback Speed:', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(), sg.Text('Tracker Settings. Required*', font=TITLE_FONT, text_color=TITLE_COLOR)],
-				   [sg.R('1x', 2, key="playback_radio_1x", default=True, background_color=BACKGROUND_COLOR), sg.R('2x', 2, key="playback_radio_2x", background_color=BACKGROUND_COLOR),
-					sg.R('5x', 2, key="playback_radio_5x", background_color=BACKGROUND_COLOR), sg.R('10x', 2, key="playback_radio_10x", background_color=BACKGROUND_COLOR), sg.R('50x', 2, key="playback_radio_50x", background_color=BACKGROUND_COLOR),
-					sg.Push(), sg.Text('Real World Width of the Video (mm)*'), sg.Input(key="video_width_mm")],
-				   [sg.Text('Select Type of Cell Tracking:', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(),
-					sg.Text('Real World Height of the Video (mm)*'), sg.Input(key="video_height_mm")],
+				   [sg.Text('Select Video or Image:', font=TITLE_FONT, text_color=TITLE_COLOR)], [sg.Input(key="_FILEPATH_"), sg.Button("Browse")],  # File Selector
+				   # [sg.Text('Select Video Playback Speed:', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(), sg.Text('Tracker Settings. Required*', font=TITLE_FONT, text_color=TITLE_COLOR)],
+				   # [sg.R('1x', 2, key="playback_radio_1x", default=True, background_color=BACKGROUND_COLOR), sg.R('2x', 2, key="playback_radio_2x", background_color=BACKGROUND_COLOR),
+					# sg.R('5x', 2, key="playback_radio_5x", background_color=BACKGROUND_COLOR), sg.R('10x', 2, key="playback_radio_10x", background_color=BACKGROUND_COLOR), sg.R('50x', 2, key="playback_radio_50x", background_color=BACKGROUND_COLOR),
+					# sg.Push(), sg.Text('Real World Width of Footage (mm)*'), sg.Input(key="video_width_mm")],
+				   [sg.Text('Select Type of Cell Tracking:', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(), sg.Text('Tracker Settings. Required*', font=TITLE_FONT, text_color=TITLE_COLOR)],
+					# sg.Push(), sg.Text('Real World Height of the Footage (mm)*'), sg.Input(key="video_height_mm")],
 				   # Section to select type of analysis with radio buttons
-				   [sg.R('Individual Cell Tracking', 1, key="individual_radio", background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Number of pixels per mm* (If height/width are unknown)'), sg.Input(key='pixels_per_mm')],
+				   [sg.R('Individual Cell Tracking', 1, key="individual_radio", background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Real World Width of Footage (mm)*'), sg.Input(key="video_width_mm")],
+				   # sg.Push(), sg.Text('Number of pixels per mm* (If height/width are unknown)'), sg.Input(key='pixels_per_mm')],
 				   # Take Input for Constants
-				   [sg.R('Full Culture Tracking', 1, key="culture_radio", background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Time Between Images (mins)* (If video type)'), sg.Input(key="time_between_frames")],
-				   [sg.R('Spheroid Tracking', 1, key="spheroid_radio", background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Min Cell Size (Default = 10)'), sg.Input(key="min_size")],
-				   [sg.Text('Select Units for Exported Data:', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(), sg.Text('Max Cell Size (Default = 600)'), sg.Input(key="max_size")],
-				   [sg.R('µm', 3, key="units_µm", default=True, background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Video Editor Settings', font=TITLE_FONT, text_color=TITLE_COLOR)],
-				   [sg.R('mm', 3, key="units_mm", background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Contrast (Default = 1.25)'), sg.Input(key="contrast")],
+				   [sg.R('Full Culture Tracking', 1, key="culture_radio", background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Real World Height of the Footage (mm)*'), sg.Input(key="video_height_mm")],
+				   # sg.Push(), sg.Text('Time Between Images (mins)* (If video type)'), sg.Input(key="time_between_frames")],
+				   [sg.R('Spheroid Tracking', 1, key="spheroid_radio", background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Number of pixels per mm* (If height/width are unknown)'), sg.Input(key='pixels_per_mm')],
+					# sg.Push(), sg.Text('Min Cell Perimeter (Default = 10 pixels)'), sg.Input(key="min_size")], sg.Push(), sg.Text('Max Cell Perimeter (Default = 600 pixels)'), sg.Input(key="max_size")],
+				   [sg.Text('Select Units for Exported Data:', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(), sg.Text('Time Between Images (mins)* (If video type)'), sg.Input(key="time_between_frames")],
+				   [sg.R('µm', 3, key="units_µm", default=True, background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Film Editing', font=TITLE_FONT, text_color=TITLE_COLOR)],
+				   # sg.Push(), sg.Text('Film Editing', font=TITLE_FONT, text_color=TITLE_COLOR)],
+				   [sg.R('mm', 3, key="units_mm", background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Min Cell Perimeter (Default = 10 pixels)'), sg.Input(key="min_size")],
+				   #sg.Push(), sg.Text('Contrast (Default = 1.25)'), sg.Input(key="contrast")],
+				   [sg.Text('Select Video Playback Speed:', font=TITLE_FONT, text_color=TITLE_COLOR), sg.Push(), sg.Text('Max Cell Perimeter (Default = 600 pixels)'), sg.Input(key="max_size")],
+				   [sg.R('1x', 2, key="playback_radio_1x", default=True, background_color=BACKGROUND_COLOR),
+					sg.R('2x', 2, key="playback_radio_2x", background_color=BACKGROUND_COLOR),
+					sg.R('5x', 2, key="playback_radio_5x", background_color=BACKGROUND_COLOR),
+					sg.R('10x', 2, key="playback_radio_10x", background_color=BACKGROUND_COLOR),
+					sg.R('50x', 2, key="playback_radio_50x", background_color=BACKGROUND_COLOR), sg.Push(), sg.Text('Contrast (Default = 1.25)'), sg.Input(key="contrast")],
 				   [sg.Push(), sg.Text('Brightness (0 leaves the brightness unchanged. Default = 0.1)'), sg.Input(key="brightness")],
 				   [sg.Push(), sg.Text('Blur Intensity (Default = 10)'), sg.Input(key="blur")],
 				   [sg.Button('Run'), sg.Button('Restart'), sg.Button('Exit')]]
@@ -113,8 +124,8 @@ class App:
 
 				   # Titles for each video window
 				   # [sg.Text('Spheroid Video', font=TITLE_FONT, text_color=TITLE_COLOR)],
-				   [sg.Text('Original Video', font=TITLE_FONT, text_color=TITLE_COLOR),
-					sg.Push(), sg.Text('Tracker Video', font=TITLE_FONT, text_color=TITLE_COLOR, justification='r')],
+				   # [sg.Text('Original Video', font=TITLE_FONT, text_color=TITLE_COLOR),
+					# sg.Push(), sg.Text('Tracker Video', font=TITLE_FONT, text_color=TITLE_COLOR, justification='r')],
 
 				   # Uncomment to show frames/videos on spheroid selection page, for now just using pop up opencv window
 				   # # Windows for edited/original video to play
@@ -543,8 +554,8 @@ class App:
 					self.window['Graph Title'].update(visible=True)
 					self.window['Area over Time'].update(visible=True)
 
-					# Enable individual cell tracking specifics exports if it meets the reqs
-					if self.window.Element("individual_radio").get():
+					# Enable individual cell/spheroid tracking specifics exports if it meets the reqs
+					if self.window.Element("individual_radio").get() or self.window.Element("spheroid_radio").get():
 						self.window['Movement over Time'].update(visible=True)
 						self.window['images_label'].update(visible=True)
 						self.window['path_image'].update(visible=True)
@@ -569,7 +580,7 @@ class App:
 				area_graph_filename = self.window.Element("area_graph_filename").get()
 
 
-				# Individual Tracker Specific Checkboxes
+				# Individual and Spheroid Tracker Specific Checkboxes
 				exportgraph_movement = self.window.Element("Movement over Time").get()
 				num_labels = self.window.Element("num_labels").get()
 				individual_movement_graph_filename = self.window.Element("individual_movement_graph_filename").get()
@@ -578,12 +589,12 @@ class App:
 				path_image_filename = self.window.Element("final_path_image_filename").get()
 
 				# # Spheroid Tracker Specific Checkboxes
-				# exportgraph_spheroid_movement = self.window.Element("Movement over Time").get()
-				# num_labels = self.window.Element("num_labels").get()
+				# exportgraph_movement_s = self.window.Element("Movement over Time").get()
+				# num_labels_s = self.window.Element("num_labels").get()
 				# spheroid_movement_graph_filename = self.window.Element("spheroid_movement_graph_filename").get()
 				#
 				# exportpath_spheroid_image = self.window.Element("path_image").get()
-				# path_image_filename = self.window.Element("final_path_image_filename").get()
+				# path_image_filename_s = self.window.Element("final_path_image_filename").get()
 
 				# Culture Tracker Specific Checkboxes
 				export_average_displacement = self.window.Element("average_displacement").get()
@@ -635,6 +646,24 @@ class App:
 						valid_filenames = False
 						sg.PopupError("Given Path Image filename is in an incorrect format.\nEnsure the filename ends in "
 									  ".png or leave the field blank for an autogenerated name")
+
+				# # If spheroid movement graph filename is given
+				# if valid_filenames and spheroid_movement_graph_filename != '' and spheroid_movement_graph_filename is not None:
+				# 	# If given filename is incorrectly formatted display error and do not export
+				# 	if not isValidGraphFilename(spheroid_movement_graph_filename):
+				# 		valid_filenames = False
+				# 		sg.PopupError(
+				# 			"Given Movement Graph's File Name is in an incorrect format.\nEnsure the filename ends in "
+				# 			".pdf or leave the field blank for manual editing of settings and saving")
+
+				# # If Export spheroid path image filename is entered:
+				# if valid_filenames and path_image_filename_s != '' and path_image_filename_s is not None:
+				# 	# If given filename is incorrectly formatted display error and do not export
+				# 	if not isValidImageFilename(path_image_filename_s):
+				# 		valid_filenames = False
+				# 		sg.PopupError(
+				# 			"Given Path Image filename is in an incorrect format.\nEnsure the filename ends in "
+				# 			".png or leave the field blank for an autogenerated name")
 
 				# If culture displacement graph filename is entered
 				if valid_filenames and culture_displacement_graph_filename != '' and culture_displacement_graph_filename is not None:
@@ -695,8 +724,8 @@ class App:
 						else:
 							self.video_player.export_area_graph()
 
-					# Individual Tracker Exports
-					if self.window.Element("individual_radio").get():
+					# Individual and Spheroid Tracker Exports
+					if self.window.Element("individual_radio").get() or self.window.Element("spheroid_radio").get():
 						# Create X vs Y Position graph
 						if exportgraph_movement:
 							# If a number of labels was supplied pass it as a parameter
@@ -720,6 +749,32 @@ class App:
 								self.video_player.export_final_path(filename=f"{export_directory}/{path_image_filename}.png")
 							else:
 								self.video_player.export_final_path()
+
+					# # Spheroid Tracker Exports
+					# elif self.window.Element("spheroid_radio").get():
+					# 	# Create X vs Y Position graph
+					# 	if exportgraph_movement_s:
+					# 		# If a number of labels was supplied pass it as a parameter
+					# 		if num_labels != '' and num_labels_s is not None:
+					# 			# If a filename was supplied pass it as a parameter
+					# 			if spheroid_movement_graph_filename != '' and spheroid_movement_graph_filename is not None:
+					# 				self.video_player.export_movement_graph(num_labels=int(num_labels_s), filename=f"{export_directory}/{spheroid_movement_graph_filename}.pdf")
+					# 			else:
+					# 				self.video_player.export_movement_graph(num_labels=int(num_labels_s))
+					# 		else:
+					# 			# If a filename was supplied pass it as a parameter
+					# 			if spheroid_movement_graph_filename != '' and spheroid_movement_graph_filename is not None:
+					# 				self.video_player.export_movement_graph(filename=f"{export_directory}/{spheroid_movement_graph_filename}.pdf")
+					# 			else:
+					# 				self.video_player.export_movement_graph()
+
+						# # Image Exports
+						# if exportpath_image:
+						# 	# If a filename was supplied pass it as a parameter
+						# 	if path_image_filename != '' and path_image_filename is not None:
+						# 		self.video_player.export_final_path(filename=f"{export_directory}/{path_image_filename}.png")
+						# 	else:
+						# 		self.video_player.export_final_path()
 
 					elif self.window.Element("culture_radio").get():
 						# Create Average Displacement Graph
@@ -821,6 +876,33 @@ class App:
 					self.window['final_path_image_label'].update(visible=True)
 					self.window['final_path_image_filename'].update(visible=True)
 					self.window['final_path_image_ext'].update(visible=True)
+
+			# # Spheroid tracker exports
+			# if event == "Movement over Time":
+			# 	# When graph for movement over time checkbox is checked enable the input for num labels and filename
+			# 	if self.window['num_labels_desc'].visible:
+			# 		self.window['num_labels_desc'].update(visible=False)
+			# 		self.window['num_labels'].update(visible=False)
+			# 		self.window['individual_movement_graph_label'].update(visible=False)
+			# 		self.window['individual_movement_graph_filename'].update(visible=False)
+			# 		self.window['individual_movement_graph_ext'].update(visible=False)
+			# 	else:
+			# 		self.window['num_labels_desc'].update(visible=True)
+			# 		self.window['num_labels'].update(visible=True)
+			# 		self.window['individual_movement_graph_label'].update(visible=True)
+			# 		self.window['individual_movement_graph_filename'].update(visible=True)
+			# 		self.window['individual_movement_graph_ext'].update(visible=True)
+			#
+			# if event == "path_image":
+			# 	# When area graph Export Checkbox is checked enable the input for a filename
+			# 	if self.window['final_path_image_filename'].visible:
+			# 		self.window['final_path_image_label'].update(visible=False)
+			# 		self.window['final_path_image_filename'].update(visible=False)
+			# 		self.window['final_path_image_ext'].update(visible=False)
+			# 	else:
+			# 		self.window['final_path_image_label'].update(visible=True)
+			# 		self.window['final_path_image_filename'].update(visible=True)
+			# 		self.window['final_path_image_ext'].update(visible=True)
 
 			# Culture Specific Exports
 			if event == "average_displacement":
@@ -1125,7 +1207,7 @@ class App:
 			self.window.refresh()
 			# Update window
 			self.window[f'-COL{SPHEROID_SELECTION}-'].contents_changed()
-			print("to SPHEROID_SELECTION")
+			# print("to SPHEROID_SELECTION")
 		else:
 			# change canvas size approx to video size
 			self.first_frame_orig.config(width=self.vid_width, height=self.vid_height)
@@ -1162,7 +1244,7 @@ class App:
 			self.window.refresh()
 			# Update window
 			self.window[f'-COL{CELL_SELECTION}-'].contents_changed()
-			print("to CELL_SELECTION")
+			# print("to CELL_SELECTION")
 		self.frame += 1
 		self.update_counter(self.frame)
 

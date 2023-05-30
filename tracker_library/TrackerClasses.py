@@ -487,6 +487,7 @@ class SpheroidTracker:
         self.tracked_cell_id = 0
         self.tracked_cell_data = {'Time (mins)': [], f'X Position ({self.units})': [], f'Y Position ({self.units})': [], f'Area ({self.units}^2)': []}
         self.tracked_cell_coords = OrderedDict()
+        self.tracked_cell_contours = []
 
         # Keep track of last played frame's tracker data
         self.cell_locations = None
@@ -579,25 +580,25 @@ class SpheroidTracker:
         # processed = self.image_processing(frame, centroid, radius)  # returns blob
         # # processed = analysis.process_image(frame, analysis.Algorithm.CANNY, self.scale, self.contrast, self.brightness, self.blur_intensity)
         #
-        # # Set up units
-        # if self.pixels_to_mm is None or self.pixels_to_mm == 0:
-        #     # Grab Frame's dimensions in order to convert pixels to mm
-        #     (h, w) = processed.shape[:2]
-        #     # If instead the dimensions of the image were given then calculate the pixel conversion using those
-        #     # If selected units were micro meters (µm)
-        #     if self.units == "µm":
-        #         self.pixels_to_mm = (((self.height_mm / h) + (self.width_mm / w)) / 2) * 1000
-        #     else:
-        #         # Otherwise use millimeters as unit
-        #         self.pixels_to_mm = ((self.height_mm / h) + (self.width_mm / w)) / 2
-        # else:
-        #     # If pixels to mm were already given, then convert it to our new scale for the image
-        #     if self.units == "µm":
-        #         # If µm was selected as the units convert between mm and µm (mm * 1000)
-        #         self.pixels_to_mm = (self.pixels_to_mm * self.scale) * 1000
-        #     else:
-        #         # Otherwise use millimeters as unit
-        #         self.pixels_to_mm = self.pixels_to_mm * self.scale
+        # Set up units
+        if self.pixels_to_mm is None or self.pixels_to_mm == 0:
+            # Grab Frame's dimensions in order to convert pixels to mm
+            (h, w) = FRAME1.shape[:2]
+            # If instead the dimensions of the image were given then calculate the pixel conversion using those
+            # If selected units were micro meters (µm)
+            if self.units == "µm":
+                self.pixels_to_mm = (((self.height_mm / h) + (self.width_mm / w)) / 2) * 1000
+            else:
+                # Otherwise use millimeters as unit
+                self.pixels_to_mm = ((self.height_mm / h) + (self.width_mm / w)) / 2
+        else:
+            # If pixels to mm were already given, then convert it to our new scale for the image
+            if self.units == "µm":
+                # If µm was selected as the units convert between mm and µm (mm * 1000)
+                self.pixels_to_mm = (self.pixels_to_mm * self.scale) * 1000
+            else:
+                # Otherwise use millimeters as unit
+                self.pixels_to_mm = self.pixels_to_mm * self.scale
         #
         # # Detect minimum cell boundaries and display edited photo
         # # returns cont = image with contours outlined and shapes = centroid, int tuple (x, y)
@@ -678,37 +679,38 @@ class SpheroidTracker:
         processed = self.image_processing(FRAME1, centroid, radius)  # returns blob
         # processed = analysis.process_image(frame, analysis.Algorithm.CANNY, self.scale, self.contrast, self.brightness, self.blur_intensity)
 
-        # Set up units
-        if self.pixels_to_mm is None or self.pixels_to_mm == 0:
-            # Grab Frame's dimensions in order to convert pixels to mm
-            (h, w) = processed.shape[:2]
-            print("(h,w):", (h, w))
-            # If instead the dimensions of the image were given then calculate the pixel conversion using those
-            # If selected units were micro meters (µm)
-            if self.units == "µm":
-                self.pixels_to_mm = (((self.height_mm / h) + (self.width_mm / w)) / 2) * 1000
-            else:
-                # Otherwise use millimeters as unit
-                self.pixels_to_mm = ((self.height_mm / h) + (self.width_mm / w)) / 2
-        else:
-            # If pixels to mm were already given, then convert it to our new scale for the image
-            if self.units == "µm":
-                # If µm was selected as the units convert between mm and µm (mm * 1000)
-                self.pixels_to_mm = (self.pixels_to_mm * self.scale) * 1000
-            else:
-                # Otherwise use millimeters as unit
-                self.pixels_to_mm = self.pixels_to_mm * self.scale
+        # # Set up units
+        # if self.pixels_to_mm is None or self.pixels_to_mm == 0:
+        #     # Grab Frame's dimensions in order to convert pixels to mm
+        #     (h, w) = processed.shape[:2]
+        #     print("(h,w):", (h, w))
+        #     # If instead the dimensions of the image were given then calculate the pixel conversion using those
+        #     # If selected units were micro meters (µm)
+        #     if self.units == "µm":
+        #         self.pixels_to_mm = (((self.height_mm / h) + (self.width_mm / w)) / 2) * 1000
+        #     else:
+        #         # Otherwise use millimeters as unit
+        #         self.pixels_to_mm = ((self.height_mm / h) + (self.width_mm / w)) / 2
+        # else:
+        #     # If pixels to mm were already given, then convert it to our new scale for the image
+        #     if self.units == "µm":
+        #         # If µm was selected as the units convert between mm and µm (mm * 1000)
+        #         self.pixels_to_mm = (self.pixels_to_mm * self.scale) * 1000
+        #     else:
+        #         # Otherwise use millimeters as unit
+        #         self.pixels_to_mm = self.pixels_to_mm * self.scale
         print("pixels to mm:", self.pixels_to_mm)
         # Detect minimum cell boundaries and display edited photo
         # returns cont = image with contours outlined and shapes = centroid, int tuple (x, y)
         # cont, shapes = analysis.detect_shape_v2(processed, self.min_cell_size, self.max_cell_size)
         cont = self.outline_spheroid(processed)  # returns image showing largest contour
+        self.tracked_cell_contours.append(cont)
         shapes = self.get_shape(FRAME1, cont)
 
         # update argument must be a dictionary mapping centroids of detected objects to their area
         self.cell_locations, self.cell_areas = self.tracker.update(shapes)
         print("cell_locations:", self.cell_locations)
-        print("cell_areas:", self.cell_areas)
+
 
         # Update Tracking information
         # self.update_tracker_data()
@@ -748,41 +750,42 @@ class SpheroidTracker:
         #     # initialize first centroid from user-drawn circle
 
         centroid, radius = START
-        print("START:", START)
+        # print("START:", START)
 
         # Process Image to detect spheroid
         processed = self.image_processing(frame, centroid, radius)  # returns blob
         # processed = analysis.process_image(frame, analysis.Algorithm.CANNY, self.scale, self.contrast, self.brightness, self.blur_intensity)
-
-        if self.pixels_to_mm is None or self.pixels_to_mm == 0:
-            # Grab Frame's dimensions in order to convert pixels to mm
-            (h, w) = processed.shape[:2]
-            # If instead the dimensions of the image were given then calculate the pixel conversion using those
-            # If selected units were micro meters (µm)
-            if self.units == "µm":
-                self.pixels_to_mm = (((self.height_mm / h) + (self.width_mm / w)) / 2) * 1000  # avg mm/pixel
-            else:
-                # Otherwise use millimeters as unit
-                self.pixels_to_mm = ((self.height_mm / h) + (self.width_mm / w)) / 2
-        else:
-            # If pixels to mm were already given, then convert it to our new scale for the image
-            if self.units == "µm":
-                # If µm was selected as the units convert between mm and µm (mm * 1000)
-                self.pixels_to_mm = (self.pixels_to_mm * self.scale) * 1000
-            else:
-                # Otherwise use millimeters as unit
-                self.pixels_to_mm = self.pixels_to_mm * self.scale
+        # if self.frame_num == 3:
+        #     if self.pixels_to_mm is None or self.pixels_to_mm == 0:
+        #         # Grab Frame's dimensions in order to convert pixels to mm
+        #         (h, w) = processed.shape[:2]
+        #         # If instead the dimensions of the image were given then calculate the pixel conversion using those
+        #         # If selected units were micro meters (µm)
+        #         if self.units == "µm":
+        #             self.pixels_to_mm = (((self.height_mm / h) + (self.width_mm / w)) / 2) * 1000  # avg mm/pixel
+        #         else:
+        #             # Otherwise use millimeters as unit
+        #             self.pixels_to_mm = ((self.height_mm / h) + (self.width_mm / w)) / 2
+        #     else:
+        #         # If pixels to mm were already given, then convert it to our new scale for the image
+        #         if self.units == "µm":
+        #             # If µm was selected as the units convert between mm and µm (mm * 1000)
+        #             self.pixels_to_mm = (self.pixels_to_mm * self.scale) * 1000
+        #         else:
+        #             # Otherwise use millimeters as unit
+        #             self.pixels_to_mm = self.pixels_to_mm * self.scale
 
         # Detect minimum cell boundaries and display edited photo
         # returns cont = image with contours outlined and shapes = centroid, int tuple (x, y)
         # cont, shapes = analysis.detect_shape_v2(processed, self.min_cell_size, self.max_cell_size)
         cont = self.outline_spheroid(processed)  # returns image showing largest contour
+        self.tracked_cell_contours.append(cont)
         shapes = self.get_shape(processed, cont)
         print("shapes:", shapes)
 
         # update argument must be a dictionary mapping centroids of detected objects to their area
         self.cell_locations, self.cell_areas = self.tracker.update(shapes)
-
+        print("cell_areas:", self.cell_areas)
         # processed = analysis.process_image
 
         # # obtain centroid and radius from previous frame
@@ -845,9 +848,12 @@ class SpheroidTracker:
             self.Ymax = self.cell_locations[self.tracked_cell_id][1]
 
         # Convert area to mm^2
+        print("self.cell_areas[self.tracked_cell_id]:", self.cell_areas[self.tracked_cell_id])
+        print("self.pixels_to_mm**2:", self.pixels_to_mm**2)
         area_mm = self.cell_areas[self.tracked_cell_id] * (self.pixels_to_mm**2)
         print("area_mm:", area_mm)
         self.tracked_cell_data[f'Area ({self.units}^2)'].append(area_mm)
+        # print("tracked cell areas:", self.tracked_cell_data[f'Area ({self.units}^2)'])
 
         # Convert Coordinates to mm
         coordinates_mm = list(self.cell_locations[self.tracked_cell_id])
@@ -1057,15 +1063,18 @@ class SpheroidTracker:
             home_dir = os.path.expanduser("~")
             home_dir += "/Downloads/"
             timestamp = datetime.now().strftime("%b%d_%Y_%H-%M-%S")
-            filename = f"{home_dir}{timestamp}_Cell{self.tracked_cell_id}_Path.png"
+            filename = f"{home_dir}{timestamp}_Spheroid_Path.png"
 
         # Create Color Image containing the path the tracked cell took
         # Scale image to match
         final_photo = analysis.rescale_frame(self.final_frame, self.scale)
+        first_contour = analysis.rescale_frame(self.tracked_cell_contours[0], self.scale)
 
         # Draw Boundary for Cell's starting position
-        final_photo = analysis.draw_initial_cell_boundary(self.first_frame, self.tracked_cell_coords[self.tracked_cell_id][0],
-                                                          final_photo, start_color)
+        # final_photo = analysis.draw_initial_cell_boundary(self.first_frame, self.tracked_cell_coords[self.tracked_cell_id][0], final_photo, start_color)
+        final_photo = cv2.drawContours(final_photo, first_contour, -1, (255, 255, 255), 2)
+        cv2.imshow('final_photo', final_photo)
+
         # Draw a line for every frame of movement going from its last position to its next position
         for i in range(1, len(self.tracked_cell_coords[self.tracked_cell_id])):
             cv2.line(final_photo, self.tracked_cell_coords[self.tracked_cell_id][i - 1], self.tracked_cell_coords[self.tracked_cell_id][i],
@@ -1107,7 +1116,7 @@ class SpheroidTracker:
             home_dir = os.path.expanduser("~")
             home_dir += "/Downloads/"
             timestamp = datetime.now().strftime("%b%d_%Y_%H-%M-%S")
-            filename = f"{home_dir}{timestamp}_Cell{self.tracked_cell_id}_Data.csv"
+            filename = f"{home_dir}{timestamp}_Spheroid_Data.csv"
 
         # Export data to excel
         export.individual_to_csv_file(filename, self.tracked_cell_data)
@@ -1148,7 +1157,7 @@ class SpheroidTracker:
           if set to 1 only the first point will be labeled
     '''
     def export_area_graph(self, num_labels=2, filename=None):
-        self.export_graph("Time (mins)", f"Area ({self.units}^2)", f"Cell {self.tracked_cell_id}: Area over Time", filename=filename)
+        self.export_graph("Time (mins)", f"Area ({self.units}^2)", "Spheroid Area over Time", filename=filename)
 
 
     # Release the video source when the object is destroyed
