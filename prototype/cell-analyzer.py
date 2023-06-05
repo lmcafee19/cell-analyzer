@@ -557,6 +557,7 @@ class App:
 					# Enable individual cell/spheroid tracking specifics exports if it meets the reqs
 					if self.window.Element("individual_radio").get() or self.window.Element("spheroid_radio").get():
 						self.window['Movement over Time'].update(visible=True)
+						# if self.window.Element("individual_radio").get():
 						self.window['images_label'].update(visible=True)
 						self.window['path_image'].update(visible=True)
 
@@ -585,6 +586,7 @@ class App:
 				num_labels = self.window.Element("num_labels").get()
 				individual_movement_graph_filename = self.window.Element("individual_movement_graph_filename").get()
 
+				# if not self.window.Element("spheroid_radio").get():
 				exportpath_image = self.window.Element("path_image").get()
 				path_image_filename = self.window.Element("final_path_image_filename").get()
 
@@ -743,8 +745,8 @@ class App:
 									self.video_player.export_movement_graph()
 
 						# Image Exports
-						if exportpath_image:
-							# If a filename was supplied pass it as a parameter
+						if exportpath_image:  # and self.window.Element("individual_radio").get():
+						# If a filename was supplied pass it as a parameter
 							if path_image_filename != '' and path_image_filename is not None:
 								self.video_player.export_final_path(filename=f"{export_directory}/{path_image_filename}.png")
 							else:

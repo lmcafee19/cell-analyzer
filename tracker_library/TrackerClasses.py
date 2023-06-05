@@ -20,6 +20,9 @@ PREVIOUS = FRAME1.copy()
 DRAWING = False  # true if mouse is pressed
 IX, IY = -1, -1
 START = (0, 0), 0  # centroid, radius
+SCALE = 0.25
+
+# (h, w) = (0, 0)  # coordinate ranges
 
 
 """
@@ -57,6 +60,8 @@ class IndividualTracker:
 
         self.height_mm = float(height_mm)
         self.width_mm = float(width_mm)
+        self.h = 0  # height in pixels
+        self.w = 0  # width in pixels
         # Real world time in minutes that pass between each image being taken
         self.time_between_frames = time_between_frames
 
@@ -204,7 +209,7 @@ class IndividualTracker:
         coordinates_mm[0] = float(coordinates_mm[0] * self.pixels_to_mm)
         coordinates_mm[1] = float(coordinates_mm[1] * self.pixels_to_mm)
         self.tracked_cell_data[f'X Position ({self.units})'].append(coordinates_mm[0])
-        self.tracked_cell_data[f'Y Position ({self.units})'].append(coordinates_mm[1])
+        self.tracked_cell_data[f'Y Position ({self.units})'].append((self.h * self.pixels_to_mm) - coordinates_mm[1])
 
         # Record Time from start
         self.tracked_cell_data['Time (mins)'].append((self.frame_num - 1) * self.time_between_frames)
@@ -215,6 +220,7 @@ class IndividualTracker:
     @returns Unedited first frame and Edited first frame of the video with each cell detected and given an ID for the user to choose
     '''
     def get_first_frame(self):
+        # global h, w
         # If source is an image return the already read image type, otherwise grab the first frame
         if is_image(self.source):
             valid = True
@@ -246,14 +252,14 @@ class IndividualTracker:
 
         if self.pixels_to_mm is None or self.pixels_to_mm == 0:
             # Grab Frame's dimensions in order to convert pixels to mm
-            (h, w) = labeled_img.shape[:2]
+            (self.h, self.w) = labeled_img.shape[:2]
             # If instead the dimensions of the image were given then calculate the pixel conversion using those
             # If selected units were micro meters (µm)
             if self.units == "µm":
-                self.pixels_to_mm = (((self.height_mm / h) + (self.width_mm / w)) / 2) * 1000
+                self.pixels_to_mm = (((self.height_mm / self.h) + (self.width_mm / self.w)) / 2) * 1000
             else:
                 # Otherwise use millimeters as unit
-                self.pixels_to_mm = ((self.height_mm / h) + (self.width_mm / w)) / 2
+                self.pixels_to_mm = ((self.height_mm / self.h) + (self.width_mm / self.w)) / 2
         else:
             # If pixels to mm were already given, then convert it to our new scale for the image
             if self.units == "µm":
@@ -306,7 +312,7 @@ class IndividualTracker:
         coordinates_mm[0] = float(coordinates_mm[0] * self.pixels_to_mm)
         coordinates_mm[1] = float(coordinates_mm[1] * self.pixels_to_mm)
         self.tracked_cell_data[f'X Position ({self.units})'].append(coordinates_mm[0])
-        self.tracked_cell_data[f'Y Position ({self.units})'].append(coordinates_mm[1])
+        self.tracked_cell_data[f'Y Position ({self.units})'].append((self.h * self.pixels_to_mm) - coordinates_mm[1])
 
         # Record Time from start
         self.tracked_cell_data['Time (mins)'].append((self.frame_num - 2) * self.time_between_frames)
@@ -447,6 +453,7 @@ class SpheroidTracker:
     def __init__(self, source, time_between_frames, width_mm=0, height_mm=0, pixels_per_mm=None, min_cell_size=10, max_cell_size=600, scale=.25, contrast=1.25, brightness=0.1,
                  blur_intensity=10, units="mm"):
 
+        global SCALE
         self.source = source
         # Open the source
         if is_image(source):
@@ -469,6 +476,8 @@ class SpheroidTracker:
 
         self.height_mm = float(height_mm)
         self.width_mm = float(width_mm)
+        self.h = 0  # height in pixels
+        self.w = 0  # width in pixels
         # Real world time in minutes that pass between each image being taken
         self.time_between_frames = time_between_frames
 
@@ -478,6 +487,7 @@ class SpheroidTracker:
 
         # Define Constants for video editing
         self.scale = scale
+        SCALE = scale
         self.contrast = contrast
         self.brightness = brightness
         self.blur_intensity = blur_intensity
@@ -550,6 +560,7 @@ class SpheroidTracker:
     @returns Unedited first frame and Edited first frame of the video with each cell detected and given an ID for the user to choose
     '''
     def get_first_frame(self):
+        # global h, w
         # Note: first frame = selection page
         global START, FRAME1
         # If source is an image return the already read image type, otherwise grab the first frame
@@ -583,14 +594,14 @@ class SpheroidTracker:
         # Set up units
         if self.pixels_to_mm is None or self.pixels_to_mm == 0:
             # Grab Frame's dimensions in order to convert pixels to mm
-            (h, w) = FRAME1.shape[:2]
+            (self.h, self.w) = FRAME1.shape[:2]
             # If instead the dimensions of the image were given then calculate the pixel conversion using those
             # If selected units were micro meters (µm)
             if self.units == "µm":
-                self.pixels_to_mm = (((self.height_mm / h) + (self.width_mm / w)) / 2) * 1000
+                self.pixels_to_mm = (((self.height_mm / self.h) + (self.width_mm / self.w)) / 2) * 1000
             else:
                 # Otherwise use millimeters as unit
-                self.pixels_to_mm = ((self.height_mm / h) + (self.width_mm / w)) / 2
+                self.pixels_to_mm = ((self.height_mm / self.h) + (self.width_mm / self.w)) / 2
         else:
             # If pixels to mm were already given, then convert it to our new scale for the image
             if self.units == "µm":
@@ -666,14 +677,14 @@ class SpheroidTracker:
             # 	break
             k = cv2.waitKey(0) & 0xFF  # 0xFF is a hexidecimal, helps with comparing pressed key
             if k == 32:  # hit spacebar to close window (replace this with a button in gui)
-                cv2.imwrite("circled_img.jpg", PREVIOUS)
+                # cv2.imwrite("circled_img.jpg", PREVIOUS)
                 break
 
         cv2.destroyWindow('Drag Circle Window')
 
         # initialize first centroid from user-drawn circle
         centroid, radius = START
-        print("START after drawing circle:", START)
+        # print("START after drawing circle:", START)
 
         # Process Image to detect spheroid
         processed = self.image_processing(FRAME1, centroid, radius)  # returns blob
@@ -709,7 +720,7 @@ class SpheroidTracker:
 
         # update argument must be a dictionary mapping centroids of detected objects to their area
         self.cell_locations, self.cell_areas = self.tracker.update(shapes)
-        print("cell_locations:", self.cell_locations)
+        # print("cell_locations:", self.cell_locations)
 
 
         # Update Tracking information
@@ -742,6 +753,10 @@ class SpheroidTracker:
 
         # resize frame because it is huge
         frame = analysis.rescale_frame(frame, self.scale)
+
+        # # If this is the final frame of the video, save it for export later
+        # if self.frame_num >= self.frames:
+        #     self.final_frame = frame
 
         # if self.frame_num == 1:
         #     # User selects their spheroid
@@ -781,11 +796,11 @@ class SpheroidTracker:
         cont = self.outline_spheroid(processed)  # returns image showing largest contour
         self.tracked_cell_contours.append(cont)
         shapes = self.get_shape(processed, cont)
-        print("shapes:", shapes)
+        # print("shapes:", shapes)
 
         # update argument must be a dictionary mapping centroids of detected objects to their area
         self.cell_locations, self.cell_areas = self.tracker.update(shapes)
-        print("cell_areas:", self.cell_areas)
+        # print("cell_areas:", self.cell_areas)
         # processed = analysis.process_image
 
         # # obtain centroid and radius from previous frame
@@ -848,10 +863,10 @@ class SpheroidTracker:
             self.Ymax = self.cell_locations[self.tracked_cell_id][1]
 
         # Convert area to mm^2
-        print("self.cell_areas[self.tracked_cell_id]:", self.cell_areas[self.tracked_cell_id])
-        print("self.pixels_to_mm**2:", self.pixels_to_mm**2)
+        # print("self.cell_areas[self.tracked_cell_id]:", self.cell_areas[self.tracked_cell_id])
+        # print("self.pixels_to_mm**2:", self.pixels_to_mm**2)
         area_mm = self.cell_areas[self.tracked_cell_id] * (self.pixels_to_mm**2)
-        print("area_mm:", area_mm)
+        # print("area_mm:", area_mm)
         self.tracked_cell_data[f'Area ({self.units}^2)'].append(area_mm)
         # print("tracked cell areas:", self.tracked_cell_data[f'Area ({self.units}^2)'])
 
@@ -860,7 +875,7 @@ class SpheroidTracker:
         coordinates_mm[0] = float(coordinates_mm[0] * self.pixels_to_mm)
         coordinates_mm[1] = float(coordinates_mm[1] * self.pixels_to_mm)
         self.tracked_cell_data[f'X Position ({self.units})'].append(coordinates_mm[0])
-        self.tracked_cell_data[f'Y Position ({self.units})'].append(coordinates_mm[1])
+        self.tracked_cell_data[f'Y Position ({self.units})'].append((self.h * self.pixels_to_mm) - coordinates_mm[1])
 
         # Record Time from start
         self.tracked_cell_data['Time (mins)'].append((self.frame_num - 1) * self.time_between_frames)
@@ -916,9 +931,10 @@ class SpheroidTracker:
 		"""
         # declare local constants
         gaus_kernel = (9, 9)  # must be odd and positive
-        med_kernel_size = 23  # must be odd and positive, always a square so only one value
-        intensity = 1
-        halo_multiplier = 1.5
+        light_med_kernel_size = 21  # must be odd and positive, always a square so only one value
+        strong_med_kernel_size = 99  # must be odd and positive, always a square so only one value
+        # intensity = 1  # must be an int
+        halo_multiplier = 1.3
 
         # Make light blur around whole background, such that unselected cells are still identifiable:
         # (this is to catch parts of spheroid that got cut off by the drawn circle, and those in next frame)
@@ -938,15 +954,15 @@ class SpheroidTracker:
         mask2 = (np.ones(image.shape, dtype="uint8")) * 255
         cv2.circle(mask2, centroid, int(radius * halo_multiplier), 0, -1)
         # apply stronger median blur to white regions of mask2 (hide background contours)
-        strong_blur = cv2.medianBlur(image, med_kernel_size)
+        strong_blur = cv2.medianBlur(image, strong_med_kernel_size)
         # paste strong blur onto white region of mask2, fill black circle of mask2 with the first blurred image
         blur2 = np.where(mask2 > 0, strong_blur, blur1)
-        blur2 *= intensity  # multiplied by an int as effective means of increasing contrast
+        # blur2 *= intensity  # multiplied by an int as effective means of increasing contrast
         # cv2.imshow("halo", blur2)
 
         # Merge cell shapes into one shape, return this image
         # median blur over processed image to create "shadowed" region where spheroid is
-        blob = cv2.medianBlur(blur2, med_kernel_size)
+        blob = cv2.medianBlur(blur2, light_med_kernel_size)
         # cv2.imshow("lumped", blob)
         return blob
 
@@ -1026,7 +1042,7 @@ class SpheroidTracker:
         coordinates_mm[0] = float(coordinates_mm[0] * self.pixels_to_mm)
         coordinates_mm[1] = float(coordinates_mm[1] * self.pixels_to_mm)
         self.tracked_cell_data[f'X Position ({self.units})'].append(coordinates_mm[0])
-        self.tracked_cell_data[f'Y Position ({self.units})'].append(coordinates_mm[1])
+        self.tracked_cell_data[f'Y Position ({self.units})'].append((self.h * self.pixels_to_mm) - coordinates_mm[1])
 
         # Record Time from start
         self.tracked_cell_data['Time (mins)'].append((self.frame_num - 2) * self.time_between_frames)
@@ -1055,7 +1071,11 @@ class SpheroidTracker:
     @param end_color bgr values for color of final cell position to be drawn
     '''
     def export_final_path(self, filename=None, path_color=(255, 255, 255), start_color=(255, 0, 0), end_color=(0, 0, 255)):
-        if self.final_frame is None or self.first_frame is None:
+        if self.final_frame is None:
+            print("final_frame is none")
+            raise Exception("Video Must finish playing before exporting the cell's path")
+        if self.first_frame is None:
+            print("first_frame is none")
             raise Exception("Video Must finish playing before exporting the cell's path")
 
         # Create default filename using the timestamp
@@ -1066,26 +1086,31 @@ class SpheroidTracker:
             filename = f"{home_dir}{timestamp}_Spheroid_Path.png"
 
         # Create Color Image containing the path the tracked cell took
-        # Scale image to match
-        final_photo = analysis.rescale_frame(self.final_frame, self.scale)
-        first_contour = analysis.rescale_frame(self.tracked_cell_contours[0], self.scale)
+        # Scale image to match (actually don't, bc already scaled in next_frame()!)
+        final_photo = self.final_frame  #analysis.rescale_frame(self.final_frame, self.scale)
+        # contour2 = analysis.rescale_frame(self.tracked_cell_contours[1], self.scale)
 
-        # Draw Boundary for Cell's starting position
+        # Draw Boundary and Centroid for Cell's starting position
         # final_photo = analysis.draw_initial_cell_boundary(self.first_frame, self.tracked_cell_coords[self.tracked_cell_id][0], final_photo, start_color)
-        final_photo = cv2.drawContours(final_photo, first_contour, -1, (255, 255, 255), 2)
-        cv2.imshow('final_photo', final_photo)
+        final_photo = cv2.drawContours(final_photo, self.tracked_cell_contours[1], -1, start_color, 2)
+        cv2.circle(final_photo, self.tracked_cell_coords[self.tracked_cell_id][0], 4, start_color, cv2.FILLED)
+
+
 
         # Draw a line for every frame of movement going from its last position to its next position
         for i in range(1, len(self.tracked_cell_coords[self.tracked_cell_id])):
             cv2.line(final_photo, self.tracked_cell_coords[self.tracked_cell_id][i - 1], self.tracked_cell_coords[self.tracked_cell_id][i],
                     path_color, 2)
 
-        # Draw dot at final centroid
+        # Draw contour and dot at final centroid
+        cv2.drawContours(final_photo, self.tracked_cell_contours[-1], -1, end_color, 2)
         cv2.circle(final_photo, self.tracked_cell_coords[self.tracked_cell_id][len(self.tracked_cell_coords[self.tracked_cell_id]) - 1], 4,
                   end_color, cv2.FILLED)
 
+        cv2.imshow('final_photo', final_photo)
+
         # Save Image
-        cv2.imwrite(filename, final_photo)
+        # cv2.imwrite(filename, final_photo)
 
 
     '''
@@ -1147,7 +1172,7 @@ class SpheroidTracker:
           if set to 1 only the first point will be labeled
     '''
     def export_movement_graph(self, num_labels=2, filename=None):
-        self.export_graph(f"X Position ({self.units})", f"Y Position ({self.units})", f"Cell {self.tracked_cell_id}: Movement", self.tracked_cell_data["Time (mins)"], num_labels, filename)
+        self.export_graph(f"X Position ({self.units})", f"Y Position ({self.units})", "Spheroid Movement", self.tracked_cell_data["Time (mins)"], num_labels, filename)
 
 
     '''
@@ -1262,6 +1287,7 @@ class CultureTracker:
     @:returns unedited frame, edited frame
     '''
     def next_frame(self):
+        # global h, w
         if is_image(self.source):
             # Only Display Images one time
             if self.frame_num <= self.frames:
@@ -1285,17 +1311,17 @@ class CultureTracker:
         # If this is the first frame find the pixels per mm measurement
         if self.frame_num == 1:
             # Grab Frame's dimensions in order to convert pixels to mm
-            (h, w) = processed.shape[:2]
+            (self.h, self.w) = processed.shape[:2]
             if self.pixels_to_mm is None or self.pixels_to_mm == 0:
                 # If instead the dimensions of the image were given then calculate the pixel conversion using those
                 # If selected units were micro meters (µm)
                 if self.units == "µm":
-                    self.pixels_to_mm = (((self.height_mm / h) + (self.width_mm / w)) / 2) * 1000
+                    self.pixels_to_mm = (((self.height_mm / self.h) + (self.width_mm / self.w)) / 2) * 1000
                     # Calculate the area of the video by multiplying the dimensions
                     self.area_mm = self.height_mm * self.width_mm * 1000
                 else:
                     # Otherwise use millimeters as unit
-                    self.pixels_to_mm = ((self.height_mm / h) + (self.width_mm / w)) / 2
+                    self.pixels_to_mm = ((self.height_mm / self.h) + (self.width_mm / self.w)) / 2
                     # Calculate the area of the video by multiplying the dimensions
                     self.area_mm = self.height_mm * self.width_mm
             else:
@@ -1304,12 +1330,12 @@ class CultureTracker:
                 if self.units == "µm":
                     self.pixels_to_mm = self.pixels_to_mm * self.scale * 1000
                     # Calculate the area by converting the area in pixels to the area in micrometers
-                    self.area_mm = ((h * w) * (self.pixels_to_mm ** 2)) * 1000
+                    self.area_mm = ((self.h * self.w) * (self.pixels_to_mm ** 2)) * 1000
                 else:
                     # Otherwise use millimeters as unit
                     self.pixels_to_mm = self.pixels_to_mm * self.scale
                     # Calculate the area by converting the area in pixels to the area in mm
-                    self.area_mm = (h * w) * (self.pixels_to_mm ** 2)
+                    self.area_mm = (self.h * self.w) * (self.pixels_to_mm ** 2)
 
         # Use Tracker to label and record coordinates of all cells
         self.cell_locations, self.cell_areas = self.tracker.update(shapes)
@@ -1340,10 +1366,10 @@ class CultureTracker:
                     self.cell_positions_mm[cell_id].append((0, 0))
 
             # Convert coordinates to mm
-            # Coordinates correspond to centroids distance from the left and top of the image
+            # Coordinates correspond to centroids distance from the left and bottom of the image
             coordinates_mm = list(coordinates)
             coordinates_mm[0] = float(coordinates_mm[0] * self.pixels_to_mm)
-            coordinates_mm[1] = float(coordinates_mm[1] * self.pixels_to_mm)
+            coordinates_mm[1] = float((self.h - coordinates_mm[1]) * self.pixels_to_mm)
 
             self.cell_positions_mm[cell_id].append(coordinates_mm)
 
@@ -1568,14 +1594,15 @@ def is_image(filename:str):
     return valid
 
 
-# Used for spheroid tracking, only works outside of class
+# Used for spheroid tracking, only works outside of class. Cant edit the parameters or it will not work
 def draw_circle(event, x, y, flags, param):
     """Drawing circle on image based on mouse movements
     code adapted from:
     https://pythonprogramming.net/drawing-writing-python-opencv-tutorial/
     https://www.life2coding.com/paint-opencv-images-save-image/
     https://www.tutorialspoint.com/opencv-python-how-to-draw-circles-using-mouse-events"""
-    img_copy = FRAME1.copy()  # sets fresh image as canvas to clear the slate
+    img_copy = FRAME1.copy()  # analysis.rescale_frame(FRAME1.copy(), SCALE)  #sets fresh image as canvas to clear the slate
+
     global IX, IY, DRAWING, PREVIOUS, START
     circle_color = (200, 50, 100)
     if event == cv2.EVENT_LBUTTONDOWN:  # when left button on mouse is clicked...
