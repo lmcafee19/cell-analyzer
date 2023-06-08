@@ -1217,7 +1217,6 @@ class CultureTracker:
         self.units = units
         self.frame_num = 1
 
-
         self.height_mm = float(height_mm)
         self.width_mm = float(width_mm)
         self.area_mm = None
