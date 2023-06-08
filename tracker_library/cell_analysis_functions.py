@@ -191,6 +191,7 @@ def detect_shape_v2(img, min_size, max_size):
     for contour in contours:
         # Filter out all contours not in specified range
         if min_size < cv.contourArea(contour) < max_size:
+            # Area = cv.contourArea(contour)
 
             # Minimum rectangle needed to cover contour, will be angled
             # Rect format: (center(x, y), (width, height), angle of rotation)

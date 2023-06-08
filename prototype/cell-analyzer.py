@@ -1001,7 +1001,7 @@ class App:
 		self.video_thread.start()
 		# Create event that will tell the thread to keep running or not
 		self.run_thread = True
-		print(self.run_thread)
+		# print(self.run_thread)
 
 
 	def update(self):

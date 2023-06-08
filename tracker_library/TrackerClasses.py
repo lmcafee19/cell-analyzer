@@ -245,10 +245,10 @@ class IndividualTracker:
         self.cell_locations, self.cell_areas = self.tracker.update(shapes)
 
         # Label all cells with cell id only if there is a small amount of cells
-        if len(self.cell_locations) <= 25:
-            labeled_img = analysis.label_cells(processed, self.cell_locations)
-        else:
-            labeled_img = processed
+        # if len(self.cell_locations) <= 25:
+        labeled_img = analysis.label_cells(processed, self.cell_locations)
+        # else:
+        #     labeled_img = processed
 
         if self.pixels_to_mm is None or self.pixels_to_mm == 0:
             # Grab Frame's dimensions in order to convert pixels to mm
